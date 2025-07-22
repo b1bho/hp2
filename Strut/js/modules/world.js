@@ -570,6 +570,11 @@ function launchAttack() {
         routingChain: activeNodes.map(n => n.id)
     };
 
+    // Ensure activeAttacks array exists
+    if (!state.activeAttacks) {
+        state.activeAttacks = [];
+    }
+
     state.activeAttacks.push(newAttack);
     saveState();
     updateActiveAttacks();

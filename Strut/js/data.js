@@ -416,7 +416,7 @@ const initialGameState = {
     xmr: 1000,
     level: 1,
     xp: 0,
-    nextLevelXp: 100,
+    xpToNextLevel: 100,
     talentPoints: 0,
     btcValueInUSD: 50000,
     unlocked: {
@@ -475,8 +475,10 @@ const initialGameState = {
     completedQuests: [],
 
     activeOperations: [],
+    activeAttacks: [],
     worldData: {},
     newsFeed: [],
+    studying: {},
     
     // FIX 2: Clan inizialmente nullo - deve essere creato dal giocatore
     clan: null
