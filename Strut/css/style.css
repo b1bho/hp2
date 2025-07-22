@@ -644,3 +644,63 @@ body {
     overflow-y: auto;
     font-family: 'Roboto Mono', monospace;
 }
+
+/* --- IMPROVED BOTNET STATS UI --- */
+#botnet-aggregate-stats {
+    background: linear-gradient(135deg, rgba(31, 41, 55, 0.8), rgba(17, 24, 39, 0.9));
+    border: 1px solid rgba(99, 102, 241, 0.3);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    backdrop-filter: blur(10px);
+}
+
+#botnet-aggregate-stats > div {
+    padding: 1.5rem;
+    border-radius: 0.5rem;
+    background: rgba(55, 65, 81, 0.2);
+    border: 1px solid rgba(75, 85, 99, 0.3);
+    transition: all 0.3s ease;
+}
+
+#botnet-aggregate-stats > div:hover {
+    background: rgba(79, 70, 229, 0.1);
+    border-color: rgba(99, 102, 241, 0.5);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+#botnet-aggregate-stats .text-gray-400 {
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.5rem;
+}
+
+#botnet-aggregate-stats .text-2xl {
+    font-weight: 800;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.botnet-header-section {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding: 1rem 0;
+    border-bottom: 1px solid rgba(55, 65, 81, 0.5);
+}
+
+.botnet-header-section h2 {
+    font-size: 1.875rem;
+    font-weight: 700;
+    background: linear-gradient(to right, #818cf8, #a855f7);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.infected-host-counter {
+    text-align: right;
+    padding: 0.75rem 1rem;
+    background: rgba(17, 24, 39, 0.6);
+    border-radius: 0.5rem;
+    border: 1px solid rgba(79, 70, 229, 0.3);
+}
