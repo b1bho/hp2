@@ -604,6 +604,15 @@ function determineRewardsByObjective(flow) {
         case 'propagation':
             rewards.push({ type: 'propagate' });
             break;
+
+        case 'botnet':
+            // Botnet flows should have high propagation probability like propagation flows
+            rewards.push({ type: 'propagate' });
+            if (Math.random() < 0.15) { // 15% chance of finding additional BTC for botnet operations
+                const btcAmount = Math.random() * 0.002 + 0.0005;
+                rewards.push({ type: 'btc', amount: parseFloat(btcAmount.toFixed(6)) });
+            }
+            break;
     }
 
     return rewards;

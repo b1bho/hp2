@@ -749,6 +749,11 @@ function renderDataLockerSection() {
                     <div><span class="text-gray-500">Sensibilità:</span> <span class="text-indigo-300">${data.sensitivity}</span></div>
                     <div><span class="text-gray-500">Valore:</span> <span class="text-yellow-400">${data.value.toLocaleString()} BTC</span></div>
                 </div>
+                <div class="mt-3 text-center">
+                    <button class="analyze-data-btn px-3 py-1 bg-green-600 hover:bg-green-700 rounded text-sm font-semibold" data-packet-id="${data.id}" data-source="personal">
+                        <i class="fas fa-search mr-1"></i>Analizza Dati
+                    </button>
+                </div>
             </div>
         `).join('');
     };
@@ -777,6 +782,11 @@ function renderDataLockerSection() {
                         <div><span class="text-gray-500">Purezza:</span> <span class="text-indigo-300">${data.purity.toFixed(2)}%</span></div>
                         <div><span class="text-gray-500">Sensibilità:</span> <span class="text-indigo-300">${data.sensitivity}</span></div>
                         <div><span class="text-gray-500">Valore:</span> <span class="text-yellow-400">${data.value.toLocaleString()} BTC</span></div>
+                    </div>
+                    <div class="mt-3 text-center">
+                        <button class="analyze-data-btn px-3 py-1 bg-green-600 hover:bg-green-700 rounded text-sm font-semibold" data-packet-id="${data.id}" data-source="clan" data-server-id="${item.serverId}">
+                            <i class="fas fa-search mr-1"></i>Analizza Dati
+                        </button>
                     </div>
                 </div>
             `;
@@ -807,7 +817,32 @@ function renderDataLockerSection() {
                 </div>
             </div>
         </div>
+
+        <!-- Analysis Modal -->
+        <div id="analysis-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
+            <div class="bg-gray-800 rounded-lg max-w-2xl w-full max-h-[80vh] overflow-y-auto">
+                <div class="p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 id="analysis-modal-title" class="text-xl font-semibold text-white">Analisi Dati</h3>
+                        <button id="close-analysis-modal" class="text-gray-400 hover:text-white text-2xl">&times;</button>
+                    </div>
+                    <div id="analysis-interface-content">
+                        <!-- Analysis content will be populated here -->
+                    </div>
+                </div>
+            </div>
+        </div>
     `;
+
+    // Add event listeners for analysis buttons
+    container.querySelectorAll('.analyze-data-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const packetId = btn.dataset.packetId;
+            const source = btn.dataset.source;
+            const serverId = btn.dataset.serverId;
+            openAnalysisModal(packetId, source, serverId);
+        });
+    });
 }
 function initProfilePage() {
     renderProfileContent();
@@ -824,4 +859,128 @@ function initProfilePage() {
             handleStudyClick(e);
         }
     });
+}
+
+// Intelligence Analysis Functions
+function openAnalysisModal(packetId, source, serverId) {
+    const modal = document.getElementById('analysis-modal');
+    if (!modal) return;
+
+    // Find the data packet
+    let packet = null;
+    let sourceName = '';
+
+    if (source === 'personal') {
+        packet = state.dataLocker.personal.find(p => p.id === packetId);
+        sourceName = 'PC Personale';
+    } else if (source === 'clan' && serverId) {
+        const clanItem = state.dataLocker.clan.find(c => c.data.id === packetId && c.serverId == serverId);
+        if (clanItem) {
+            packet = clanItem.data;
+            sourceName = `Server Clan #${serverId}`;
+        }
+    }
+
+    if (!packet) {
+        showNotification("Errore: Pacchetto dati non trovato.", "error");
+        return;
+    }
+
+    // Set modal title
+    document.getElementById('analysis-modal-title').textContent = `Analisi: ${packet.name}`;
+
+    // Create analysis interface similar to intelligence.js
+    const valueInBtc = packet.value || 0;
+    document.getElementById('analysis-interface-content').innerHTML = `
+        <div class="mb-4">
+            <p class="text-sm text-gray-400 mb-4">${packet.description}</p>
+            <p class="text-xs text-gray-500 mb-4">Fonte: ${sourceName}</p>
+            <div class="data-card p-4 rounded-lg mb-6">
+                 <div class="grid grid-cols-3 gap-2 text-sm font-mono">
+                    <div><span class="text-gray-500">Purezza:</span> <span class="text-indigo-300">${packet.purity.toFixed(2)}%</span></div>
+                    <div><span class="text-gray-500">Sensibilità:</span> <span class="text-indigo-300">${packet.sensitivity}</span></div>
+                    <div><span class="text-gray-500">Valore:</span> <span class="text-yellow-400">${valueInBtc.toLocaleString()} BTC</span></div>
+                </div>
+            </div>
+
+            <div>
+                <h4 class="font-semibold mb-3 text-indigo-300">Ricerca per Keyword o IP</h4>
+                <div class="flex gap-2">
+                    <input type="text" id="analysis-keyword-search-input" class="bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-white w-full" placeholder="Es: Mario Rossi, 8.8.8.8...">
+                    <button id="analysis-keyword-search-btn" class="px-4 py-2 font-semibold rounded-md bg-green-600 hover:bg-green-700">Cerca</button>
+                </div>
+                <div id="analysis-search-result" class="mt-4 p-4 bg-black/20 rounded-md min-h-[50px]">
+                    <p class="text-gray-500">Inserisci una keyword o un indirizzo IP per iniziare l'analisi.</p>
+                </div>
+            </div>
+        </div>
+    `;
+
+    // Add event listeners
+    document.getElementById('analysis-keyword-search-btn').addEventListener('click', () => {
+        const keyword = document.getElementById('analysis-keyword-search-input').value;
+        if (keyword) {
+            performAnalysisSearch(packet, keyword);
+        }
+    });
+
+    document.getElementById('close-analysis-modal').addEventListener('click', () => {
+        modal.classList.add('hidden');
+    });
+
+    // Show modal
+    modal.classList.remove('hidden');
+}
+
+function performAnalysisSearch(packet, keyword) {
+    const resultContainer = document.getElementById('analysis-search-result');
+    resultContainer.innerHTML = `<p class="text-yellow-400"><i class="fas fa-spinner fa-spin mr-2"></i>Analisi dei dati in corso...</p>`;
+
+    const successChance = packet.purity / 100;
+    const searchTerm = keyword.trim().toLowerCase();
+
+    setTimeout(() => {
+        if (Math.random() < successChance) {
+            // Search both for keyword and IP like in intelligence.js
+            const activeQuest = state.activeQuests.find(q => 
+                q.status === 'accepted' && 
+                ( (q.targetKeyword && q.targetKeyword.toLowerCase() === searchTerm) || 
+                  (q.targetIpAddress && q.targetIpAddress === searchTerm) )
+            );
+            
+            if (activeQuest) {
+                const rewardInBtc = activeQuest.rewards.usd / state.btcValueInUSD;
+                const intelValueInBtc = rewardInBtc / 2;
+
+                const newIntelItem = {
+                    id: `intel-${Date.now()}`,
+                    questId: activeQuest.id,
+                    name: `Intel: ${activeQuest.title}`,
+                    description: `Informazione chiave trovata: "${keyword}". Può essere usata per completare la relativa missione.`,
+                    value: parseFloat(intelValueInBtc.toFixed(6))
+                };
+                state.intelItems.push(newIntelItem);
+
+                activeQuest.status = 'objective_found';
+
+                resultContainer.innerHTML = `<p class="text-green-400"><i class="fas fa-star mr-2"></i>Informazione Cruciale Trovata!</p>
+                                             <p class="text-sm text-gray-300 mt-2">Un nuovo "Dato Intel" è stato aggiunto al tuo archivio. Vai alla bacheca missioni nell'HQ per completare l'incarico.</p>`;
+                saveState();
+
+                if (state.activePage === 'hq') {
+                    renderQuestBoard();
+                }
+                if (state.activePage === 'profile' && state.activeProfileSection === 'data-locker') {
+                    renderDataLockerSection();
+                }
+
+            } else {
+                resultContainer.innerHTML = `<p class="text-green-400"><i class="fas fa-check-circle mr-2"></i>Corrispondenza trovata per: "${keyword}"!</p>
+                                             <p class="text-xs text-gray-400 mt-2">Questa informazione non sembra legata a nessuna missione attiva.</p>`;
+            }
+        } else {
+            resultContainer.innerHTML = `<p class="text-red-400"><i class="fas fa-times-circle mr-2"></i>Nessuna corrispondenza trovata per: "${keyword}".</p>
+                                         <p class="text-xs text-gray-400 mt-2">I dati potrebbero essere troppo corrotti (bassa purezza). Prova a ottenere un archivio di qualità superiore.</p>`;
+        }
+    }, 2000);
 }
