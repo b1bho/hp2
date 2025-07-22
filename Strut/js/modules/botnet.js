@@ -1110,11 +1110,41 @@ function renderDDoSFlowOptions() {
     let optionsHtml = '<option value="">-- Select DDoS Flow --</option>';
     
     if (ddosFlows.length === 0) {
-        optionsHtml += '<option value="" disabled>No DDoS flows available. Create flows with DDoS blocks first.</option>';
+        // Provide helpful guidance when no DDoS flows are available
+        if (flows.length === 0) {
+            optionsHtml += '<option value="" disabled>No flows available. Create flows in the Editor first.</option>';
+        } else {
+            optionsHtml += '<option value="" disabled>No DDoS flows available. Create flows with DDoS objective or DDoS blocks.</option>';
+            
+            // Show available flows that could be modified
+            const nonDDoSFlows = flows.filter(flow => !isDDoSFlow(flow));
+            if (nonDDoSFlows.length > 0) {
+                optionsHtml += '<optgroup label="Available flows (not DDoS compatible)">';
+                nonDDoSFlows.slice(0, 3).forEach(flow => {
+                    const objective = flow.objective || 'none';
+                    optionsHtml += `<option value="" disabled>${flow.name} (${objective})</option>`;
+                });
+                if (nonDDoSFlows.length > 3) {
+                    optionsHtml += `<option value="" disabled>...and ${nonDDoSFlows.length - 3} more</option>`;
+                }
+                optionsHtml += '</optgroup>';
+            }
+        }
     } else {
         ddosFlows.forEach(flow => {
-            optionsHtml += `<option value="${flow.id}">${flow.name} (${flow.objective || 'denialOfService'})</option>`;
+            const objective = flow.objective || 'denialOfService';
+            const powerLevel = flow.stats?.attack ? Math.floor(flow.stats.attack / 50000) : 1;
+            const powerIndicator = '★'.repeat(Math.min(powerLevel, 5)) + '☆'.repeat(Math.max(0, 5 - powerLevel));
+            optionsHtml += `<option value="${flow.id}">${flow.name} (${objective}) ${powerIndicator}</option>`;
         });
+        
+        // Add helpful information about other flows
+        const nonDDoSFlows = flows.filter(flow => !isDDoSFlow(flow));
+        if (nonDDoSFlows.length > 0) {
+            optionsHtml += '<optgroup label="Other flows (not DDoS compatible)">';
+            optionsHtml += `<option value="" disabled>${nonDDoSFlows.length} flows available with different objectives</option>`;
+            optionsHtml += '</optgroup>';
+        }
     }
 
     select.innerHTML = optionsHtml;
@@ -1136,9 +1166,22 @@ function renderDDoSFlowOptions() {
     if (launchBtn) {
         launchBtn.addEventListener('click', launchDDoSAttack);
     }
+    
+    // Show helpful tips if no DDoS flows are available
+    if (ddosFlows.length === 0) {
+        showDDoSFlowGuidance();
+    }
 }
 
 function isDDoSFlow(flow) {
+    if (!flow) return false;
+    
+    // Check if flow objective is explicitly set to denial of service
+    if (flow.objective === 'denialOfService') {
+        return true;
+    }
+    
+    // Check if flow contains DDoS-specific blocks
     if (!flow.blocks) return false;
     
     const ddosBlocks = [
@@ -1148,8 +1191,66 @@ function isDDoSFlow(flow) {
         'Attacco Layer 7 (HTTP Flood)'
     ];
     
-    return flow.blocks.some(block => ddosBlocks.includes(block.type)) || 
-           flow.objective === 'denialOfService';
+    return flow.blocks.some(block => {
+        const blockType = typeof block === 'string' ? block : block.type;
+        return ddosBlocks.includes(blockType);
+    });
+}
+
+function validateDDoSFlow(flow) {
+    // Provide detailed validation feedback for DDoS flows
+    const validation = {
+        isValid: false,
+        issues: [],
+        suggestions: []
+    };
+    
+    if (!flow) {
+        validation.issues.push('No flow provided');
+        return validation;
+    }
+    
+    // Check objective
+    if (flow.objective !== 'denialOfService') {
+        if (flow.objective) {
+            validation.issues.push(`Flow objective is "${flow.objective}" instead of "denialOfService"`);
+            validation.suggestions.push('Set the flow objective to "Denial of Service (DoS/DDoS)" in the Editor');
+        } else {
+            validation.issues.push('Flow has no objective set');
+            validation.suggestions.push('Set the flow objective to "Denial of Service (DoS/DDoS)" in the Editor');
+        }
+    }
+    
+    // Check for DDoS blocks
+    const ddosBlocks = [
+        'Lancia attacco SYN Flood',
+        'Genera traffico UDP Flood', 
+        'Coordina botnet per DDoS',
+        'Attacco Layer 7 (HTTP Flood)'
+    ];
+    
+    const hasBlocks = flow.blocks && flow.blocks.length > 0;
+    const hasDDoSBlocks = hasBlocks && flow.blocks.some(block => {
+        const blockType = typeof block === 'string' ? block : block.type;
+        return ddosBlocks.includes(blockType);
+    });
+    
+    if (!hasBlocks) {
+        validation.issues.push('Flow has no blocks');
+        validation.suggestions.push('Add DDoS blocks like "SYN Flood" or "UDP Flood" in the Editor');
+    } else if (!hasDDoSBlocks) {
+        validation.issues.push('Flow has no DDoS-specific blocks');
+        validation.suggestions.push('Add at least one DDoS block: SYN Flood, UDP Flood, HTTP Flood, or Botnet Coordination');
+    }
+    
+    // Check flow completeness (FC score)
+    if (flow.fc && flow.fc < 50) {
+        validation.issues.push(`Low flow completeness score (${flow.fc}%)`);
+        validation.suggestions.push('Improve the flow by adding required blocks for DDoS attacks');
+    }
+    
+    validation.isValid = validation.issues.length === 0;
+    return validation;
 }
 
 function updateAttackPreview() {
@@ -1417,6 +1518,48 @@ function calculateTotalAttackPower(botGroups) {
         }
     });
     return totalPower;
+}
+
+function showDDoSFlowGuidance() {
+    // Add helpful guidance in the attack configuration section
+    const configSection = document.querySelector('#content-ddos .bg-gray-800\\/50');
+    if (!configSection) return;
+    
+    const existingGuidance = configSection.querySelector('.ddos-guidance');
+    if (existingGuidance) return; // Don't add duplicate guidance
+    
+    const guidanceDiv = document.createElement('div');
+    guidanceDiv.className = 'ddos-guidance bg-blue-900/30 rounded-lg p-4 mb-4 border border-blue-500';
+    guidanceDiv.innerHTML = `
+        <div class="flex items-start space-x-3">
+            <i class="fas fa-info-circle text-blue-400 text-lg mt-1"></i>
+            <div>
+                <h4 class="font-semibold text-blue-300 mb-2">No DDoS Flows Available</h4>
+                <p class="text-sm text-gray-300 mb-2">To launch DDoS attacks, you need flows with DDoS capabilities:</p>
+                <ul class="text-xs text-gray-400 space-y-1 mb-3">
+                    <li>• Go to the <strong>Editor</strong> to create attack flows</li>
+                    <li>• Set the flow objective to <strong>"Denial of Service (DoS/DDoS)"</strong></li>
+                    <li>• Include blocks like: SYN Flood, UDP Flood, HTTP Flood</li>
+                    <li>• Save your flow and return here to use it</li>
+                </ul>
+                <div class="flex space-x-2">
+                    <button onclick="switchPage('editor')" class="px-3 py-1 text-xs bg-blue-600 hover:bg-blue-700 rounded">
+                        Open Editor
+                    </button>
+                    <button onclick="this.parentElement.parentElement.parentElement.parentElement.remove()" 
+                            class="px-3 py-1 text-xs bg-gray-600 hover:bg-gray-700 rounded">
+                        Dismiss
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Insert guidance after the h3 title
+    const title = configSection.querySelector('h3');
+    if (title) {
+        title.insertAdjacentElement('afterend', guidanceDiv);
+    }
 }
 
 function hideAttackStatus() {
