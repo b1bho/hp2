@@ -484,7 +484,7 @@ function executeSingleFlow(host, flow, slotIndex) {
                     case 'btc':
                         state.btc += reward.amount;
                         logMessage += ` Trovato un wallet con ${reward.amount.toFixed(6)} BTC!`;
-                        showToast(`Jackpot! Trovati ${reward.amount.toFixed(6)} BTC!`, 'success');
+                        showNotification(`Jackpot! Trovati ${reward.amount.toFixed(6)} BTC!`, 'success');
                         break;
                     case 'data':
                         promptDataStorage(reward.packet);
@@ -494,12 +494,26 @@ function executeSingleFlow(host, flow, slotIndex) {
                         const newHost = generateRandomHost();
                         state.infectedHostPool.push(newHost);
                         logMessage += ` Infezione propagata a un nuovo host: ${newHost.ipAddress}.`;
-                        showToast(`Propagazione riuscita! Nuovo host ${newHost.ipAddress} aggiunto.`, 'success');
+                        showNotification(`Propagazione riuscita! Nuovo host ${newHost.ipAddress} aggiunto.`, 'success');
                         break;
                 }
             });
         } else {
-            logMessage += " Operazione completata senza ricompense immediate.";
+            // Provide more informative message based on flow objective
+            const objective = flow.objective || 'financial';
+            switch (objective) {
+                case 'dataExfiltration':
+                    logMessage += " Operazione completata ma nessun dato utile trovato sui sistemi target.";
+                    break;
+                case 'financial':
+                    logMessage += " Operazione completata ma nessun wallet o asset finanziario scoperto.";
+                    break;
+                case 'propagation':
+                    logMessage += " Operazione completata ma le condizioni di rete non erano favorevoli alla propagazione.";
+                    break;
+                default:
+                    logMessage += " Operazione completata con successo ma senza ricompense immediate.";
+            }
         }
         
         showNotification(logMessage, 'success');
@@ -635,7 +649,7 @@ function promptDataStorage(dataPacket) {
             state.dataLocker.clan.push({ serverId: serverId, data: dataPacket });
         }
         
-        showToast(`Dati archiviati! Disponibili in Intelligence.`, 'success');
+        showNotification(`Dati archiviati! Disponibili in Intelligence.`, 'success');
         saveState();
         modal.classList.add('hidden');
     });
