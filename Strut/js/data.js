@@ -478,18 +478,8 @@ const initialGameState = {
     worldData: {},
     newsFeed: [],
     
-    // FIX 2: Aggiunta una struttura base per il clan per evitare errori all'avvio
-    clan: {
-        name: "Nessun Clan",
-        members: [], // Add empty members array
-        darkMarket: {
-            hostedOnServerId: null,
-            listings: []
-        },
-        infrastructure: {
-            servers: []
-        }
-    }
+    // FIX 2: Clan inizialmente nullo - deve essere creato dal giocatore
+    clan: null
 };
 
 let state = {};
