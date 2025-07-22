@@ -159,6 +159,10 @@ async function updateBTCValue() {
         }
     } catch (error) {
         console.error("Impossibile aggiornare il prezzo di BTC dall'API. Verrà usato l'ultimo valore noto.", error);
+        // Fallback to a default value if no value is set
+        if (!state.btcValueInUSD) {
+            state.btcValueInUSD = 50000; // Default BTC price for testing
+        }
     } finally {
         updateUI();
         if (state.activePage === 'market') renderMarket();
@@ -230,7 +234,8 @@ function updateUI() {
     talentPointsEl.textContent = state.talentPoints;
     const btcValueEl = document.getElementById('btc-value');
     if (btcValueEl) {
-        btcValueEl.textContent = `$${state.btcValueInUSD.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        const btcValue = state.btcValueInUSD || 50000; // Default value if not set
+        btcValueEl.textContent = `$${btcValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     }
     const playerLevelEl = document.getElementById('player-level');
     const playerXpEl = document.getElementById('player-xp');
