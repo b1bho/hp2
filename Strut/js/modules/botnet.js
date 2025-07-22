@@ -674,7 +674,9 @@ function propagateFromHost(hostId) {
     addLogToHost(hostId, `Avvio propagazione con il flusso "${flow.name}"...`);
 
     setTimeout(() => {
-        const successChance = (flow.stats.stealth || 20) + (host.stabilityScore / 5);
+        // Use the same 95% base success rate as executeSingleFlow for consistency
+        const failureChance = 5 + (100 - host.stabilityScore) / 5; // 5% base failure, increases with instability
+        const successChance = 100 - failureChance;
         if (Math.random() * 100 < successChance) {
             const newHost = generateRandomHost();
             state.infectedHostPool.push(newHost);
