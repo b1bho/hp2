@@ -39,13 +39,30 @@ function createMarketItem(item, type, baseId = null) {
     
     let isOwned = false;
     if (type === 'hardware') {
+        // Safety check: ensure ownedHardware object exists
+        if (!state.ownedHardware || typeof state.ownedHardware !== 'object') {
+            console.warn('state.ownedHardware not properly initialized, reinitializing...');
+            state.ownedHardware = {};
+            saveState();
+        }
         isOwned = !!state.ownedHardware[itemId];
     } else if (type === 'service') {
+        // Safety check: ensure purchasedServices object exists
+        if (!state.purchasedServices || typeof state.purchasedServices !== 'object') {
+            console.warn('state.purchasedServices not properly initialized, reinitializing...');
+            state.purchasedServices = {};
+            saveState();
+        }
         isOwned = !!state.purchasedServices[itemId];
     }
     
     const canAfford = type === 'clan' ? (state.clan && state.clan.treasury >= costInBtc) : (state.btc >= costInBtc);
-    const isLeader = state.clan && state.clan.members.find(m => m.name === state.hackerName && m.role === 'Leader');
+    
+    // Safety check for clan members
+    let isLeader = false;
+    if (state.clan && Array.isArray(state.clan.members)) {
+        isLeader = state.clan.members.find(m => m.name === state.hackerName && m.role === 'Leader');
+    }
     
     let canBuy = false;
     let buttonText = 'Compra';

@@ -413,9 +413,12 @@ const initialGameState = {
     hackerName: 'Ghost',
     money: 5000,
     btc: 0.5,
+    xmr: 1000,
     level: 1,
     xp: 0,
     nextLevelXp: 100,
+    talentPoints: 0,
+    btcValueInUSD: 50000,
     unlocked: {
         'Python': 1,
         'Networking (Net)': 1
@@ -423,8 +426,15 @@ const initialGameState = {
     identity: {
         current: 'Ghost',
         traces: 5,
+        realIp: null, // Will be set by initializeDynamicState
+        investigatedBy: 'Nessuna',
+        suspicion: 0
     },
+    morality: 0,
+    traceLogs: [],
     activePage: 'botnet',
+    isWorldUnlocked: false,
+    discoveredTargets: [],
     hardware: {
         cpu: { level: 1, cores: 4, clock: 2.5 },
         ram: { level: 1, size: 8 },
@@ -434,9 +444,23 @@ const initialGameState = {
         { id: 'nmap', name: 'Nmap', version: '1.0', type: 'Scanner' },
         { id: 'metasploit', name: 'Metasploit', version: '1.0', type: 'Exploit Framework' }
     ],
-    savedFlows: [],
+    // Personal computer with flow slots based on CPU cores
+    personalComputer: {
+        attachedFlows: [
+            { flowName: null, status: 'idle', startTime: 0, duration: 0 },
+            { flowName: null, status: 'idle', startTime: 0, duration: 0 },
+            { flowName: null, status: 'idle', startTime: 0, duration: 0 },
+            { flowName: null, status: 'idle', startTime: 0, duration: 0 }
+        ]
+    },
+    savedFlows: {},
+    permanentFlows: {},
     infectedHostPool: [],
     botnetGroups: {},
+    ownedHardware: {},
+    purchasedServices: {},
+    ipTraceability: {},
+    news: [],
     
     // FIX 1: Aggiunte le nuove strutture dati necessarie
     data: {
@@ -457,6 +481,7 @@ const initialGameState = {
     // FIX 2: Aggiunta una struttura base per il clan per evitare errori all'avvio
     clan: {
         name: "Nessun Clan",
+        members: [], // Add empty members array
         darkMarket: {
             hostedOnServerId: null,
             listings: []

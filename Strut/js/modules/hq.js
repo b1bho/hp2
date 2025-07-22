@@ -26,6 +26,14 @@ function renderHqPage() {
 
     let hardwareHTML = `<div class="hq-stat-card p-4 rounded-lg"><h4 class="text-lg font-bold text-indigo-300 mb-2">Hardware Personale</h4><ul class="text-sm space-y-1 list-disc list-inside text-gray-300">`;
     const allPersonalItems = [...marketData.personalHardware, ...marketData.personalInfrastructure];
+    
+    // Safety check: ensure ownedHardware object exists
+    if (!state.ownedHardware || typeof state.ownedHardware !== 'object') {
+        console.warn('state.ownedHardware not properly initialized in renderHqPage, reinitializing...');
+        state.ownedHardware = {};
+        saveState();
+    }
+    
     const ownedItems = Object.keys(state.ownedHardware);
     if (ownedItems.length > 0) {
         ownedItems.forEach(id => {
@@ -204,6 +212,22 @@ function executeFlowFromPersonalComputer(event) {
 function updatePersonalComputer() {
     let shouldRerender = false;
     
+    // Safety check: ensure personalComputer and attachedFlows exist
+    if (!state.personalComputer || !Array.isArray(state.personalComputer.attachedFlows)) {
+        console.warn('personalComputer.attachedFlows not properly initialized, reinitializing...');
+        const cores = state.hardware?.cpu?.cores || 4;
+        state.personalComputer = {
+            attachedFlows: new Array(cores).fill(null).map(() => ({
+                flowName: null, 
+                status: 'idle', 
+                startTime: 0, 
+                duration: 0
+            }))
+        };
+        saveState();
+        return;
+    }
+    
     if (state.personalComputer.attachedFlows.some(slot => slot.status === 'running')) {
         shouldRerender = true;
     }
@@ -231,6 +255,14 @@ function updatePersonalComputer() {
 }
 function updateNewsTicker() {
     if (state.activePage !== 'hq') return;
+    
+    // Safety check: ensure news array exists
+    if (!Array.isArray(state.news)) {
+        console.warn('state.news not properly initialized, reinitializing...');
+        state.news = [];
+        saveState();
+    }
+    
     if (state.news.length < MAX_NEWS_ITEMS) {
         const availableNews = newsData.filter(n => !state.news.some(sn => sn.headline === n.headline));
         if (availableNews.length > 0) {
