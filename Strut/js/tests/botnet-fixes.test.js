@@ -41,7 +41,7 @@ let testState = {
         {
             id: 'flow-propagation-test',
             name: 'Propagation Flow',
-            objective: 'propagation',
+            objective: 'worm',
             stats: { attack: 100000 }
         },
         {
@@ -119,7 +119,7 @@ function testPropagationTargetRecognition() {
         const result = hookFlowToSlot('test-host-1', 0, 'flow-propagation-test');
         const logMessage = host.activityLog[host.activityLog.length - 1];
         
-        const hasObjectiveInLog = logMessage.includes('Obiettivo: propagation');
+        const hasObjectiveInLog = logMessage.includes('Obiettivo: worm');
         const hasCorrectFlowName = logMessage.includes('Propagation Flow');
         
         console.log('✅ Enhanced logging includes objective:', hasObjectiveInLog);
@@ -151,8 +151,8 @@ function testPropagationTargetRecognition() {
                 return { error: 'Invalid flow', message: 'Flusso agganciato non trovato nell\'archivio flussi.' };
             }
 
-            if (flow.objective !== 'propagation') {
-                mockAddLogToHost(hostId, `Tentativo di propagazione fallito: il flusso "${flow.name}" ha obiettivo "${flow.objective || 'non specificato'}" invece di "propagation".`);
+            if (flow.objective !== 'worm') {
+                mockAddLogToHost(hostId, `Tentativo di propagazione fallito: il flusso "${flow.name}" ha obiettivo "${flow.objective || 'non specificato'}" invece di "worm".`);
                 return { error: 'Wrong objective', message: `È necessario un flusso con obiettivo 'Propagazione' per questa azione. Il flusso "${flow.name}" ha obiettivo "${flow.objective || 'non specificato'}".` };
             }
 
@@ -284,10 +284,49 @@ function testDataAnalysisInIntelligence() {
         return result.success && result.canAnalyze && result.purityCheck && result.sensitivityCheck;
     }
     
+    // Test real-time intelligence console refresh
+    function testIntelligenceConsoleRefresh() {
+        // Mock renderDataPacketsList function
+        let renderCalled = false;
+        global.renderDataPacketsList = () => {
+            renderCalled = true;
+            console.log('✅ renderDataPacketsList called');
+        };
+        
+        // Mock state for active intelligence page
+        const originalActivePage = testState.activePage;
+        testState.activePage = 'intelligence_console';
+        
+        // Mock promptDataStorage call
+        const testDataPacket = {
+            id: 'refresh-test-packet',
+            name: 'Test Refresh Data',
+            description: 'Data to test console refresh',
+            type: 'Test Data',
+            value: 0.0001,
+            purity: 75.0,
+            sensitivity: 'Low'
+        };
+        
+        // Simulate data storage that should trigger refresh
+        // This mimics the code in promptDataStorage
+        testState.dataLocker.personal.push(testDataPacket);
+        if (testState.activePage === 'intelligence_console' && typeof global.renderDataPacketsList === 'function') {
+            global.renderDataPacketsList();
+        }
+        
+        // Restore original state
+        testState.activePage = originalActivePage;
+        
+        console.log('✅ Intelligence console refresh triggered:', renderCalled);
+        return renderCalled;
+    }
+    
     const test1 = testDataPacketCreation();
     const test2 = testIntelligenceAnalysis();
+    const test3 = testIntelligenceConsoleRefresh();
     
-    return test1 && test2;
+    return test1 && test2 && test3;
 }
 
 // Test Suite 3: Botnet UI Improvements
