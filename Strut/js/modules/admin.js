@@ -111,7 +111,12 @@ function resetBotnet() {
 }
 
 function adminLevelUp() {
-    const xpNeeded = state.xpToNextLevel - state.xp;
+    // Ensure xpToNextLevel exists and has a valid value
+    if (!state.xpToNextLevel || state.xpToNextLevel <= 0) {
+        state.xpToNextLevel = 100;
+    }
+    
+    const xpNeeded = state.xpToNextLevel - (state.xp || 0);
     addXp(xpNeeded, 'player');
     alert(`Livello aumentato a ${state.level}!`);
     updateAdminPanelUI();
@@ -120,11 +125,19 @@ function adminLevelUp() {
 // --- NUOVA FUNZIONE ---
 function adminSetLevel() {
     const targetLevelInput = document.getElementById('admin-level');
-    if (!targetLevelInput) return;
+    if (!targetLevelInput) {
+        alert("Errore: Campo livello non trovato.");
+        return;
+    }
 
     const targetLevel = parseInt(targetLevelInput.value, 10);
-    if (isNaN(targetLevel) || targetLevel <= state.level) {
-        alert("Inserisci un livello valido e superiore a quello attuale.");
+    if (isNaN(targetLevel) || targetLevel <= 0) {
+        alert("Inserisci un livello valido (maggiore di 0).");
+        return;
+    }
+
+    if (targetLevel <= state.level) {
+        alert("Il livello inserito deve essere superiore al livello attuale.");
         return;
     }
 
@@ -154,8 +167,13 @@ function adminLevelUpProgressive(targetLevel, button) {
         return;
     }
 
+    // Ensure xpToNextLevel exists and has a valid value
+    if (!state.xpToNextLevel || state.xpToNextLevel <= 0) {
+        state.xpToNextLevel = 100;
+    }
+
     // Level up di un singolo livello
-    const xpNeeded = (state.nextLevelXp || state.xpToNextLevel || 100) - (state.xp || 0);
+    const xpNeeded = state.xpToNextLevel - (state.xp || 0);
     addXp(xpNeeded, 'player');
     
     // Mostra progresso ogni 5 livelli
@@ -176,10 +194,11 @@ function updateAdminPanelUI() {
     const adminTalentsInput = document.getElementById('admin-talents');
     const adminLevelInput = document.getElementById('admin-level');
 
-    if(adminBtcInput) adminBtcInput.value = state.btc;
-    if(adminXmrInput) adminXmrInput.value = state.xmr;
-    if(adminTalentsInput) adminTalentsInput.value = state.talentPoints;
-    if(adminLevelInput) adminLevelInput.value = state.level;
+    // Only update if elements exist and have valid values
+    if(adminBtcInput && state.btc !== undefined) adminBtcInput.value = state.btc;
+    if(adminXmrInput && state.xmr !== undefined) adminXmrInput.value = state.xmr;
+    if(adminTalentsInput && state.talentPoints !== undefined) adminTalentsInput.value = state.talentPoints;
+    if(adminLevelInput && state.level !== undefined) adminLevelInput.value = state.level;
 }
 
 function initAdminPanel() {
