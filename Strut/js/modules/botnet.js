@@ -1,7 +1,24 @@
 // File: js/modules/botnet.js
-// VERSIONE CORRETTA E INTEGRATA
+// VERSIONE CORRETTA E INTEGRATA CON LA NUOVA LOGICA DI ESECUZIONE FLUSSI
 
 let selectedHostIds = new Set();
+
+// FIX: Funzione helper per garantire che i flussi salvati siano sempre un array,
+// gestendo anche formati legacy dove potevano essere un oggetto.
+function getSavedFlowsAsArray() {
+    if (Array.isArray(state.savedFlows)) {
+        return state.savedFlows;
+    }
+    if (typeof state.savedFlows === 'object' && state.savedFlows !== null) {
+        // Converte un oggetto di flussi in un array
+        return Object.keys(state.savedFlows).map(key => ({
+            id: key,
+            name: state.savedFlows[key].name || key,
+            ...state.savedFlows[key]
+        }));
+    }
+    return []; // Ritorna un array vuoto come fallback sicuro
+}
 
 function initBotnetPage() {
     renderInfectedHostsList();
@@ -171,14 +188,8 @@ function renderHostDetailsPanel() {
         let flowSlotsHTML = '';
         const numSlots = host.resources?.flowSlots || 1;
         
-        // **FIX**: Convert the savedFlows object into an array of objects with 'id' and 'name' properties
-        const flowsArray = state.savedFlows ? Object.keys(state.savedFlows).map(key => {
-            return {
-                ...state.savedFlows[key], // Copy original flow properties
-                id: key,                  // The key is the ID
-                name: key                 // Use the key as the name
-            };
-        }) : [];
+        // FIX: Usa la funzione helper per ottenere sempre un array di flussi.
+        const flowsArray = getSavedFlowsAsArray();
 
         for (let i = 0; i < numSlots; i++) {
             const hookedFlowId = host.hookedFlows?.[i];
@@ -226,7 +237,7 @@ function renderHostDetailsPanel() {
                     ${flowSlotsHTML}
                 </div>
                 <div class="grid grid-cols-2 gap-3">
-                    <button id="execute-flow-btn" data-host-id="${hostId}" class="bg-purple-600 hover:bg-purple-700 p-2 rounded text-sm font-bold">Esegui Flusso</button>
+                    <button id="execute-flow-btn" data-host-id="${hostId}" class="bg-purple-600 hover:bg-purple-700 p-2 rounded text-sm font-bold">Esegui Flussi</button>
                     <button id="propagate-btn" data-host-id="${hostId}" class="bg-green-600 hover:bg-green-700 p-2 rounded text-sm font-bold">Propaga Infezione</button>
                 </div>
             </div>
@@ -362,12 +373,14 @@ function removeTraces(hostId) {
     renderInfectedHostsList();
 }
 
-function deactivateHost(hostId) {
+function deactivateHost(hostId, skipConfirm = false) {
     const hostIndex = state.infectedHostPool.findIndex(h => h.id === hostId);
     if (hostIndex === -1) return;
     const host = state.infectedHostPool[hostIndex];
 
-    if (confirm(`Sei sicuro di voler disattivare permanentemente l'host ${host.ipAddress}? Questa azione è irreversibile.`)) {
+    const confirmed = skipConfirm || confirm(`Sei sicuro di voler disattivare permanentemente l'host ${host.ipAddress}? Questa azione è irreversibile.`);
+
+    if (confirmed) {
         if (host.traceabilityScore > 50) {
             const penalty = Math.ceil(host.traceabilityScore / 10);
             state.identity.traces += penalty;
@@ -414,8 +427,7 @@ function hookFlowToSlot(hostId, slotIndex, flowId) {
         }
     }
     
-    const flowsArray = state.savedFlows ? Object.keys(state.savedFlows).map(key => ({...state.savedFlows[key], id: key, name: key})) : [];
-    const flowName = flowId ? flowsArray.find(f => f.id === flowId)?.name : 'Nessuno';
+    const flowName = flowId ? (getSavedFlowsAsArray().find(f => f.id === flowId)?.name || 'Sconosciuto') : 'Nessuno';
     host.hookedFlows[slotIndex] = flowId || null;
     
     addLogToHost(hostId, `Flusso "${flowName}" agganciato allo slot ${slotIndex + 1}.`);
@@ -429,72 +441,167 @@ function hookFlowToSlot(hostId, slotIndex, flowId) {
     renderInfectedHostsList();
 }
 
+// ====================================================================
+// NUOVA LOGICA DI ESECUZIONE FLUSSO (SOSTITUISCE LA VECCHIA)
+// ====================================================================
+
 function executeFlowOnHost(hostId) {
     const host = state.infectedHostPool.find(h => h.id === hostId);
-    if (!host) return;
-
-    const flowId = host.hookedFlows?.[0];
-    if (!flowId) {
-        showNotification("Nessun flusso agganciato allo slot primario.", "error");
-        return;
-    }
-    
-    const flowsArray = state.savedFlows ? Object.keys(state.savedFlows).map(key => ({...state.savedFlows[key], id: key, name: key})) : [];
-    const flow = flowsArray.find(f => f.id === flowId);
-    if (!flow) {
-        showNotification("Flusso agganciato non trovato.", "error");
+    if (!host || !host.hookedFlows || host.hookedFlows.every(f => f === null)) {
+        showNotification("Nessun flusso agganciato a questo host.", "error");
         return;
     }
 
-    addLogToHost(hostId, `Esecuzione flusso: ${flow.name}...`);
-    showNotification(`Esecuzione di "${flow.name}" su ${host.ipAddress}...`, 'info');
+    addLogToHost(hostId, `Avvio esecuzione di tutti i flussi agganciati...`);
+    showNotification(`Avvio esecuzione flussi su ${host.ipAddress}...`, 'info');
 
-    setTimeout(() => {
-        const successChance = (flow.stats.attack || 20) / 2 + (host.stabilityScore / 2);
-        const isSuccess = Math.random() * 100 < successChance;
-
-        if (isSuccess) {
-            const moneyGained = Math.floor(Math.random() * (flow.stats.attack || 20) * 100);
-            state.money += moneyGained;
-            host.stabilityScore = Math.max(0, host.stabilityScore - 5);
-            const msg = `Flusso eseguito con successo. Guadagnati ${formatMoney(moneyGained)}.`;
-            showNotification(msg, 'success');
-            addLogToHost(hostId, msg);
-
-            if (flow.nodes.some(n => n.name === 'Esfiltra dati da database')) { // Check based on your flow structure
-                const dataPack = {
-                    id: `dp_${Date.now()}`,
-                    name: `Dati sensibili da ${host.ipAddress}`,
-                    type: 'Dati Aziendali',
-                    value: Math.floor(Math.random() * 150) + 50,
-                    source: host.location
-                };
-                state.dataPacks.push(dataPack);
-                const dataMsg = `Pacchetto dati esfiltrato da ${host.ipAddress}.`;
-                showNotification(dataMsg, 'success');
-                addLogToHost(hostId, dataMsg);
-            }
-        } else {
-            host.stabilityScore = Math.max(0, host.stabilityScore - 20);
-            host.traceabilityScore = Math.min(100, host.traceabilityScore + 15);
-            const msg = `Esecuzione fallita. Stabilità ridotta e rischio rilevamento aumentato.`;
-            showNotification(msg, 'error');
-            addLogToHost(hostId, msg);
-
-            if (host.stabilityScore <= 0) {
-                const cleanMsg = `Host ${host.ipAddress} diventato instabile e perso.`;
-                showNotification(cleanMsg, "error");
-                addLogToHost(hostId, cleanMsg);
-                deactivateHost(hostId);
-                return;
+    // Esegue tutti i flussi agganciati in sequenza con un piccolo ritardo
+    host.hookedFlows.forEach((flowId, index) => {
+        if (flowId) {
+            const flow = getSavedFlowsAsArray().find(f => f.id === flowId);
+            if (flow) {
+                // Aggiunge un ritardo per dare l'impressione di un'operazione complessa
+                setTimeout(() => {
+                    executeSingleFlow(host, flow, index);
+                }, 1000 * (index + 1));
             }
         }
+    });
+}
+
+function executeSingleFlow(host, flow, slotIndex) {
+    // Calcolo probabilità di successo
+    const baseSuccessChance = 95; // Alta probabilità di base
+    const stabilityPenalty = (100 - host.stabilityScore) / 4; // Penalità basata sull'instabilità
+    const successChance = Math.max(5, baseSuccessChance - stabilityPenalty);
+    const roll = Math.random() * 100;
+
+    if (roll < successChance) {
+        // --- SUCCESSO ---
+        const rewards = generateRewards(flow);
+        let logMessage = `Flusso "${flow.name}" (Slot ${slotIndex + 1}) eseguito con successo.`;
+
+        if (rewards.length > 0) {
+            rewards.forEach(reward => {
+                if (reward.type === 'btc') {
+                    state.btc += reward.amount;
+                    logMessage += ` Trovati ${reward.amount.toFixed(6)} BTC.`;
+                    showToast(`Ottenuto ${reward.amount.toFixed(6)} BTC!`, 'success');
+                } else if (reward.type === 'data') {
+                    promptDataStorage(reward.packet);
+                    logMessage += ` Dati "${reward.packet.name}" esfiltrati.`;
+                }
+            });
+        } else {
+            logMessage += " Nessun dato di valore trovato.";
+        }
         
+        showNotification(logMessage, 'success');
+        addLogToHost(host.id, logMessage);
+        host.stabilityScore = Math.max(0, host.stabilityScore - (Math.random() * 5 + 1));
+    
+    } else {
+        // --- FALLIMENTO ---
+        const msg = `Esecuzione di "${flow.name}" (Slot ${slotIndex + 1}) fallita.`;
+        showNotification(msg, 'error');
+        addLogToHost(host.id, msg);
+        host.stabilityScore = Math.max(0, host.stabilityScore - (Math.random() * 15 + 10));
+        host.traceabilityScore = Math.min(100, host.traceabilityScore + (Math.random() * 20 + 10));
+    }
+
+    if (host.stabilityScore <= 0) {
+        const cleanMsg = `Host ${host.ipAddress} è diventato instabile ed è stato perso!`;
+        showNotification(cleanMsg, "error");
+        addLogToHost(host.id, cleanMsg);
+        deactivateHost(host.id, true);
+        return; 
+    }
+    
+    saveState();
+    updateUI();
+    renderHostDetailsPanel();
+    renderInfectedHostsList();
+}
+
+function generateRewards(flow) {
+    const rewards = [];
+    const blockToLootMap = {
+        'Esfiltra dati da database': { type: 'Credenziali Utente', value: 0.0005 },
+        'Estrai email da database': { type: 'Lista Email', value: 0.0002 },
+        'Cattura Screenshot': { type: 'Dati Sensibili', value: 0.0003 },
+        'Crea fake login page': { type: 'Credenziali Phishing', value: 0.0008 }
+    };
+
+    (flow.blocks || []).forEach(block => {
+        if (blockToLootMap[block.type]) {
+            const lootInfo = blockToLootMap[block.type];
+            const btcValue = lootInfo.value + (flow.stats.attack / 500000);
+            
+            const dataPacket = {
+                id: `data-${Date.now()}-${Math.floor(Math.random() * 9999)}`,
+                name: `${lootInfo.type} da "${flow.name}"`,
+                description: `Pacchetto dati contenente ${lootInfo.type.toLowerCase()}.`,
+                type: lootInfo.type,
+                value: parseFloat(btcValue.toFixed(6))
+            };
+            rewards.push({ type: 'data', packet: dataPacket });
+        }
+    });
+
+    if (Math.random() < 0.02) { // 2% di chance di trovare BTC
+        const btcAmount = Math.random() * 0.001;
+        rewards.push({ type: 'btc', amount: parseFloat(btcAmount.toFixed(6)) });
+    }
+
+    return rewards;
+}
+
+function promptDataStorage(dataPacket) {
+    const modal = document.getElementById('data-storage-modal');
+    if (!modal) return;
+    
+    const infoContainer = document.getElementById('data-packet-info');
+    const optionsContainer = document.getElementById('storage-options');
+
+    infoContainer.innerHTML = `
+        <p class="font-semibold text-white">${dataPacket.name}</p>
+        <p class="text-xs text-gray-400">${dataPacket.description}</p>
+        <p class="text-xs font-mono mt-2">Valore Stimato: <span class="text-yellow-400">${dataPacket.value} BTC</span></p>
+    `;
+
+    let optionsHtml = `<button class="storage-btn w-full text-left px-3 py-2 bg-indigo-600 hover:bg-indigo-700 rounded-md" data-storage-type="personal">Archivio Personale</button>`;
+    
+    if (state.clan && state.clan.infrastructure && state.clan.infrastructure.servers.length > 0) {
+        optionsHtml += state.clan.infrastructure.servers.map(server => `
+            <button class="storage-btn w-full text-left px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded-md" data-storage-type="clan" data-server-id="${server.id}">
+                Server Clan #${server.id}
+            </button>
+        `).join('');
+    }
+    
+    optionsContainer.innerHTML = optionsHtml;
+
+    const newOptionsContainer = optionsContainer.cloneNode(true);
+    optionsContainer.parentNode.replaceChild(newOptionsContainer, optionsContainer);
+
+    newOptionsContainer.addEventListener('click', e => {
+        const target = e.target.closest('.storage-btn');
+        if (!target) return;
+
+        const { storageType, serverId } = target.dataset;
+
+        if (storageType === 'personal') {
+            state.dataLocker.personal.push(dataPacket);
+        } else if (storageType === 'clan') {
+            state.dataLocker.clan.push({ serverId: serverId, data: dataPacket });
+        }
+        
+        showToast(`Dati archiviati! Disponibili in Intelligence.`, 'success');
         saveState();
-        updateUI();
-        renderHostDetailsPanel();
-        renderInfectedHostsList();
-    }, 1500);
+        modal.classList.add('hidden');
+    });
+
+    modal.classList.remove('hidden');
 }
 
 function propagateFromHost(hostId) {
@@ -502,10 +609,9 @@ function propagateFromHost(hostId) {
     if (!host) return;
 
     const flowId = host.hookedFlows?.[0];
-    const flowsArray = state.savedFlows ? Object.keys(state.savedFlows).map(key => ({...state.savedFlows[key], id: key, name: key})) : [];
-    const flow = flowId ? flowsArray.find(f => f.id === flowId) : null;
+    const flow = flowId ? getSavedFlowsAsArray().find(f => f.id === flowId) : null;
 
-    if (!flow || !flow.nodes.some(n => n.name === 'Genera worm di rete')) { // Check based on your flow structure
+    if (!flow || !(flow.blocks || []).some(b => b.type === 'Genera worm di rete')) {
         showNotification("È necessario un flusso con un blocco 'Genera worm di rete' per la propagazione.", "error");
         addLogToHost(hostId, "Tentativo di propagazione fallito: flusso non idoneo.");
         renderHostDetailsPanel();
@@ -558,7 +664,6 @@ function generateRandomHost() {
     };
 }
 
-// Funzione di supporto per formattare il denaro (se non già presente)
 function formatMoney(amount) {
     if (typeof amount !== 'number') return '$0';
     return '$' + amount.toLocaleString('en-US');
