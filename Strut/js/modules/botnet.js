@@ -1,9 +1,9 @@
 // File: js/modules/botnet.js
-// VERSIONE CORRETTA E INTEGRATA CON LA NUOVA LOGICA DI ESECUZIONE FLUSSI
+// VERSIONE CON LOGICA DI SUCCESSO E RICOMPENSE BASATA SULL'OBIETTIVO DEL FLUSSO
 
 let selectedHostIds = new Set();
 
-// FIX: Funzione helper per garantire che i flussi salvati siano sempre un array,
+// Funzione helper per garantire che i flussi salvati siano sempre un array,
 // gestendo anche formati legacy dove potevano essere un oggetto.
 function getSavedFlowsAsArray() {
     if (Array.isArray(state.savedFlows)) {
@@ -188,7 +188,6 @@ function renderHostDetailsPanel() {
         let flowSlotsHTML = '';
         const numSlots = host.resources?.flowSlots || 1;
         
-        // FIX: Usa la funzione helper per ottenere sempre un array di flussi.
         const flowsArray = getSavedFlowsAsArray();
 
         for (let i = 0; i < numSlots; i++) {
@@ -455,12 +454,10 @@ function executeFlowOnHost(hostId) {
     addLogToHost(hostId, `Avvio esecuzione di tutti i flussi agganciati...`);
     showNotification(`Avvio esecuzione flussi su ${host.ipAddress}...`, 'info');
 
-    // Esegue tutti i flussi agganciati in sequenza con un piccolo ritardo
     host.hookedFlows.forEach((flowId, index) => {
         if (flowId) {
             const flow = getSavedFlowsAsArray().find(f => f.id === flowId);
             if (flow) {
-                // Aggiunge un ritardo per dare l'impressione di un'operazione complessa
                 setTimeout(() => {
                     executeSingleFlow(host, flow, index);
                 }, 1000 * (index + 1));
@@ -470,39 +467,49 @@ function executeFlowOnHost(hostId) {
 }
 
 function executeSingleFlow(host, flow, slotIndex) {
-    // Calcolo probabilità di successo
-    const baseSuccessChance = 95; // Alta probabilità di base
-    const stabilityPenalty = (100 - host.stabilityScore) / 4; // Penalità basata sull'instabilità
-    const successChance = Math.max(5, baseSuccessChance - stabilityPenalty);
+    // 1. NUOVA PROBABILITÀ DI SUCCESSO
+    const failureChance = 5 + (100 - host.stabilityScore) / 5; // Il rischio base è 5%, aumenta con l'instabilità
+    const successChance = 100 - failureChance;
     const roll = Math.random() * 100;
 
     if (roll < successChance) {
         // --- SUCCESSO ---
-        const rewards = generateRewards(flow);
+        // 2. RICOMPENSE BASATE SULL'OBIETTIVO DEL FLUSSO
+        const rewards = determineRewardsByObjective(flow);
         let logMessage = `Flusso "${flow.name}" (Slot ${slotIndex + 1}) eseguito con successo.`;
 
         if (rewards.length > 0) {
             rewards.forEach(reward => {
-                if (reward.type === 'btc') {
-                    state.btc += reward.amount;
-                    logMessage += ` Trovati ${reward.amount.toFixed(6)} BTC.`;
-                    showToast(`Ottenuto ${reward.amount.toFixed(6)} BTC!`, 'success');
-                } else if (reward.type === 'data') {
-                    promptDataStorage(reward.packet);
-                    logMessage += ` Dati "${reward.packet.name}" esfiltrati.`;
+                switch(reward.type) {
+                    case 'btc':
+                        state.btc += reward.amount;
+                        logMessage += ` Trovato un wallet con ${reward.amount.toFixed(6)} BTC!`;
+                        showToast(`Jackpot! Trovati ${reward.amount.toFixed(6)} BTC!`, 'success');
+                        break;
+                    case 'data':
+                        promptDataStorage(reward.packet);
+                        logMessage += ` Dati "${reward.packet.name}" esfiltrati.`;
+                        break;
+                    case 'propagate':
+                        const newHost = generateRandomHost();
+                        state.infectedHostPool.push(newHost);
+                        logMessage += ` Infezione propagata a un nuovo host: ${newHost.ipAddress}.`;
+                        showToast(`Propagazione riuscita! Nuovo host ${newHost.ipAddress} aggiunto.`, 'success');
+                        break;
                 }
             });
         } else {
-            logMessage += " Nessun dato di valore trovato.";
+            logMessage += " Operazione completata senza ricompense immediate.";
         }
         
         showNotification(logMessage, 'success');
         addLogToHost(host.id, logMessage);
-        host.stabilityScore = Math.max(0, host.stabilityScore - (Math.random() * 5 + 1));
+        host.stabilityScore = Math.max(0, host.stabilityScore - (Math.random() * 5 + 1)); // Malus stabilità minimo
     
     } else {
         // --- FALLIMENTO ---
-        const msg = `Esecuzione di "${flow.name}" (Slot ${slotIndex + 1}) fallita.`;
+        // 3. MALUS INVARIATI
+        const msg = `Esecuzione di "${flow.name}" (Slot ${slotIndex + 1}) fallita. Rilevate contromisure!`;
         showNotification(msg, 'error');
         addLogToHost(host.id, msg);
         host.stabilityScore = Math.max(0, host.stabilityScore - (Math.random() * 15 + 10));
@@ -523,34 +530,66 @@ function executeSingleFlow(host, flow, slotIndex) {
     renderInfectedHostsList();
 }
 
-function generateRewards(flow) {
+function determineRewardsByObjective(flow) {
     const rewards = [];
-    const blockToLootMap = {
-        'Esfiltra dati da database': { type: 'Credenziali Utente', value: 0.0005 },
-        'Estrai email da database': { type: 'Lista Email', value: 0.0002 },
-        'Cattura Screenshot': { type: 'Dati Sensibili', value: 0.0003 },
-        'Crea fake login page': { type: 'Credenziali Phishing', value: 0.0008 }
-    };
+    const objective = flow.objective || 'financial'; // Default a 'financial' se non specificato
 
-    (flow.blocks || []).forEach(block => {
-        if (blockToLootMap[block.type]) {
-            const lootInfo = blockToLootMap[block.type];
-            const btcValue = lootInfo.value + (flow.stats.attack / 500000);
-            
-            const dataPacket = {
-                id: `data-${Date.now()}-${Math.floor(Math.random() * 9999)}`,
-                name: `${lootInfo.type} da "${flow.name}"`,
-                description: `Pacchetto dati contenente ${lootInfo.type.toLowerCase()}.`,
-                type: lootInfo.type,
-                value: parseFloat(btcValue.toFixed(6))
+    switch (objective) {
+        case 'dataExfiltration':
+            const dataExfiltrationBlocks = {
+                'Esfiltra dati da database': { type: 'Credenziali di Accesso', value: 0.0005 },
+                'Estrai email da database': { type: 'Lista Email', value: 0.0002 },
+                'Cattura Screenshot': { type: 'Dati Personali', value: 0.0003 },
+                'Crea fake login page': { type: 'Credenziali Phishing', value: 0.0008 }
             };
-            rewards.push({ type: 'data', packet: dataPacket });
-        }
-    });
+            
+            let dataFound = false;
+            (flow.blocks || []).forEach(block => {
+                if (dataExfiltrationBlocks[block.type]) {
+                    dataFound = true;
+                    const lootInfo = dataExfiltrationBlocks[block.type];
+                    const btcValue = lootInfo.value + (flow.stats.attack / 500000);
+                    
+                    const dataPacket = {
+                        id: `data-${Date.now()}-${Math.floor(Math.random() * 9999)}`,
+                        name: `${lootInfo.type} da "${flow.name}"`,
+                        description: `Pacchetto dati contenente ${lootInfo.type.toLowerCase()}. Qualità influenzata dalla potenza del flusso.`,
+                        type: lootInfo.type,
+                        value: parseFloat(btcValue.toFixed(6))
+                    };
+                    rewards.push({ type: 'data', packet: dataPacket });
+                }
+            });
+            
+            if (!dataFound) {
+                 const lootInfo = { type: 'Dati Generici', value: 0.0001 };
+                 const btcValue = lootInfo.value + (flow.stats.attack / 500000);
+                 const dataPacket = {
+                        id: `data-${Date.now()}-${Math.floor(Math.random() * 9999)}`,
+                        name: `${lootInfo.type} da "${flow.name}"`,
+                        description: `Pacchetto dati contenente ${lootInfo.type.toLowerCase()}.`,
+                        type: lootInfo.type,
+                        value: parseFloat(btcValue.toFixed(6))
+                    };
+                rewards.push({ type: 'data', packet: dataPacket });
+            }
 
-    if (Math.random() < 0.02) { // 2% di chance di trovare BTC
-        const btcAmount = Math.random() * 0.001;
-        rewards.push({ type: 'btc', amount: parseFloat(btcAmount.toFixed(6)) });
+            if (rewards.length > 0 && Math.random() < 0.05) { // 5% chance di trovare un wallet
+                 const btcAmount = Math.random() * 0.005 + 0.001;
+                 rewards.push({ type: 'btc', amount: parseFloat(btcAmount.toFixed(6)) });
+            }
+            break;
+
+        case 'financial':
+            if (Math.random() < 0.10) { // 10% di chance di trovare BTC
+                const btcAmount = Math.random() * 0.001;
+                rewards.push({ type: 'btc', amount: parseFloat(btcAmount.toFixed(6)) });
+            }
+            break;
+
+        case 'propagation':
+            rewards.push({ type: 'propagate' });
+            break;
     }
 
     return rewards;
@@ -611,10 +650,9 @@ function propagateFromHost(hostId) {
     const flowId = host.hookedFlows?.[0];
     const flow = flowId ? getSavedFlowsAsArray().find(f => f.id === flowId) : null;
 
-    if (!flow || !(flow.blocks || []).some(b => b.type === 'Genera worm di rete')) {
-        showNotification("È necessario un flusso con un blocco 'Genera worm di rete' per la propagazione.", "error");
-        addLogToHost(hostId, "Tentativo di propagazione fallito: flusso non idoneo.");
-        renderHostDetailsPanel();
+    if (!flow || flow.objective !== 'propagation') {
+        showNotification("È necessario un flusso con obiettivo 'Propagazione' per questa azione.", "error");
+        addLogToHost(hostId, "Tentativo di propagazione fallito: obiettivo del flusso non corretto.");
         return;
     }
 

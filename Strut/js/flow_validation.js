@@ -92,7 +92,7 @@ const blockInterfaces = {
     'Trova vulnerabilità software (scanner)': { inputs: [{ type: 'ControlFlow', name: 'In' }, { type: 'Target', name: 'Target' }], outputs: [{ type: 'ControlFlow', name: 'Out' }, { type: 'Vulnerability', name: 'Vulnerability Found' }] },
     'Crea shellcode base': { inputs: [{ type: 'ControlFlow', name: 'In' }], outputs: [{ type: 'ControlFlow', name: 'Out' }, { type: 'Shellcode', name: 'Shellcode' }] },
     'Crea exploit per buffer overflow': { inputs: [{ type: 'ControlFlow', name: 'In' }, { type: 'Vulnerability', name: 'Vulnerability' }], outputs: [{ type: 'ControlFlow', name: 'Out' }, { type: 'Payload', name: 'Exploit' }] },
-    'Esegui Comando Remoto': { inputs: [{ type: 'ControlFlow', name: 'In' }, { type: 'Target', name: 'Target' }, { type: 'Command', name: 'Command' }], outputs: [{ type: 'ControlFlow', name: 'Out' }, { type: 'RawData', name: 'Output' }] },
+    'Esegui Comando Remoto': { inputs: [{ type: 'ControlFlow', name: 'In' }, { type: 'Target', name: 'Target' }], outputs: [{ type: 'ControlFlow', name: 'Out' }, { type: 'RawData', name: 'Output' }] },
     'Sviluppa exploit per zero-day': { inputs: [{ type: 'ControlFlow', name: 'In' }, { type: 'Vulnerability', name: 'Vulnerability' }], outputs: [{ type: 'ControlFlow', name: 'Out' }, { type: 'Payload', name: '0-day Exploit' }] },
     'Decompila eseguibile (base)': { inputs: [{ type: 'ControlFlow', name: 'In' }, { type: 'Executable', name: 'File' }], outputs: [{ type: 'ControlFlow', name: 'Out' }, { type: 'Text', name: 'Source Code' }] },
     'Analizza codice binario': { inputs: [{ type: 'ControlFlow', name: 'In' }, { type: 'Executable', name: 'File' }], outputs: [{ type: 'ControlFlow', name: 'Out' }, { type: 'StructuredData', name: 'Analysis' }] },
