@@ -223,7 +223,24 @@ function renderProfileContent() {
 }
 
 function updateProfileData() {
-    const { identity, morality, traceLogs } = state;
+    const { identity, morality } = state;
+    
+    // Safety checks for identity properties
+    if (!identity.hasOwnProperty('investigatedBy')) {
+        identity.investigatedBy = 'Nessuna';
+    }
+    if (!identity.hasOwnProperty('suspicion')) {
+        identity.suspicion = 0;
+    }
+    
+    // Safety check: ensure traceLogs array exists
+    let traceLogs = state.traceLogs;
+    if (!Array.isArray(traceLogs)) {
+        console.warn('state.traceLogs not properly initialized, reinitializing...');
+        traceLogs = state.traceLogs = [];
+        saveState();
+    }
+    
     document.getElementById('traces-left').textContent = identity.traces;
     document.getElementById('investigated-by').textContent = identity.investigatedBy;
     document.getElementById('suspicion-bar').style.width = `${identity.suspicion}%`;

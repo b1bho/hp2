@@ -170,26 +170,105 @@ async function updateBTCValue() {
     }
 }
 function initializeDynamicState() {
+    // Initialize real IP if not set
     if (!state.identity.realIp) {
         state.identity.realIp = generateRandomIp();
     }
+    
+    // Initialize IPs for purchased services
     for (const serviceId in state.purchasedServices) {
         if (state.purchasedServices[serviceId] && !state.purchasedServices[serviceId].currentIp) {
             const serviceData = marketData.networkServices.find(s => s.id === serviceId);
             state.purchasedServices[serviceId].currentIp = serviceData ? serviceData.ipAddress : generateRandomIp();
         }
     }
+    
+    // Initialize clan infrastructure
     if (state.clan && state.clan.infrastructure) {
+        // Initialize VPN
         if (state.clan.infrastructure.c_vpn && !state.clan.infrastructure.c_vpn.currentIp) {
             const tier = state.clan.infrastructure.c_vpn.tier - 1;
             const vpnData = marketData.clanInfrastructure.c_vpn.tiers[tier];
             state.clan.infrastructure.c_vpn.currentIp = vpnData ? vpnData.ipAddress : generateRandomIp();
         }
+        
+        // Initialize Firewall
         if (state.clan.infrastructure.c_firewall && !state.clan.infrastructure.c_firewall.currentIp) {
              const tier = state.clan.infrastructure.c_firewall.tier - 1;
              const firewallData = marketData.clanInfrastructure.c_firewall.tiers[tier];
              state.clan.infrastructure.c_firewall.currentIp = firewallData ? firewallData.ipAddress : generateRandomIp();
         }
+        
+        // Initialize attachedFlows for all clan infrastructure
+        Object.keys(state.clan.infrastructure).forEach(infraId => {
+            const infra = state.clan.infrastructure[infraId];
+            if (infra && infra.tier && marketData.clanInfrastructure[infraId]) {
+                const infraData = marketData.clanInfrastructure[infraId];
+                let tierData;
+                
+                if (infraData.tiers) {
+                    tierData = infraData.tiers[infra.tier - 1];
+                } else {
+                    tierData = infraData;
+                }
+                
+                if (tierData && tierData.flowSlots && !infra.attachedFlows) {
+                    infra.attachedFlows = new Array(tierData.flowSlots).fill(null);
+                }
+            }
+        });
+        
+        // Initialize attachedFlows for clan servers
+        if (state.clan.infrastructure.servers) {
+            state.clan.infrastructure.servers.forEach(server => {
+                const serverData = marketData.clanInfrastructure.clanServer;
+                if (serverData && serverData.flowSlots && !server.attachedFlows) {
+                    server.attachedFlows = new Array(serverData.flowSlots).fill(null);
+                }
+            });
+        }
+    }
+    
+    // Ensure personalComputer has correct number of attachedFlows based on CPU cores
+    if (!state.personalComputer || !state.personalComputer.attachedFlows) {
+        const cores = state.hardware?.cpu?.cores || 4;
+        state.personalComputer = {
+            attachedFlows: new Array(cores).fill(null).map(() => ({
+                flowName: null, 
+                status: 'idle', 
+                startTime: 0, 
+                duration: 0
+            }))
+        };
+    }
+    
+    // Ensure arrays are properly initialized
+    if (!Array.isArray(state.news)) {
+        state.news = [];
+    }
+    
+    if (!Array.isArray(state.traceLogs)) {
+        state.traceLogs = [];
+    }
+    
+    if (!state.ownedHardware) {
+        state.ownedHardware = {};
+    }
+    
+    if (!state.purchasedServices) {
+        state.purchasedServices = {};
+    }
+    
+    if (!state.ipTraceability) {
+        state.ipTraceability = {};
+    }
+    
+    if (!state.permanentFlows) {
+        state.permanentFlows = {};
+    }
+    
+    if (typeof state.savedFlows !== 'object' || Array.isArray(state.savedFlows)) {
+        state.savedFlows = {};
     }
 }
 function destroyLines() {
