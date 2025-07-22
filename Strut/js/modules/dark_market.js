@@ -1,4 +1,5 @@
 function initDarkMarketPage() {
+    // Controllo di sicurezza: se non c'è un clan o un dark market, mostra un messaggio e interrompi.
     if (!state.clan || !state.clan.darkMarket) {
         document.getElementById('app-container').innerHTML = `<p class="text-center text-red-500">Accesso negato. Il tuo clan non possiede un Dark Market.</p>`;
         return;
@@ -12,35 +13,31 @@ function renderMarketHostInfo() {
     const hostInfoEl = document.getElementById('market-host-info');
     if (!hostInfoEl) return;
 
-    const server = state.clan.infrastructure.servers.find(s => s.id === state.clan.darkMarket.hostedOnServerId);
+    // FIX di sicurezza: usa optional chaining '?' per evitare errori se 'infrastructure' o 'servers' non esistono.
+    const server = state.clan.infrastructure?.servers?.find(s => s.id === state.clan.darkMarket.hostedOnServerId);
     if (server) {
         hostInfoEl.textContent = `Ospitato su: Server #${server.id} (${server.ip})`;
     }
 }
 
-/**
- * VERSIONE CORRETTA: Ora mostra i dati sia dall'archivio personale che da quello del clan.
- */
 function renderStorableItems() {
     const container = document.getElementById('clan-data-for-sale');
     if (!container) return;
 
-    const listedItemIds = new Set(state.clan.darkMarket.listings.map(item => item.dataPacket.id));
+    // FIX di sicurezza: usa '?? []' per fornire un array vuoto se 'listings' è inesistente, evitando crash.
+    const listedItemIds = new Set((state.clan.darkMarket?.listings ?? []).map(item => item.dataPacket.id));
     
-    // 1. Unire i dati da tutte le fonti (personale e clan)
     const allAvailableData = [];
-    // Dati personali
-    state.dataLocker.personal.forEach(item => {
+    // FIX di sicurezza: Controlla che dataLocker e le sue proprietà esistano.
+    (state.dataLocker?.personal ?? []).forEach(item => {
         allAvailableData.push({ ...item, dataSource: 'personal' });
     });
-    // Dati del clan
-    state.dataLocker.clan.forEach(clanItem => {
+    (state.dataLocker?.clan ?? []).forEach(clanItem => {
         allAvailableData.push({ ...clanItem.data, dataSource: 'clan', serverId: clanItem.serverId });
     });
 
-    // Filtra i dati non ancora in vendita
     const availableData = allAvailableData.filter(item => !listedItemIds.has(item.id));
-    const availableIntel = state.intelItems.filter(item => !listedItemIds.has(item.id));
+    const availableIntel = (state.intelItems ?? []).filter(item => !listedItemIds.has(item.id));
 
     if (availableData.length === 0 && availableIntel.length === 0) {
         container.innerHTML = `<p class="text-gray-500 text-center p-4">Nessun dato o intel disponibile da mettere in vendita.</p>`;
@@ -49,7 +46,6 @@ function renderStorableItems() {
 
     let html = '';
 
-    // Sezione Dati Intel
     if (availableIntel.length > 0) {
         html += `<h4 class="text-lg font-semibold text-yellow-300 mb-2">Dati Intel</h4>`;
         html += availableIntel.map(item => `
@@ -65,7 +61,6 @@ function renderStorableItems() {
         `).join('');
     }
 
-    // Sezione Dati Comuni
     if (availableData.length > 0) {
         html += `<h4 class="text-lg font-semibold text-indigo-300 mt-4 mb-2">Dati Comuni</h4>`;
         html += availableData.map(item => {
@@ -110,12 +105,15 @@ function renderForSaleItems() {
     const container = document.getElementById('market-listings');
     if (!container) return;
 
-    if (state.clan.darkMarket.listings.length === 0) {
+    // FIX di sicurezza: usa '?? []' per fornire un array vuoto se 'listings' è inesistente.
+    const listings = state.clan.darkMarket?.listings ?? [];
+
+    if (listings.length === 0) {
         container.innerHTML = `<p class="text-gray-500 text-center p-4">Nessun oggetto attualmente in vendita.</p>`;
         return;
     }
 
-    container.innerHTML = state.clan.darkMarket.listings.map(item => {
+    container.innerHTML = listings.map(item => {
         const data = item.dataPacket;
         const borderColor = item.itemType === 'intel' ? 'border-yellow-500' : 'border-green-500';
         const itemTypeName = item.itemType === 'intel' ? 'INTEL' : 'DATO';
@@ -141,36 +139,34 @@ function renderForSaleItems() {
     });
 }
 
-/**
- * VERSIONE CORRETTA: Rimuove l'oggetto dalla fonte corretta (personale o clan).
- */
 function listItemForSale(itemId, price, itemType, sourceInfo) {
     let itemIndex = -1;
     let itemToSell = null;
 
     if (itemType === 'data') {
         if (sourceInfo.source === 'personal') {
-            itemIndex = state.dataLocker.personal.findIndex(item => item.id === itemId);
+            itemIndex = (state.dataLocker?.personal ?? []).findIndex(item => item.id === itemId);
             if (itemIndex > -1) {
                 [itemToSell] = state.dataLocker.personal.splice(itemIndex, 1);
             }
         } else if (sourceInfo.source === 'clan') {
-            itemIndex = state.dataLocker.clan.findIndex(item => item.data.id === itemId && item.serverId == sourceInfo.serverId);
+            itemIndex = (state.dataLocker?.clan ?? []).findIndex(item => item.data.id === itemId && item.serverId == sourceInfo.serverId);
             if (itemIndex > -1) {
                 const clanItem = state.dataLocker.clan.splice(itemIndex, 1)[0];
                 itemToSell = clanItem.data;
             }
         }
     } else if (itemType === 'intel') {
-        itemIndex = state.intelItems.findIndex(item => item.id === itemId);
+        itemIndex = (state.intelItems ?? []).findIndex(item => item.id === itemId);
         if (itemIndex > -1) {
             [itemToSell] = state.intelItems.splice(itemIndex, 1);
             
             const questId = itemToSell.questId;
-            const questIndex = state.activeQuests.findIndex(q => q.id === questId);
+            const questIndex = (state.activeQuests ?? []).findIndex(q => q.id === questId);
             if (questIndex > -1) {
                 const questTitle = state.activeQuests[questIndex].title;
                 state.activeQuests.splice(questIndex, 1);
+                state.completedQuests = state.completedQuests || [];
                 state.completedQuests.push(questId);
                 alert(`Mettendo in vendita l'intel, la missione "${questTitle}" è stata annullata.`);
             }
@@ -196,7 +192,7 @@ function listItemForSale(itemId, price, itemType, sourceInfo) {
 }
 
 function unlistItem(listingId) {
-    const itemIndex = state.clan.darkMarket.listings.findIndex(item => item.listingId === listingId);
+    const itemIndex = (state.clan.darkMarket?.listings ?? []).findIndex(item => item.listingId === listingId);
     if (itemIndex === -1) {
         alert("Oggetto non trovato.");
         return;
@@ -205,10 +201,10 @@ function unlistItem(listingId) {
     const [removedListing] = state.clan.darkMarket.listings.splice(itemIndex, 1);
     
     if (removedListing.itemType === 'data') {
-        // Per semplicità, i dati rimossi tornano sempre all'archivio personale.
-        // Una logica più complessa potrebbe ricordare la fonte originale.
+        state.dataLocker.personal = state.dataLocker.personal || [];
         state.dataLocker.personal.push(removedListing.dataPacket);
     } else if (removedListing.itemType === 'intel') {
+        state.intelItems = state.intelItems || [];
         state.intelItems.push(removedListing.dataPacket);
     }
 

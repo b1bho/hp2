@@ -410,6 +410,7 @@ const networkNodeData = {
 };
 
 const initialGameState = {
+    hackerName: 'Ghost',
     money: 5000,
     btc: 0.5,
     level: 1,
@@ -433,138 +434,105 @@ const initialGameState = {
         { id: 'nmap', name: 'Nmap', version: '1.0', type: 'Scanner' },
         { id: 'metasploit', name: 'Metasploit', version: '1.0', type: 'Exploit Framework' }
     ],
-    savedFlows: [
-        { 
-            id: 'flow_1656686400000', 
-            name: 'Scansione Base', 
-            stats: { attack: 10, stealth: 20, cost: 5, time: 30 },
-            blocks: [
-                { id: 'block_1', type: 'scan', config: { scanType: 'portScan' } },
-            ],
-            connections: []
-        },
-        { 
-            id: 'flow_1656686400001', 
-            name: 'Sniffer Dati Semplice', 
-            stats: { attack: 25, stealth: 15, cost: 15, time: 60 },
-            blocks: [
-                { id: 'b1', type: 'Esegui port scan avanzato' },
-                { id: 'b2', type: 'Esfiltra dati da database' }
-            ],
-            connections: [ { from: 'b1', to: 'b2' } ]
-        },
-        { 
-            id: 'flow_1656686400002', 
-            name: 'Worm Propagante', 
-            stats: { attack: 30, stealth: 40, cost: 50, time: 120 },
-            blocks: [
-                { id: 'b1', type: 'Scansione rete locale' },
-                { id: 'b2', type: 'Genera worm di rete' }
-            ],
-            connections: [ { from: 'b1', to: 'b2' } ]
-        }
-    ],
-    infectedHostPool: [
-        {
-            id: 'host_1',
-            ipAddress: '198.51.100.12',
-            location: 'New York, USA',
-            status: 'Active',
-            infectionType: 'Trojan Horse',
-            stabilityScore: 85.5,
-            traceabilityScore: 10.2,
-            resources: {
-                cpuPower: 1.2,
-                bandwidth: 100,
-                flowSlots: 2
-            },
-            hookedFlows: [null, null],
-            activityLog: ['[10:30:00] Infezione riuscita.']
-        },
-        {
-            id: 'host_2',
-            ipAddress: '203.0.113.55',
-            location: 'London, UK',
-            status: 'Active',
-            infectionType: 'Worm',
-            stabilityScore: 92.1,
-            traceabilityScore: 5.8,
-            resources: {
-                cpuPower: 2.5,
-                bandwidth: 500,
-                flowSlots: 3
-            },
-            hookedFlows: [null, null, null],
-            activityLog: ['[10:32:15] Infezione riuscita.']
-        },
-        {
-            id: 'host_3',
-            ipAddress: '192.0.2.140',
-            location: 'Tokyo, Japan',
-            status: 'Compromised',
-            infectionType: 'Spyware',
-            stabilityScore: 40.3,
-            traceabilityScore: 55.6,
-            resources: {
-                cpuPower: 0.8,
-                bandwidth: 50,
-                flowSlots: 1
-            },
-            hookedFlows: [null],
-            activityLog: ['[10:25:40] Infezione riuscita.', '[10:55:01] Rilevata operazione fallita.']
-        }
-    ],
-    botnetGroups: {
-        'Alpha': { hostIds: ['host_1'], attachedFlows: [] },
-        'Beta': { hostIds: ['host_2'], attachedFlows: [] }
-    },
-    dataPacks: [],
-    // FIX: Aggiunta la struttura dati per i dati sensibili.
-    // Altre parti del codice (quests.js, dark_market.js) si aspettano che esista `state.data.sensitive_data`.
+    savedFlows: [],
+    infectedHostPool: [],
+    botnetGroups: {},
+    
+    // FIX 1: Aggiunte le nuove strutture dati necessarie
     data: {
-        sensitive_data: []
+        sensitive_data: [] // Per la retrocompatibilità con le quest
     },
+    dataLocker: {
+        personal: [],
+        clan: []
+    },
+    intelItems: [],
+    activeQuests: [],
+    completedQuests: [],
+
     activeOperations: [],
-    worldData: { /* ... */ },
-    newsFeed: [ /* ... */ ],
-    quests: [ /* ... */ ],
-    clan: null
+    worldData: {},
+    newsFeed: [],
+    
+    // FIX 2: Aggiunta una struttura base per il clan per evitare errori all'avvio
+    clan: {
+        name: "Nessun Clan",
+        darkMarket: {
+            hostedOnServerId: null,
+            listings: []
+        },
+        infrastructure: {
+            servers: []
+        }
+    }
 };
 
 let state = {};
 
-function loadState() {
-    const savedState = localStorage.getItem('hackerTycoonState');
-    if (savedState) {
-        state = JSON.parse(savedState);
-        // Assicura che i nuovi campi esistano anche nei salvataggi vecchi
-        if (state.infectedHostPool) {
-            state.infectedHostPool.forEach(host => {
-                if (host.stabilityScore === undefined) host.stabilityScore = 80;
-                if (host.traceabilityScore === undefined) host.traceabilityScore = 15;
-                if (host.resources === undefined) host.resources = { cpuPower: 1, bandwidth: 100, flowSlots: 1 };
-                if (host.hookedFlows === undefined) host.hookedFlows = [null];
-                if (host.activityLog === undefined) host.activityLog = [];
-            });
+// Funzione di utilità per unire oggetti in modo ricorsivo e intelligente.
+// Aggiunge nuove chiavi da 'source' a 'target' senza sovrascrivere i dati esistenti.
+function deepMerge(target, source) {
+    const output = { ...target };
+
+    for (const key in source) {
+        if (Object.prototype.hasOwnProperty.call(source, key)) {
+            if (isObject(source[key]) && key in target && isObject(target[key])) {
+                output[key] = deepMerge(target[key], source[key]);
+            } else if (!target.hasOwnProperty(key)) {
+                // Aggiunge la chiave/valore solo se non esiste nel target (salvataggio)
+                output[key] = source[key];
+            }
         }
-        // FIX: Aggiunto per garantire la compatibilità con i salvataggi precedenti
-        // che non hanno la struttura 'data'.
-        if (state.data === undefined) {
-            state.data = { sensitive_data: [] };
+    }
+    // Assicura che il target (salvataggio) mantenga i suoi valori originali per le chiavi esistenti
+    for (const key in target) {
+         if (Object.prototype.hasOwnProperty.call(target, key)) {
+            output[key] = target[key];
+         }
+    }
+
+    return output;
+}
+
+function isObject(item) {
+    return (item && typeof item === 'object' && !Array.isArray(item));
+}
+
+
+// VERSIONE MIGLIORATA: Carica lo stato e lo sincronizza con la struttura più recente.
+function loadState() {
+    const savedStateJSON = localStorage.getItem('hackerTycoonState');
+    const defaultState = JSON.parse(JSON.stringify(initialGameState));
+
+    if (savedStateJSON) {
+        try {
+            const savedState = JSON.parse(savedStateJSON);
+            // Unisce lo stato di default nel salvataggio, aggiungendo solo le chiavi mancanti
+            // senza sovrascrivere i progressi del giocatore.
+            state = deepMerge(savedState, defaultState);
+        } catch (e) {
+            console.error("Errore nel parsing del salvataggio. Inizio una nuova partita.", e);
+            state = defaultState;
         }
     } else {
-        state = JSON.parse(JSON.stringify(initialGameState)); // Deep copy
+        state = defaultState;
     }
 }
 
+
 function saveState() {
-    localStorage.setItem('hackerTycoonState', JSON.stringify(state));
+    try {
+        localStorage.setItem('hackerTycoonState', JSON.stringify(state));
+    } catch (error) {
+        console.error("Errore durante il salvataggio:", error);
+    }
 }
 
 function resetGame() {
     localStorage.removeItem('hackerTycoonState');
-    state = JSON.parse(JSON.stringify(initialGameState));
+    // Ricarica la pagina per assicurarsi che lo stato iniziale pulito venga caricato
     location.reload();
 }
 
+// Carica lo stato all'avvio del gioco
 loadState();
