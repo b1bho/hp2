@@ -517,8 +517,23 @@ function executeSingleFlow(host, flow, slotIndex) {
                 case 'financial':
                     logMessage += " Operazione completata ma nessun wallet o asset finanziario scoperto.";
                     break;
-                case 'propagation':
+                case 'worm':
                     logMessage += " Operazione completata ma le condizioni di rete non erano favorevoli alla propagazione.";
+                    break;
+                case 'botnet':
+                    logMessage += " Operazione completata ma non sono stati reclutati nuovi host per la botnet.";
+                    break;
+                case 'remoteControl':
+                    logMessage += " Accesso remoto stabilito ma nessuna risorsa di valore identificata.";
+                    break;
+                case 'reconnaissance':
+                    logMessage += " Ricognizione completata ma le informazioni raccolte non erano di valore significativo.";
+                    break;
+                case 'ransomware':
+                    logMessage += " Operazione di crittografia completata ma il target non aveva asset di valore.";
+                    break;
+                case 'denialOfService':
+                    logMessage += " Attacco DoS completato con successo, servizio target interrotto.";
                     break;
                 default:
                     logMessage += " Operazione completata con successo ma senza ricompense immediate.";
@@ -616,7 +631,7 @@ function determineRewardsByObjective(flow) {
             }
             break;
 
-        case 'propagation':
+        case 'worm':
             rewards.push({ type: 'propagate' });
             break;
 
@@ -625,6 +640,45 @@ function determineRewardsByObjective(flow) {
             rewards.push({ type: 'propagate' });
             if (Math.random() < 0.15) { // 15% chance of finding additional BTC for botnet operations
                 const btcAmount = Math.random() * 0.002 + 0.0005;
+                rewards.push({ type: 'btc', amount: parseFloat(btcAmount.toFixed(6)) });
+            }
+            break;
+
+        case 'remoteControl':
+            // Remote control flows may find some BTC wallets during system access
+            if (Math.random() < 0.08) { // 8% chance of finding BTC
+                const btcAmount = Math.random() * 0.0008 + 0.0002;
+                rewards.push({ type: 'btc', amount: parseFloat(btcAmount.toFixed(6)) });
+            }
+            break;
+
+        case 'reconnaissance':
+            // Reconnaissance flows primarily generate intelligence data
+            const reconData = {
+                id: `data-${Date.now()}-${Math.floor(Math.random() * 9999)}`,
+                name: `Dati Intelligence da "${flow.name}"`,
+                description: `Informazioni di ricognizione raccolte durante l'analisi del target.`,
+                type: 'Intelligence',
+                value: parseFloat((0.0001 + (flow.stats.attack / 1000000)).toFixed(6)),
+                purity: Math.min(100, 50 + (flow.stats.attack / 80000)),
+                sensitivity: 'Medium'
+            };
+            rewards.push({ type: 'data', packet: reconData });
+            break;
+
+        case 'ransomware':
+            // Ransomware flows have high BTC reward potential
+            if (Math.random() < 0.20) { // 20% chance of finding BTC (victims often have wallets)
+                const btcAmount = Math.random() * 0.003 + 0.001;
+                rewards.push({ type: 'btc', amount: parseFloat(btcAmount.toFixed(6)) });
+            }
+            break;
+
+        case 'denialOfService':
+            // DoS attacks don't typically yield direct rewards but may disrupt security
+            // Small chance of finding accessible resources during the attack
+            if (Math.random() < 0.05) { // 5% chance
+                const btcAmount = Math.random() * 0.0005;
                 rewards.push({ type: 'btc', amount: parseFloat(btcAmount.toFixed(6)) });
             }
             break;
@@ -675,6 +729,12 @@ function promptDataStorage(dataPacket) {
         
         showNotification(`Dati archiviati! Disponibili in Intelligence.`, 'success');
         saveState();
+        
+        // Refresh intelligence console if it's currently active
+        if (state.activePage === 'intelligence_console' && typeof renderDataPacketsList === 'function') {
+            renderDataPacketsList();
+        }
+        
         modal.classList.add('hidden');
     });
 
@@ -700,9 +760,9 @@ function propagateFromHost(hostId) {
         return;
     }
 
-    if (flow.objective !== 'propagation') {
+    if (flow.objective !== 'worm') {
         showNotification(`È necessario un flusso con obiettivo 'Propagazione' per questa azione. Il flusso "${flow.name}" ha obiettivo "${flow.objective || 'non specificato'}".`, "error");
-        addLogToHost(hostId, `Tentativo di propagazione fallito: il flusso "${flow.name}" ha obiettivo "${flow.objective || 'non specificato'}" invece di "propagation".`);
+        addLogToHost(hostId, `Tentativo di propagazione fallito: il flusso "${flow.name}" ha obiettivo "${flow.objective || 'non specificato'}" invece di "worm".`);
         return;
     }
 
