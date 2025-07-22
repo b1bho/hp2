@@ -426,11 +426,20 @@ function hookFlowToSlot(hostId, slotIndex, flowId) {
         }
     }
     
-    const flowName = flowId ? (getSavedFlowsAsArray().find(f => f.id === flowId)?.name || 'Sconosciuto') : 'Nessuno';
+    const flow = flowId ? getSavedFlowsAsArray().find(f => f.id === flowId) : null;
+    const flowName = flow?.name || (flowId ? 'Sconosciuto' : 'Nessuno');
+    const flowObjective = flow?.objective || 'sconosciuto';
+    
     host.hookedFlows[slotIndex] = flowId || null;
     
-    addLogToHost(hostId, `Flusso "${flowName}" agganciato allo slot ${slotIndex + 1}.`);
-    showNotification(`Flusso "${flowName}" agganciato.`, "info");
+    // Enhanced logging with objective information
+    if (flowId) {
+        addLogToHost(hostId, `Flusso "${flowName}" (Obiettivo: ${flowObjective}) agganciato allo slot ${slotIndex + 1}.`);
+        showNotification(`Flusso "${flowName}" con obiettivo "${flowObjective}" agganciato.`, "info");
+    } else {
+        addLogToHost(hostId, `Slot ${slotIndex + 1} liberato.`);
+        showNotification(`Slot ${slotIndex + 1} liberato.`, "info");
+    }
     
     saveState();
     if (typeof updateUI === 'function') {
@@ -569,7 +578,11 @@ function determineRewardsByObjective(flow) {
                         name: `${lootInfo.type} da "${flow.name}"`,
                         description: `Pacchetto dati contenente ${lootInfo.type.toLowerCase()}. Qualità influenzata dalla potenza del flusso.`,
                         type: lootInfo.type,
-                        value: parseFloat(btcValue.toFixed(6))
+                        value: parseFloat(btcValue.toFixed(6)),
+                        purity: Math.min(100, 60 + (flow.stats.attack / 100000)), // Purity based on flow attack power
+                        sensitivity: lootInfo.type === 'Credenziali di Accesso' ? 'High' : 
+                                   lootInfo.type === 'Credenziali Phishing' ? 'High' :
+                                   lootInfo.type === 'Dati Personali' ? 'Medium' : 'Low'
                     };
                     rewards.push({ type: 'data', packet: dataPacket });
                 }
@@ -583,7 +596,9 @@ function determineRewardsByObjective(flow) {
                         name: `${lootInfo.type} da "${flow.name}"`,
                         description: `Pacchetto dati contenente ${lootInfo.type.toLowerCase()}.`,
                         type: lootInfo.type,
-                        value: parseFloat(btcValue.toFixed(6))
+                        value: parseFloat(btcValue.toFixed(6)),
+                        purity: Math.min(100, 40 + (flow.stats.attack / 200000)), // Lower purity for generic data
+                        sensitivity: 'Low'
                     };
                 rewards.push({ type: 'data', packet: dataPacket });
             }
@@ -673,14 +688,26 @@ function propagateFromHost(hostId) {
     const flowId = host.hookedFlows?.[0];
     const flow = flowId ? getSavedFlowsAsArray().find(f => f.id === flowId) : null;
 
-    if (!flow || flow.objective !== 'propagation') {
-        showNotification("È necessario un flusso con obiettivo 'Propagazione' per questa azione.", "error");
-        addLogToHost(hostId, "Tentativo di propagazione fallito: obiettivo del flusso non corretto.");
+    if (!flowId) {
+        showNotification("È necessario agganciare un flusso al primo slot per la propagazione.", "error");
+        addLogToHost(hostId, "Tentativo di propagazione fallito: nessun flusso agganciato al primo slot.");
+        return;
+    }
+
+    if (!flow) {
+        showNotification("Flusso agganciato non trovato nell'archivio flussi.", "error");
+        addLogToHost(hostId, "Tentativo di propagazione fallito: flusso agganciato non valido.");
+        return;
+    }
+
+    if (flow.objective !== 'propagation') {
+        showNotification(`È necessario un flusso con obiettivo 'Propagazione' per questa azione. Il flusso "${flow.name}" ha obiettivo "${flow.objective || 'non specificato'}".`, "error");
+        addLogToHost(hostId, `Tentativo di propagazione fallito: il flusso "${flow.name}" ha obiettivo "${flow.objective || 'non specificato'}" invece di "propagation".`);
         return;
     }
 
     showNotification(`Tentativo di propagazione da ${host.ipAddress}...`, "info");
-    addLogToHost(hostId, `Avvio propagazione con il flusso "${flow.name}"...`);
+    addLogToHost(hostId, `Avvio propagazione con il flusso "${flow.name}" (obiettivo: ${flow.objective})...`);
 
     setTimeout(() => {
         // Use the same 95% base success rate as executeSingleFlow for consistency
