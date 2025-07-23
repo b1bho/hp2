@@ -176,6 +176,10 @@ function closeModal(modalElement) {
 
 function renderProfileContent() {
     const identitySection = document.getElementById('identity-section');
+    if (!identitySection) {
+        // Profile page is not loaded, skip rendering
+        return;
+    }
     identitySection.innerHTML = `
         <h2 class="text-3xl font-bold mb-4 branch-title">Stato dell'Identità</h2>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
@@ -225,6 +229,12 @@ function renderProfileContent() {
 }
 
 function updateProfileData() {
+    // Check if profile page is loaded
+    if (!document.getElementById('identity-section')) {
+        // Profile page is not loaded, skip updating
+        return;
+    }
+    
     const { identity, morality } = state;
     
     // Safety checks for identity properties
