@@ -92,34 +92,114 @@ function handleAttackConsequences(attack, successRatio, effectiveStats) {
     const failureSeverity = 1 - successRatio;
     if (failureSeverity <= 0) return;
 
-    let traceIncrease = 0;
-    traceIncrease += failureSeverity * 20;
-    traceIncrease += (effectiveStats.rl / 10);
-    traceIncrease -= (effectiveStats.an / 2);
-    traceIncrease += (100 - (attack.flowFc || 100)) / 10;
-    traceIncrease += (attack.target.tier || 1) * 5;
-    traceIncrease = Math.max(5, Math.ceil(traceIncrease));
-
-    const getNodeInfo = (nodeId) => {
-        if (networkNodeData[nodeId]) return networkNodeData[nodeId];
-        const personalService = marketData.networkServices.find(s => s.id === nodeId);
-        if (personalService) return { ...personalService, currentIp: state.purchasedServices[nodeId]?.currentIp };
-        if (nodeId.startsWith('c_vpn_t') && state.clan?.infrastructure.c_vpn) {
-            const tier = state.clan.infrastructure.c_vpn.tier - 1;
-            return { ...marketData.clanInfrastructure.c_vpn.tiers[tier], currentIp: state.clan.infrastructure.c_vpn.currentIp };
+    // Use the new comprehensive IP traceability system
+    if (typeof processIPTraceabilityIncrease === 'function') {
+        // Process traceability for each node in the routing chain
+        const routingChain = attack.routingChain || [];
+        
+        routingChain.forEach(nodeId => {
+            const node = getNodeInfo(nodeId);
+            const ip = node?.currentIp || node?.ipAddress;
+            
+            if (ip) {
+                // Determine IP type for proper scoring
+                let ipType = 'personal'; // default
+                
+                if (networkNodeData && networkNodeData[nodeId]) {
+                    // Network node (proxy, VPN, Tor, etc.)
+                    const nodeType = networkNodeData[nodeId].type || 'proxy';
+                    if (nodeType.includes('tor')) {
+                        ipType = nodeType.includes('exit') ? 'tor_exit' : 'tor';
+                    } else {
+                        ipType = nodeType.toLowerCase();
+                    }
+                } else if (nodeId.startsWith('c_vpn_t')) {
+                    ipType = 'clan';
+                } else if (state.purchasedServices && state.purchasedServices[nodeId]) {
+                    // Personal service
+                    const service = marketData.networkServices.find(s => s.id === nodeId);
+                    ipType = (service && service.type) ? service.type.toLowerCase() : 'vpn';
+                }
+                
+                // Process IP traceability increase
+                processIPTraceabilityIncrease(
+                    ip, 
+                    ipType, 
+                    effectiveStats, 
+                    attack.target.tier || 1, 
+                    successRatio, 
+                    attack.target.name
+                );
+            }
+        });
+        
+        // Process source IP traceability
+        let sourceIp = state.identity.realIp;
+        let sourceIpType = 'personal';
+        
+        if (attack.host && attack.host.type === 'clan') {
+            const server = state.clan.infrastructure.servers.find(s => s.id === attack.host.serverId);
+            if (server) {
+                sourceIp = server.ip;
+                sourceIpType = 'clan';
+            }
+        } else if (attack.host && attack.host.type === 'botnet_group') {
+            const groupName = attack.host.name;
+            const group = state.botnetGroups[groupName];
+            
+            if (group && group.hostIds.length > 0) {
+                // Process traceability for all bots in the group
+                group.hostIds.forEach(hostId => {
+                    const host = state.infectedHostPool.find(h => h.id === hostId);
+                    if (host && host.ip) {
+                        processIPTraceabilityIncrease(
+                            host.ip,
+                            'botnet',
+                            effectiveStats,
+                            attack.target.tier || 1,
+                            successRatio,
+                            attack.target.name
+                        );
+                    }
+                });
+            }
+            
+            // Don't process personal IP for botnet attacks
+            sourceIp = null;
         }
-        return null;
-    };
-
-    attack.routingChain.forEach(nodeId => {
-        const node = getNodeInfo(nodeId);
-        const ip = node?.currentIp || node?.ipAddress;
-        if (ip) {
-            if (!state.ipTraceability[ip]) state.ipTraceability[ip] = 0;
-            state.ipTraceability[ip] = Math.min(100, state.ipTraceability[ip] + traceIncrease);
+        
+        // Process source IP if applicable
+        if (sourceIp) {
+            processIPTraceabilityIncrease(
+                sourceIp,
+                sourceIpType,
+                effectiveStats,
+                attack.target.tier || 1,
+                successRatio,
+                attack.target.name
+            );
         }
-    });
+    } else {
+        // Fallback to old system if new system isn't available
+        let traceIncrease = 0;
+        traceIncrease += failureSeverity * 20;
+        traceIncrease += (effectiveStats.rl / 10);
+        traceIncrease -= (effectiveStats.an / 2);
+        traceIncrease += (100 - (attack.flowFc || 100)) / 10;
+        traceIncrease += (attack.target.tier || 1) * 5;
+        traceIncrease = Math.max(5, Math.ceil(traceIncrease));
 
+        attack.routingChain.forEach(nodeId => {
+            const node = getNodeInfo(nodeId);
+            const ip = node?.currentIp || node?.ipAddress;
+            if (ip) {
+                if (!state.ipTraceability[ip]) state.ipTraceability[ip] = 0;
+                state.ipTraceability[ip] = Math.min(100, state.ipTraceability[ip] + traceIncrease);
+            }
+        });
+    }
+
+    // Check for trace blocking (keep existing logic)
     let traceSuccessful = true;
     for (const nodeId of [...attack.routingChain].reverse()) {
         const node = getNodeInfo(nodeId);
@@ -133,9 +213,10 @@ function handleAttackConsequences(attack, successRatio, effectiveStats) {
         }
     }
 
+    // Legacy trace logging (maintain compatibility)
     if (traceSuccessful) {
         let sourceIp = state.identity.realIp;
-        let traceDetails = `La catena di routing non ha retto. L'IP di origine è stato tracciato.`; // Messaggio di default
+        let traceDetails = `La catena di routing non ha retto. L'IP di origine è stato tracciato.`;
 
         if (attack.host && attack.host.type === 'clan') {
             const server = state.clan.infrastructure.servers.find(s => s.id === attack.host.serverId);
@@ -143,22 +224,15 @@ function handleAttackConsequences(attack, successRatio, effectiveStats) {
                 sourceIp = server.ip;
                 traceDetails = `L'attacco è stato tracciato fino al server del clan: ${server.ip}.`;
             }
-        } 
-        // **FIX**: Logica specifica per attacchi da botnet
-        else if (attack.host && attack.host.type === 'botnet_group') {
+        } else if (attack.host && attack.host.type === 'botnet_group') {
             const groupName = attack.host.name;
             const group = state.botnetGroups[groupName];
-            sourceIp = `Gruppo Botnet: ${groupName}`; // L'origine è il gruppo
+            sourceIp = `Gruppo Botnet: ${groupName}`;
 
             if (group && group.hostIds.length > 0) {
                 const hostIPs = group.hostIds.map(hostId => {
                     const host = state.infectedHostPool.find(h => h.id === hostId);
-                    if (host) {
-                        // Aumenta la tracciabilità dei singoli bot coinvolti
-                        host.traceabilityScore = Math.min(100, (host.traceabilityScore || 0) + traceIncrease);
-                        return host.ipAddress;
-                    }
-                    return null;
+                    return host ? host.ip : null;
                 }).filter(ip => ip);
 
                 if (hostIPs.length > 0) {
@@ -167,30 +241,40 @@ function handleAttackConsequences(attack, successRatio, effectiveStats) {
                     traceDetails = `L'attacco è stato tracciato fino al gruppo botnet '${groupName}', ma non sono stati trovati IP specifici.`;
                 }
             } else {
-                 traceDetails = `L'attacco è stato tracciato fino al gruppo botnet '${groupName}', ma il gruppo è vuoto o non è stato trovato.`;
+                traceDetails = `L'attacco è stato tracciato fino al gruppo botnet '${groupName}', ma il gruppo è vuoto o non è stato trovato.`;
             }
         }
 
-        if (!state.ipTraceability[sourceIp]) state.ipTraceability[sourceIp] = 0;
-        state.ipTraceability[sourceIp] = Math.min(100, state.ipTraceability[sourceIp] + traceIncrease);
-
-        state.identity.traces += Math.ceil(traceIncrease / 5);
+        // Update legacy trace logs
+        state.identity.traces += Math.ceil((1 - successRatio) * 10);
         state.traceLogs.unshift({
             type: "Origine Esposta",
             ip: sourceIp,
             date: new Date().toISOString().split('T')[0],
             target: attack.target.name,
-            details: traceDetails // Usa il messaggio dettagliato
+            details: traceDetails
         });
         if(state.traceLogs.length > 20) state.traceLogs.pop();
         
         showNotification(`ATTENZIONE: L'origine del tuo attacco (${sourceIp}) è stata tracciata!`, 'error');
-        state.identity.suspicion = Math.min(100, state.identity.suspicion + Math.ceil(traceIncrease / 2));
+        state.identity.suspicion = Math.min(100, state.identity.suspicion + Math.ceil((1 - successRatio) * 5));
     }
 
     if (state.activePage === 'profile') {
         updateProfileData();
     }
+}
+
+// Helper function to get node information (keep existing logic)
+function getNodeInfo(nodeId) {
+    if (networkNodeData && networkNodeData[nodeId]) return networkNodeData[nodeId];
+    const personalService = marketData?.networkServices?.find(s => s.id === nodeId);
+    if (personalService) return { ...personalService, currentIp: state.purchasedServices?.[nodeId]?.currentIp };
+    if (nodeId.startsWith('c_vpn_t') && state.clan?.infrastructure.c_vpn) {
+        const tier = state.clan.infrastructure.c_vpn.tier - 1;
+        return { ...marketData.clanInfrastructure.c_vpn.tiers[tier], currentIp: state.clan.infrastructure.c_vpn.currentIp };
+    }
+    return null;
 }
 
 
@@ -232,6 +316,49 @@ function resolveAttack(attack, progressPercentage) {
 
     if (successRatio < 1) {
         handleAttackConsequences(attack, successRatio, effectiveStats);
+        
+        // Integrate with Investigation Level system
+        if (typeof increaseInvestigationLevel === 'function') {
+            // Calculate investigation level increase based on attack failure and traceability
+            const failureSeverity = 1 - successRatio;
+            const investigationIncrease = failureSeverity * 2; // Base increase for failed attacks
+            
+            // Get average IP traceability score from routing chain
+            let avgTraceability = 0;
+            let traceableIPs = 0;
+            
+            if (attack.routingChain && attack.routingChain.length > 0) {
+                attack.routingChain.forEach(nodeId => {
+                    const node = getNodeInfo(nodeId);
+                    const ip = node?.currentIp || node?.ipAddress;
+                    if (ip && state.ipTraceability && state.ipTraceability[ip]) {
+                        avgTraceability += state.ipTraceability[ip];
+                        traceableIPs++;
+                    }
+                });
+                
+                if (traceableIPs > 0) {
+                    avgTraceability = avgTraceability / traceableIPs;
+                }
+            }
+            
+            // Increase investigation level if there was significant failure or high traceability
+            if (investigationIncrease > 0.5 || avgTraceability > 50) {
+                increaseInvestigationLevel(
+                    investigationIncrease,
+                    `Failed attack on ${attack.target.name}`,
+                    {
+                        targetTier: attack.target.tier || 1,
+                        successRatio: successRatio,
+                        ipTraceability: avgTraceability,
+                        targetName: attack.target.name,
+                        flowRL: effectiveStats.rl,
+                        flowAN: effectiveStats.an,
+                        flowFC: attack.flowFc || 100
+                    }
+                );
+            }
+        }
     }
 
     if (successRatio < 0.5) {

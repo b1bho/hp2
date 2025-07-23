@@ -101,11 +101,96 @@ function renderHqPage() {
     }
     statsContainer.innerHTML += networkHTML;
 
+    // Add Investigation Level panel
+    if (typeof getInvestigationStatus === 'function') {
+        const investigationStatus = getInvestigationStatus();
+        const canWipe = investigationStatus.canWipe && typeof executeIdentityWipe === 'function';
+        
+        let investigationHTML = `
+            <div class="hq-stat-card p-4 rounded-lg">
+                <h4 class="text-lg font-bold text-red-400 mb-2">
+                    <i class="fas fa-search mr-2"></i>Stato Indagine
+                </h4>
+                <div class="text-sm space-y-2">
+                    <div class="flex justify-between items-center">
+                        <span>Livello Indagine:</span>
+                        <span class="font-bold ${investigationStatus.color}">${investigationStatus.level.toFixed(1)}%</span>
+                    </div>
+                    <div class="w-full bg-gray-700 rounded-full h-2">
+                        <div class="bg-red-500 h-2 rounded-full transition-all duration-300" style="width: ${investigationStatus.level}%"></div>
+                    </div>
+                    <div class="text-xs ${investigationStatus.color} font-semibold">
+                        <i class="fas fa-info-circle mr-1"></i>${investigationStatus.status}: ${investigationStatus.message}
+                    </div>
+        `;
+        
+        // Add Identity Wipe button if available
+        if (canWipe) {
+            const cooldownHours = typeof getWipeCooldownHours === 'function' ? getWipeCooldownHours() : 0;
+            if (cooldownHours > 0) {
+                investigationHTML += `
+                    <div class="mt-3 p-2 bg-gray-800 rounded border-l-2 border-yellow-500">
+                        <div class="text-xs text-yellow-400">
+                            <i class="fas fa-clock mr-1"></i>Cancellazione Identità disponibile tra ${cooldownHours}h
+                        </div>
+                    </div>
+                `;
+            } else {
+                investigationHTML += `
+                    <div class="mt-3">
+                        <button id="identity-wipe-btn" class="w-full px-3 py-2 text-sm font-semibold rounded-md bg-orange-600 hover:bg-orange-700 transition-colors">
+                            <i class="fas fa-user-times mr-2"></i>Cancella Identità
+                        </button>
+                        <div class="text-xs text-gray-400 mt-1 text-center">
+                            Costa 50% risorse, azzera indagine
+                        </div>
+                    </div>
+                `;
+            }
+        }
+        
+        // Add warning if arrest is imminent
+        if (investigationStatus.arrestImminent) {
+            investigationHTML += `
+                <div class="mt-3 p-2 bg-red-900 rounded border border-red-500">
+                    <div class="text-xs text-red-400 font-bold text-center animate-pulse">
+                        <i class="fas fa-exclamation-triangle mr-1"></i>ARRESTO IMMINENTE!
+                    </div>
+                </div>
+            `;
+        }
+        
+        investigationHTML += `
+                </div>
+            </div>
+        `;
+        
+        statsContainer.innerHTML += investigationHTML;
+        
+        // Add event listener for Identity Wipe button
+        const wipeBtn = document.getElementById('identity-wipe-btn');
+        if (wipeBtn && typeof executeIdentityWipe === 'function') {
+            wipeBtn.addEventListener('click', () => {
+                executeIdentityWipe();
+            });
+        }
+    }
+
     statsContainer.querySelectorAll('.refresh-ip-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
             refreshVpnIp(e.target.closest('button').dataset.serviceId);
         });
     });
+}
+
+/**
+ * Update the HQ Investigation panel (called by investigation system)
+ */
+function updateHQInvestigationPanel() {
+    // Re-render the entire HQ page to update the investigation panel
+    if (state.activePage === 'hq') {
+        renderHqPage();
+    }
 }
 
 // (Il resto del file hq.js rimane invariato)
