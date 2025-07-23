@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Burned Host Removal Test</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background: #111827; color: #f3f4f6; font-family: 'Inter', sans-serif; }
+        .test-section { border: 1px solid #374151; border-radius: 8px; padding: 1rem; margin: 1rem 0; }
+        .test-pass { color: #10b981; }
+        .test-fail { color: #ef4444; }
+        .test-warning { color: #f59e0b; }
+    </style>
+</head>
+<body class="p-8">
+    <div class="max-w-6xl mx-auto">
+        <h1 class="text-3xl font-bold text-indigo-400 mb-6">Burned Host Removal Test</h1>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="test-section">
+                <h2 class="text-xl font-bold text-blue-300 mb-4">State Before</h2>
+                <div id="state-before" class="space-y-2 text-sm font-mono">
+                    Loading...
+                </div>
+            </div>
+            
+            <div class="test-section">
+                <h2 class="text-xl font-bold text-green-300 mb-4">State After</h2>
+                <div id="state-after" class="space-y-2 text-sm font-mono">
+                    Waiting for test...
+                </div>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h2 class="text-xl font-bold text-orange-300 mb-4">Test Control</h2>
+            <div class="space-x-4">
+                <button id="simulate-burning" class="px-6 py-2 bg-red-600 hover:bg-red-700 rounded">
+                    Simulate Host Burning (Score 500+)
+                </button>
+                <button id="reset-test" class="px-6 py-2 bg-gray-600 hover:bg-gray-700 rounded">
+                    Reset Test
+                </button>
+            </div>
+            <div id="test-log" class="mt-4 space-y-1 max-h-40 overflow-y-auto"></div>
+        </div>
+    </div>
+
+    <!-- Load game modules -->
+    <script src="Strut/js/data.js"></script>
+    <script src="Strut/js/modules/ip_traceability.js"></script>
+    <script src="Strut/js/modules/botnet.js"></script>
+    
+    <script>
+        // Mock functions
+        function showNotification(message, type = 'info') {
+            addToLog(`NOTIFICATION [${type}]: ${message}`);
+        }
+        
+        function saveState() {
+            addToLog('State saved');
+        }
+        
+        function updateUI() {
+            addToLog('UI updated');
+        }
+        
+        function updateBotnetAggregateStats() {
+            addToLog('Botnet stats updated');
+        }
+        
+        function updateBotnetGroupsUI() {
+            addToLog('Botnet groups UI updated');
+        }
+        
+        function addToLog(message) {
+            const log = document.getElementById('test-log');
+            const entry = document.createElement('div');
+            entry.className = 'text-xs text-gray-300';
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            log.appendChild(entry);
+            log.scrollTop = log.scrollHeight;
+        }
+        
+        // Initialize test state
+        window.state = {
+            ipTraceability: {},
+            playerTraces: {
+                totalTraces: 0,
+                investigationLevel: 0,
+                traceHistory: [],
+                investigatedBy: 'Nessuna'
+            },
+            infectedHostPool: [
+                {
+                    id: 'test_host_1',
+                    ipAddress: '10.0.0.1',
+                    location: 'Test Location 1',
+                    status: 'Active',
+                    infectionType: 'Trojan',
+                    stabilityScore: 80,
+                    traceabilityScore: 10,
+                    resources: { cpuPower: 1.5, bandwidth: 100, flowSlots: 2 }
+                },
+                {
+                    id: 'test_host_2',
+                    ipAddress: '10.0.0.2',
+                    location: 'Test Location 2',
+                    status: 'Active',
+                    infectionType: 'Worm',
+                    stabilityScore: 90,
+                    traceabilityScore: 5,
+                    resources: { cpuPower: 2.0, bandwidth: 200, flowSlots: 3 }
+                },
+                {
+                    id: 'test_host_3',
+                    ipAddress: '10.0.0.3',
+                    location: 'Test Location 3',
+                    status: 'Active',
+                    infectionType: 'Rootkit',
+                    stabilityScore: 75,
+                    traceabilityScore: 15,
+                    resources: { cpuPower: 1.2, bandwidth: 80, flowSlots: 1 }
+                }
+            ],
+            botnetGroups: {
+                'TestGroup1': {
+                    hostIds: ['test_host_1', 'test_host_2'],
+                    attachedFlows: [],
+                    currentActivity: 'Idle'
+                },
+                'TestGroup2': {
+                    hostIds: ['test_host_3'],
+                    attachedFlows: [],
+                    currentActivity: 'Idle'
+                }
+            },
+            xmr: 1000
+        };
+        
+        // Initialize IP traceability
+        initializeIpTraceability();
+        
+        // Manually add infected host IPs to traceability system
+        state.infectedHostPool.forEach(host => {
+            state.ipTraceability[host.ipAddress] = {
+                ip: host.ipAddress,
+                type: 'infected_host',
+                score: 0,
+                usageCount: 0,
+                lastUsed: null,
+                status: 'active',
+                traces: [],
+                hostId: host.id
+            };
+        });
+        
+        function displayState(elementId, title) {
+            const element = document.getElementById(elementId);
+            
+            const infectedHosts = state.infectedHostPool.length;
+            const totalGroupHosts = Object.values(state.botnetGroups).reduce((sum, group) => sum + group.hostIds.length, 0);
+            const groups = Object.keys(state.botnetGroups).length;
+            
+            const traceabilityEntries = Object.keys(state.ipTraceability).filter(ip => 
+                state.ipTraceability[ip].type === 'infected_host'
+            ).length;
+            
+            element.innerHTML = `
+                <div class="text-blue-300 font-bold mb-2">${title}</div>
+                <div>Infected Hosts in Pool: <span class="text-yellow-400">${infectedHosts}</span></div>
+                <div>Total Hosts in Groups: <span class="text-yellow-400">${totalGroupHosts}</span></div>
+                <div>Botnet Groups: <span class="text-yellow-400">${groups}</span></div>
+                <div>IP Traceability Entries: <span class="text-yellow-400">${traceabilityEntries}</span></div>
+                <div class="mt-2 text-xs">
+                    <div class="text-gray-400">Host Pool:</div>
+                    ${state.infectedHostPool.map(host => 
+                        `<div class="ml-2">• ${host.id} (${host.ipAddress}) - ${host.status}</div>`
+                    ).join('')}
+                </div>
+                <div class="mt-2 text-xs">
+                    <div class="text-gray-400">Groups:</div>
+                    ${Object.entries(state.botnetGroups).map(([name, group]) => 
+                        `<div class="ml-2">• ${name}: [${group.hostIds.join(', ')}]</div>`
+                    ).join('')}
+                </div>
+                <div class="mt-2 text-xs">
+                    <div class="text-gray-400">IP Traceability (infected hosts):</div>
+                    ${Object.entries(state.ipTraceability)
+                        .filter(([ip, data]) => data.type === 'infected_host')
+                        .map(([ip, data]) => 
+                            `<div class="ml-2">• ${ip} (Score: ${data.score}, Status: ${data.status}, HostId: ${data.hostId})</div>`
+                        ).join('')}
+                </div>
+            `;
+        }
+        
+        // Display initial state
+        displayState('state-before', 'Initial State');
+        
+        document.getElementById('simulate-burning').addEventListener('click', () => {
+            addToLog('=== STARTING BURN TEST ===');
+            
+            // Pick the first host and increase its traceability to burning threshold
+            const targetHost = state.infectedHostPool[0];
+            const targetIp = targetHost.ipAddress;
+            
+            addToLog(`Target host: ${targetHost.id} (${targetIp})`);
+            
+            // Apply traceability increase that should trigger burning (500+ threshold)
+            addToLog('Applying traceability increase of 520 points...');
+            applyTraceabilityIncrease(targetIp, 520, {
+                event: 'test_burn',
+                target: 'test_target',
+                flow: 'test_flow'
+            });
+            
+            addToLog('=== BURN TEST COMPLETED ===');
+            
+            // Display the state after burning
+            displayState('state-after', 'State After Burning');
+        });
+        
+        document.getElementById('reset-test').addEventListener('click', () => {
+            location.reload();
+        });
+        
+        addToLog('Test initialized. Ready to simulate host burning.');
+    </script>
+</body>
+</html>
