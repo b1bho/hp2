@@ -92,6 +92,18 @@ function handleAttackConsequences(attack, successRatio, effectiveStats) {
     const failureSeverity = 1 - successRatio;
     if (failureSeverity <= 0) return;
 
+    // Helper function to get node information
+    const getNodeInfo = (nodeId) => {
+        if (networkNodeData[nodeId]) return networkNodeData[nodeId];
+        const personalService = marketData.networkServices.find(s => s.id === nodeId);
+        if (personalService) return { ...personalService, currentIp: state.purchasedServices[nodeId]?.currentIp };
+        if (nodeId.startsWith('c_vpn_t') && state.clan?.infrastructure.c_vpn) {
+            const tier = state.clan.infrastructure.c_vpn.tier - 1;
+            return { ...marketData.clanInfrastructure.c_vpn.tiers[tier], currentIp: state.clan.infrastructure.c_vpn.currentIp };
+        }
+        return null;
+    };
+
     // Determine attack result status
     let attackResult = {
         status: successRatio > 0.8 ? 'success' : 
@@ -205,17 +217,6 @@ function handleAttackConsequences(attack, successRatio, effectiveStats) {
     traceIncrease += (attack.target.tier || 1) * 5;
     traceIncrease = Math.max(5, Math.ceil(traceIncrease));
     traceIncrease = Math.max(5, Math.ceil(traceIncrease));
-
-    const getNodeInfo = (nodeId) => {
-        if (networkNodeData[nodeId]) return networkNodeData[nodeId];
-        const personalService = marketData.networkServices.find(s => s.id === nodeId);
-        if (personalService) return { ...personalService, currentIp: state.purchasedServices[nodeId]?.currentIp };
-        if (nodeId.startsWith('c_vpn_t') && state.clan?.infrastructure.c_vpn) {
-            const tier = state.clan.infrastructure.c_vpn.tier - 1;
-            return { ...marketData.clanInfrastructure.c_vpn.tiers[tier], currentIp: state.clan.infrastructure.c_vpn.currentIp };
-        }
-        return null;
-    };
 
     attack.routingChain.forEach(nodeId => {
         const node = getNodeInfo(nodeId);
