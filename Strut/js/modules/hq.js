@@ -301,6 +301,7 @@ function initHqPage() {
     renderQuestBoard();
     renderNewsTicker();
     renderPersonalComputer();
+    renderFactionReputationBars();
 
     const intelBtn = document.getElementById('goto-intel-console-btn');
     if (intelBtn) {
