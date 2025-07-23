@@ -299,10 +299,10 @@ function executeLastNodeDetection(targetId, attack) {
     targetState.detectedNodes.add(lastNodeIp);
     
     // Drastically increase IP traceability score for the last node
-    if (!state.ipTraceability[lastNodeIp]) {
-        state.ipTraceability[lastNodeIp] = 0;
+    if (typeof ensureIpData === 'function') {
+        const ipData = ensureIpData(lastNodeIp);
+        ipData.score = Math.min(100, ipData.score + 40);
     }
-    state.ipTraceability[lastNodeIp] = Math.min(100, state.ipTraceability[lastNodeIp] + 40);
     
     // Record countermeasure
     targetState.countermeasureHistory.push({

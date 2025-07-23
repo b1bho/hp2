@@ -225,6 +225,41 @@ function initializePublicServiceIpTraceability() {
 }
 
 /**
+ * Ensure IP data is properly initialized in state.ipTraceability
+ * @param {string} ipAddress - IP address to ensure
+ * @param {string} type - IP type (optional, defaults to 'unknown')
+ * @returns {Object} The IP data object
+ */
+function ensureIpData(ipAddress, type = 'unknown') {
+    if (!state.ipTraceability) {
+        state.ipTraceability = {};
+    }
+    
+    const existing = state.ipTraceability[ipAddress];
+    
+    // If it's already a proper object, return it
+    if (existing && typeof existing === 'object' && existing.traces) {
+        return existing;
+    }
+    
+    // If it's a legacy number, convert it to proper object
+    const legacyScore = (typeof existing === 'number') ? existing : 0;
+    
+    state.ipTraceability[ipAddress] = {
+        ip: ipAddress,
+        type: type,
+        score: legacyScore,
+        usageCount: 0,
+        lastUsed: null,
+        status: 'active',
+        traces: [],
+        canRegenerate: false
+    };
+    
+    return state.ipTraceability[ipAddress];
+}
+
+/**
  * Calculate traceability increase for an attack
  * @param {string} ipAddress - IP address used in attack
  * @param {Object} attackResult - Attack outcome data
@@ -233,7 +268,7 @@ function initializePublicServiceIpTraceability() {
  * @returns {number} Traceability score increase
  */
 function calculateTraceabilityIncrease(ipAddress, attackResult, flow, target) {
-    const ipData = state.ipTraceability[ipAddress];
+    const ipData = ensureIpData(ipAddress);
     if (!ipData) return 0;
     
     let baseIncrease = 0;
@@ -332,7 +367,7 @@ function calculateTraceabilityIncrease(ipAddress, attackResult, flow, target) {
  * @param {Object} traceData - Trace event data
  */
 function applyTraceabilityIncrease(ipAddress, increase, traceData) {
-    const ipData = state.ipTraceability[ipAddress];
+    const ipData = ensureIpData(ipAddress);
     if (!ipData || ipData.status === 'burned') return;
     
     // Apply the increase
@@ -792,6 +827,7 @@ function getAllIpTraceabilityData() {
 
 // Export functions for global access
 window.initializeIpTraceability = initializeIpTraceability;
+window.ensureIpData = ensureIpData;
 window.calculateTraceabilityIncrease = calculateTraceabilityIncrease;
 window.applyTraceabilityIncrease = applyTraceabilityIncrease;
 window.getIpTraceabilityStatus = getIpTraceabilityStatus;

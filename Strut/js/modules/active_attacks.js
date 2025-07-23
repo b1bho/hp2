@@ -221,9 +221,9 @@ function handleAttackConsequences(attack, successRatio, effectiveStats) {
     attack.routingChain.forEach(nodeId => {
         const node = getNodeInfo(nodeId);
         const ip = node?.currentIp || node?.ipAddress;
-        if (ip) {
-            if (!state.ipTraceability[ip]) state.ipTraceability[ip] = 0;
-            state.ipTraceability[ip] = Math.min(100, state.ipTraceability[ip] + traceIncrease);
+        if (ip && typeof ensureIpData === 'function') {
+            const ipData = ensureIpData(ip);
+            ipData.score = Math.min(100, ipData.score + traceIncrease);
         }
     });
 
@@ -278,8 +278,10 @@ function handleAttackConsequences(attack, successRatio, effectiveStats) {
             }
         }
 
-        if (!state.ipTraceability[sourceIp]) state.ipTraceability[sourceIp] = 0;
-        state.ipTraceability[sourceIp] = Math.min(100, state.ipTraceability[sourceIp] + traceIncrease);
+        if (typeof ensureIpData === 'function') {
+            const ipData = ensureIpData(sourceIp);
+            ipData.score = Math.min(100, ipData.score + traceIncrease);
+        }
 
         state.identity.traces += Math.ceil(traceIncrease / 5);
         state.traceLogs.unshift({
