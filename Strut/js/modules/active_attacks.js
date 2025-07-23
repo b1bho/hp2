@@ -367,6 +367,7 @@ function resolveAttack(attack, progressPercentage) {
         if (infectionType) {
             hostsToInfect = Math.ceil(effectiveStats.eo / 2 * successRatio);
             for(let i = 0; i < hostsToInfect; i++) {
+                const flowSlots = Math.floor(1 + Math.random() * 3); // Random 1-3 flow slots
                 const newHost = {
                     id: `host-${Date.now()}-${i}`,
                     ipAddress: generateRandomIp(),
@@ -375,10 +376,14 @@ function resolveAttack(attack, progressPercentage) {
                     infectionType: infectionType,
                     stabilityScore: Math.min(99, effectiveStats.rc * 20),
                     traceabilityScore: 10 + effectiveStats.rl,
+                    sourcePOI: `${attack.target.name} (${attack.nationName || 'Globale'})`, // Track POI source
                     resources: {
                         cpuPower: parseFloat((1 + Math.random() * effectiveStats.eo).toFixed(2)),
-                        bandwidth: 100 + Math.floor(Math.random() * 900)
+                        bandwidth: 100 + Math.floor(Math.random() * 900),
+                        flowSlots: flowSlots
                     },
+                    hookedFlows: new Array(flowSlots).fill(null), // Initialize with null values
+                    activityLog: [`[${new Date().toLocaleTimeString()}] Infezione da ${attack.target.name} completata`],
                     lastContact: Date.now()
                 };
                 state.infectedHostPool.push(newHost);

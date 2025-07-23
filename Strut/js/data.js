@@ -544,6 +544,7 @@ const initialGameState = {
             infectionType: "Trojan",
             stabilityScore: 85,
             traceabilityScore: 15,
+            sourcePOI: "Sistema Universitario (Italia)", // POI source tracking
             resources: {
                 cpuPower: 2.4,
                 bandwidth: 100,
@@ -560,6 +561,7 @@ const initialGameState = {
             infectionType: "Worm",
             stabilityScore: 90,
             traceabilityScore: 10,
+            sourcePOI: "Popolazione Generale (Italia)", // POI source tracking
             resources: {
                 cpuPower: 3.2,
                 bandwidth: 150,
@@ -576,6 +578,7 @@ const initialGameState = {
             infectionType: "Backdoor",
             stabilityScore: 75,
             traceabilityScore: 25,
+            sourcePOI: "Comune Locale (Italia)", // POI source tracking
             resources: {
                 cpuPower: 1.8,
                 bandwidth: 80,
