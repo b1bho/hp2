@@ -3724,6 +3724,7 @@ function completeRansomwareEncryption(operationId) {
     });
     
     renderActiveRansomwareOperations();
+    renderRansomRequestsStatus();
     renderRansomwareBotGroupSelection();
     saveState();
     updateUI();
