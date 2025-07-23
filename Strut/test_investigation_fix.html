@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Investigation Level Fix Test</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background: #111827; color: #f3f4f6; font-family: 'Inter', sans-serif; }
+        .test-section { border: 1px solid #374151; border-radius: 8px; padding: 1rem; margin: 1rem 0; }
+        .test-pass { color: #10b981; }
+        .test-fail { color: #ef4444; }
+        .test-warning { color: #f59e0b; }
+    </style>
+</head>
+<body class="p-8">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl font-bold text-indigo-400 mb-6">Investigation Level Fix Test</h1>
+        
+        <div class="test-section">
+            <h2 class="text-xl font-bold text-blue-300 mb-4">Test Results</h2>
+            <div id="test-results" class="space-y-2">
+                <div class="text-gray-400">Loading tests...</div>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h2 class="text-xl font-bold text-green-300 mb-4">Manual Demo</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <button id="test-personal-ip" class="px-4 py-2 bg-red-600 hover:bg-red-700 rounded">
+                    Test Personal IP Attack
+                </button>
+                <button id="test-vpn-ip" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded">
+                    Test VPN IP Attack
+                </button>
+                <button id="test-infected-ip" class="px-4 py-2 bg-green-600 hover:bg-green-700 rounded">
+                    Test Infected Host Attack
+                </button>
+            </div>
+            <div id="demo-results" class="mt-4 space-y-2"></div>
+        </div>
+    </div>
+
+    <!-- Load required modules -->
+    <script src="js/data.js"></script>
+    <script src="js/modules/ip_traceability.js"></script>
+    
+    <script>
+        // Mock required functions
+        function showNotification(message, type = 'info') {
+            const results = document.getElementById('demo-results');
+            const notif = document.createElement('div');
+            notif.className = `p-2 rounded mb-2 ${type === 'error' ? 'bg-red-900' : type === 'warning' ? 'bg-yellow-900' : 'bg-blue-900'}`;
+            notif.textContent = message;
+            results.appendChild(notif);
+        }
+        
+        function saveState() {
+            // Mock save function
+        }
+        
+        function generateRandomIp() {
+            // Return the same IP we set in identity for testing consistency
+            return state.identity?.realIp || '192.168.100.1';
+        }
+        
+        // Initialize mock state
+        window.state = {
+            ipTraceability: {},
+            playerTraces: {
+                totalTraces: 0,
+                investigationLevel: 0,
+                traceHistory: [],
+                investigatedBy: 'Nessuna'
+            },
+            identity: { realIp: '192.168.100.1' },  // Use different IP to avoid conflict with sample data
+            infectedHostPool: [
+                {
+                    id: 'test_host_1',
+                    ipAddress: '172.16.0.1',  // Different IP from personal IP
+                    status: 'Active'
+                }
+            ],
+            purchasedServices: {
+                'vpn_service': {
+                    currentIp: '203.45.67.89',
+                    serviceId: 'vpn_premium'
+                }
+            },
+            xmr: 1000
+        };
+        
+        // Initialize the system
+        initializeIpTraceability();
+        
+        // Add VPN IP manually for testing
+        state.ipTraceability['203.45.67.89'] = {
+            ip: '203.45.67.89',
+            type: 'public_vpn',
+            score: 0,
+            usageCount: 0,
+            lastUsed: null,
+            status: 'active',
+            traces: [],
+            canRegenerate: true,
+            serviceId: 'vpn_premium'
+        };
+        
+        // Run tests
+        function runTests() {
+            const results = document.getElementById('test-results');
+            results.innerHTML = '';
+            
+            let passed = 0;
+            let total = 0;
+            
+            function addResult(message, isPass) {
+                const div = document.createElement('div');
+                div.className = isPass ? 'test-pass' : 'test-fail';
+                div.textContent = (isPass ? '✅ ' : '❌ ') + message;
+                results.appendChild(div);
+                if (isPass) passed++;
+                total++;
+            }
+            
+            // Test 1: Personal IP traces should affect investigation level
+            const initialInvestigationLevel = state.playerTraces.investigationLevel;
+            const initialTotalTraces = state.playerTraces.totalTraces;
+            
+            applyTraceabilityIncrease('192.168.100.1', 60, {
+                event: 'test_attack',
+                target: 'test_target',
+                flow: 'test_flow'
+            });
+            
+            addResult(
+                `Personal IP traces affect investigation level: ${state.playerTraces.totalTraces} vs ${initialTotalTraces}`,
+                state.playerTraces.totalTraces > initialTotalTraces
+            );
+            
+            // Test 2: VPN IP traces should NOT affect investigation level
+            const currentTotalTraces = state.playerTraces.totalTraces;
+            
+            applyTraceabilityIncrease('203.45.67.89', 60, {
+                event: 'test_attack',
+                target: 'test_target',
+                flow: 'test_flow'
+            });
+            
+            addResult(
+                `VPN IP traces do NOT affect investigation level: ${state.playerTraces.totalTraces} vs ${currentTotalTraces}`,
+                state.playerTraces.totalTraces === currentTotalTraces
+            );
+            
+            // Test 3: Infected host IP traces should NOT affect investigation level
+            const currentTotalTraces2 = state.playerTraces.totalTraces;
+            
+            applyTraceabilityIncrease('172.16.0.1', 60, {
+                event: 'test_attack',
+                target: 'test_target',
+                flow: 'test_flow'
+            });
+            
+            addResult(
+                `Infected host IP traces do NOT affect investigation level: ${state.playerTraces.totalTraces} vs ${currentTotalTraces2}`,
+                state.playerTraces.totalTraces === currentTotalTraces2
+            );
+            
+            // Test 4: All IPs should still have their individual traceability scores
+            const personalIpScore = state.ipTraceability['192.168.100.1']?.score || 0;
+            const vpnIpScore = state.ipTraceability['203.45.67.89']?.score || 0;
+            const infectedIpScore = state.ipTraceability['172.16.0.1']?.score || 0;
+            
+            addResult(
+                `Personal IP has traceability score: ${personalIpScore}`,
+                personalIpScore > 0
+            );
+            
+            addResult(
+                `VPN IP has traceability score: ${vpnIpScore}`,
+                vpnIpScore > 0
+            );
+            
+            addResult(
+                `Infected host IP has traceability score: ${infectedIpScore}`,
+                infectedIpScore > 0
+            );
+            
+            // Summary
+            const summary = document.createElement('div');
+            summary.className = 'mt-4 p-3 rounded ' + (passed === total ? 'bg-green-900' : 'bg-red-900');
+            summary.textContent = `Tests completed: ${passed}/${total} passed`;
+            results.appendChild(summary);
+        }
+        
+        // Event listeners for manual testing
+        document.getElementById('test-personal-ip').addEventListener('click', () => {
+            applyTraceabilityIncrease('192.168.100.1', 25, {
+                event: 'manual_test',
+                target: 'test_target',
+                flow: 'test_flow'
+            });
+        });
+        
+        document.getElementById('test-vpn-ip').addEventListener('click', () => {
+            applyTraceabilityIncrease('203.45.67.89', 25, {
+                event: 'manual_test',
+                target: 'test_target',
+                flow: 'test_flow'
+            });
+        });
+        
+        document.getElementById('test-infected-ip').addEventListener('click', () => {
+            applyTraceabilityIncrease('172.16.0.1', 25, {
+                event: 'manual_test',
+                target: 'test_target',
+                flow: 'test_flow'
+            });
+        });
+        
+        // Run tests automatically
+        setTimeout(runTests, 500);
+    </script>
+</body>
+</html>
