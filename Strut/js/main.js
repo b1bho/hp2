@@ -549,9 +549,9 @@ function initLateralMenu() {
         // Update toggle button icon
         const toggleIcon = menuToggle.querySelector('i');
         if (lateralMenu.classList.contains('expanded')) {
-            toggleIcon.className = 'fas fa-chevron-left';
+            toggleIcon.className = 'fas fa-times';
         } else {
-            toggleIcon.className = 'fas fa-bars';
+            toggleIcon.className = 'fas fa-chevron-right';
         }
     }
     
@@ -564,7 +564,7 @@ function initLateralMenu() {
         if (window.innerWidth <= 768) {
             if (!lateralMenu.contains(e.target) && lateralMenu.classList.contains('expanded')) {
                 lateralMenu.classList.remove('expanded');
-                menuToggle.querySelector('i').className = 'fas fa-bars';
+                menuToggle.querySelector('i').className = 'fas fa-chevron-right';
             }
         }
     });
@@ -605,7 +605,7 @@ function updateSidebarInfo() {
     
     if (sidebarLevel) sidebarLevel.textContent = state.level || 1;
     if (sidebarPlayerName) sidebarPlayerName.textContent = state.playerName || 'Hacker';
-    if (sidebarBtcBalance) sidebarBtcBalance.textContent = (state.btc || 0).toFixed(6);
+    if (sidebarBtcBalance) sidebarBtcBalance.textContent = Math.floor(state.btc || 0);
     if (sidebarXmrBalance) sidebarXmrBalance.textContent = Math.floor(state.xmr || 0);
     
     // Update expanded info
@@ -622,7 +622,7 @@ function updateSidebarInfo() {
     if (sidebarPlayerXp) sidebarPlayerXp.textContent = state.xp || 0;
     if (sidebarPlayerXpNext) sidebarPlayerXpNext.textContent = state.xpToNextLevel || 100;
     if (sidebarBtcValue) sidebarBtcValue.textContent = `$${(state.btcValueInUSD || 50000).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-    if (sidebarExpandedBtcBalance) sidebarExpandedBtcBalance.textContent = (state.btc || 0).toFixed(6);
+    if (sidebarExpandedBtcBalance) sidebarExpandedBtcBalance.textContent = Math.floor(state.btc || 0);
     if (sidebarExpandedXmrBalance) sidebarExpandedXmrBalance.textContent = Math.floor(state.xmr || 0);
     if (sidebarTalentPoints) sidebarTalentPoints.textContent = state.talentPoints || 0;
     
