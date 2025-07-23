@@ -302,6 +302,11 @@ function initializeDynamicState() {
     if (typeof state.savedFlows !== 'object' || Array.isArray(state.savedFlows)) {
         state.savedFlows = {};
     }
+    
+    // Initialize dynamic countermeasures system
+    if (typeof initializeDynamicTargetStates === 'function') {
+        initializeDynamicTargetStates();
+    }
 }
 function destroyLines() {
     lines.forEach(line => line.remove());

@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dynamic Countermeasures Test Runner</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #1a1a1a;
+            color: #e0e0e0;
+            margin: 0;
+            padding: 20px;
+        }
+        .test-results {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        .test-suite {
+            background-color: #2a2a2a;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-left: 4px solid #4CAF50;
+        }
+        .test-case {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 4px;
+            background-color: #3a3a3a;
+        }
+        .test-case.passed {
+            border-left: 3px solid #4CAF50;
+        }
+        .test-case.failed {
+            border-left: 3px solid #f44336;
+        }
+        .test-case.skipped {
+            border-left: 3px solid #ff9800;
+        }
+        .error-message {
+            color: #f44336;
+            font-family: monospace;
+            white-space: pre-wrap;
+            background-color: #4a2a2a;
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+        }
+        .summary {
+            background-color: #2a2a2a;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .stats {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin: 20px 0;
+        }
+        .stat {
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 2em;
+            font-weight: bold;
+        }
+        .passed { color: #4CAF50; }
+        .failed { color: #f44336; }
+        .skipped { color: #ff9800; }
+        .loading {
+            text-align: center;
+            font-size: 1.2em;
+            margin: 50px 0;
+        }
+        .spin {
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="test-results">
+        <h1>🛡️ Dynamic Target Countermeasures Test Suite</h1>
+        
+        <div class="loading" id="loading">
+            <div class="spin">⚙️</div>
+            <p>Loading test environment...</p>
+        </div>
+        
+        <div id="test-output" style="display: none;">
+            <div class="summary" id="summary">
+                <h2>Test Results Summary</h2>
+                <div class="stats">
+                    <div class="stat">
+                        <div class="stat-value passed" id="passed-count">0</div>
+                        <div>Passed</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value failed" id="failed-count">0</div>
+                        <div>Failed</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value skipped" id="skipped-count">0</div>
+                        <div>Skipped</div>
+                    </div>
+                </div>
+                <div id="overall-status"></div>
+            </div>
+            
+            <div id="test-suites"></div>
+        </div>
+    </div>
+
+    <!-- Load all required dependencies first -->
+    <script src="../world_data.js"></script>
+    <script src="../world_targets_data.js"></script>
+    <script src="../data.js"></script>
+    <script src="../main.js"></script>
+    <script src="../modules/dynamic_countermeasures.js"></script>
+
+    <!-- Simple test framework -->
+    <script>
+        // Simple test framework
+        let testResults = {
+            suites: [],
+            totalPassed: 0,
+            totalFailed: 0,
+            totalSkipped: 0
+        };
+
+        let currentSuite = null;
+
+        function describe(suiteName, suiteFunction) {
+            currentSuite = {
+                name: suiteName,
+                tests: [],
+                passed: 0,
+                failed: 0,
+                skipped: 0
+            };
+            
+            try {
+                suiteFunction();
+            } catch (error) {
+                console.error(`Error in test suite ${suiteName}:`, error);
+            }
+            
+            testResults.suites.push(currentSuite);
+            testResults.totalPassed += currentSuite.passed;
+            testResults.totalFailed += currentSuite.failed;
+            testResults.totalSkipped += currentSuite.skipped;
+        }
+
+        function test(testName, testFunction) {
+            if (!currentSuite) {
+                console.error('test() called outside of describe() block');
+                return;
+            }
+
+            const testCase = {
+                name: testName,
+                status: 'running',
+                error: null,
+                duration: 0
+            };
+
+            const startTime = performance.now();
+
+            try {
+                testFunction();
+                testCase.status = 'passed';
+                currentSuite.passed++;
+            } catch (error) {
+                testCase.status = 'failed';
+                testCase.error = error.message || error.toString();
+                currentSuite.failed++;
+                console.error(`Test "${testName}" failed:`, error);
+            }
+
+            testCase.duration = performance.now() - startTime;
+            currentSuite.tests.push(testCase);
+        }
+
+        function beforeEach(setupFunction) {
+            // Simple beforeEach implementation
+            if (currentSuite) {
+                currentSuite.beforeEach = setupFunction;
+            }
+        }
+
+        // Simple assertion functions
+        function expect(actual) {
+            return {
+                toBe: (expected) => {
+                    if (actual !== expected) {
+                        throw new Error(`Expected ${actual} to be ${expected}`);
+                    }
+                },
+                toEqual: (expected) => {
+                    if (JSON.stringify(actual) !== JSON.stringify(expected)) {
+                        throw new Error(`Expected ${JSON.stringify(actual)} to equal ${JSON.stringify(expected)}`);
+                    }
+                },
+                toBeDefined: () => {
+                    if (actual === undefined) {
+                        throw new Error(`Expected ${actual} to be defined`);
+                    }
+                },
+                toBeGreaterThan: (expected) => {
+                    if (actual <= expected) {
+                        throw new Error(`Expected ${actual} to be greater than ${expected}`);
+                    }
+                },
+                toBeGreaterThanOrEqual: (expected) => {
+                    if (actual < expected) {
+                        throw new Error(`Expected ${actual} to be greater than or equal to ${expected}`);
+                    }
+                },
+                toBeLessThan: (expected) => {
+                    if (actual >= expected) {
+                        throw new Error(`Expected ${actual} to be less than ${expected}`);
+                    }
+                },
+                toHaveLength: (expected) => {
+                    if (!actual || actual.length !== expected) {
+                        throw new Error(`Expected ${actual} to have length ${expected}`);
+                    }
+                }
+            };
+        }
+
+        // Wait for all dependencies to load, then run tests
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                // Initialize the game state
+                if (typeof loadState === 'function') {
+                    loadState();
+                }
+                
+                // Run the tests
+                runTests();
+            }, 100);
+        });
+
+        function runTests() {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('test-output').style.display = 'block';
+
+            try {
+                // Load and run the test file
+                const script = document.createElement('script');
+                script.src = 'dynamic-countermeasures.test.js';
+                script.onload = () => {
+                    setTimeout(displayResults, 100);
+                };
+                script.onerror = () => {
+                    console.error('Failed to load test file');
+                    displayError('Failed to load test file: dynamic-countermeasures.test.js');
+                };
+                document.head.appendChild(script);
+            } catch (error) {
+                console.error('Error running tests:', error);
+                displayError('Error running tests: ' + error.message);
+            }
+        }
+
+        function displayResults() {
+            // Update summary
+            document.getElementById('passed-count').textContent = testResults.totalPassed;
+            document.getElementById('failed-count').textContent = testResults.totalFailed;
+            document.getElementById('skipped-count').textContent = testResults.totalSkipped;
+
+            const overallStatus = document.getElementById('overall-status');
+            if (testResults.totalFailed === 0) {
+                overallStatus.innerHTML = '<h3 class="passed">✅ All tests passed!</h3>';
+            } else {
+                overallStatus.innerHTML = `<h3 class="failed">❌ ${testResults.totalFailed} test(s) failed</h3>`;
+            }
+
+            // Display test suites
+            const suitesContainer = document.getElementById('test-suites');
+            suitesContainer.innerHTML = testResults.suites.map(suite => {
+                const testsHtml = suite.tests.map(test => `
+                    <div class="test-case ${test.status}">
+                        <strong>${test.name}</strong>
+                        <span style="float: right;">${test.duration.toFixed(2)}ms</span>
+                        ${test.error ? `<div class="error-message">${test.error}</div>` : ''}
+                    </div>
+                `).join('');
+
+                return `
+                    <div class="test-suite">
+                        <h3>${suite.name}</h3>
+                        <p>Passed: <span class="passed">${suite.passed}</span> | 
+                           Failed: <span class="failed">${suite.failed}</span> | 
+                           Skipped: <span class="skipped">${suite.skipped}</span></p>
+                        ${testsHtml}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function displayError(message) {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('test-output').innerHTML = `
+                <div class="test-suite">
+                    <h3 class="failed">Test Error</h3>
+                    <div class="error-message">${message}</div>
+                </div>
+            `;
+            document.getElementById('test-output').style.display = 'block';
+        }
+    </script>
+</body>
+</html>

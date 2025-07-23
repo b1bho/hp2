@@ -267,6 +267,20 @@ function showNationPanel(nation) {
                    </div>`
                 : '';
             
+            // Check for active countermeasures
+            let countermeasureIndicators = '';
+            if (typeof getTargetStatus === 'function') {
+                const targetStatus = getTargetStatus(t.id);
+                if (targetStatus.indicators && targetStatus.indicators.length > 0) {
+                    countermeasureIndicators = `<div class="flex items-center space-x-2 mt-1">
+                        ${targetStatus.indicators.map(indicator => 
+                            `<i class="${indicator.icon} ${indicator.class}" title="${indicator.tooltip}"></i>`
+                        ).join('')}
+                        <span class="text-xs text-orange-400">Contromisure Attive</span>
+                    </div>`;
+                }
+            }
+            
             return `
                 <div class="target-item p-3 rounded-lg cursor-pointer" data-target-id="${t.id}">
                     <div class="flex justify-between items-center">
@@ -275,6 +289,7 @@ function showNationPanel(nation) {
                     </div>
                     <p class="text-sm text-gray-400 mt-1">${t.rewardType}</p>
                     ${ddosIndicator}
+                    ${countermeasureIndicators}
                 </div>
             `;
         }).join('');
@@ -625,6 +640,16 @@ function launchAttack() {
     const activeNodes = currentRoutingChain.filter(n => n);
     const flow = state.savedFlows[flowName];
     const target = selectedTarget;
+    
+    // Check for last node blocking by dynamic countermeasures
+    if (typeof checkLastNodeBlocking === 'function' && target.id) {
+        const routingChain = activeNodes.map(n => n.id);
+        if (checkLastNodeBlocking(target.id, routingChain)) {
+            alert(`Attacco bloccato! ${target.name} ha rilevato questo pattern di routing in precedenza. Modifica la tua catena di routing per procedere.`);
+            return;
+        }
+    }
+    
     const routingModifiers = calculateRoutingModifiers(currentRoutingChain);
     const costInBtc = routingModifiers.costUSD / state.btcValueInUSD;
 
@@ -753,6 +778,17 @@ function showStorageChoiceModal(dataPacket) {
             }
         });
     });
+}
+
+/**
+ * Update world target display to reflect countermeasure states
+ * Called by the dynamic countermeasures system when target states change
+ */
+function updateTargetStatesInWorldView() {
+    // Re-render the nation panel if it's currently visible
+    if (selectedNation) {
+        renderNationPanel(selectedNation);
+    }
 }
 
 function initWorldPage() {
