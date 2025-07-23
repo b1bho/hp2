@@ -3341,6 +3341,13 @@ function updateRansomwarePARPreview() {
         traceRiskEl.className = `font-bold ${getRiskColor(traceRisk)}`;
     }
     if (expectedGainEl) expectedGainEl.textContent = `${expectedGain.toFixed(3)} BTC`;
+    
+    // Update launch button state
+    const launchBtn = document.getElementById('launch-ransomware-btn');
+    if (launchBtn) {
+        const hasActiveHosts = selectedRansomwareGroups.size > 0;
+        launchBtn.disabled = !(hasActiveHosts && selectedFlow);
+    }
 }
 
 function calculateRansomAcceptanceProbability(targetType, dataSensitivity, amount, strategy) {
