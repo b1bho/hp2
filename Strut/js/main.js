@@ -347,7 +347,11 @@ function updateUI() {
     
     const btcValueEl = document.getElementById('btc-value');
     if (btcValueEl) {
-        const btcValue = state.btcValueInUSD || 50000; // Default value if not set
+        // Ensure BTC price is initialized with simulation if not set
+        if (!state.btcValueInUSD) {
+            simulateBTCPriceFluctuation();
+        }
+        const btcValue = state.btcValueInUSD;
         btcValueEl.textContent = `$${btcValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     }
     const playerLevelEl = document.getElementById('player-level');
@@ -603,7 +607,7 @@ function updateSidebarInfo() {
     const sidebarBtcBalance = document.getElementById('sidebar-btc-balance');
     const sidebarXmrBalance = document.getElementById('sidebar-xmr-balance');
     
-    if (sidebarLevel) sidebarLevel.textContent = state.playerLevel || 1;
+    if (sidebarLevel) sidebarLevel.textContent = state.level || 1;
     if (sidebarPlayerName) sidebarPlayerName.textContent = state.playerName || 'Hacker';
     if (sidebarBtcBalance) sidebarBtcBalance.textContent = (state.btc || 0).toFixed(6);
     if (sidebarXmrBalance) sidebarXmrBalance.textContent = Math.floor(state.xmr || 0);
@@ -618,10 +622,14 @@ function updateSidebarInfo() {
     const sidebarExpandedXmrBalance = document.getElementById('sidebar-expanded-xmr-balance');
     const sidebarTalentPoints = document.getElementById('sidebar-talent-points');
     
-    if (sidebarExpandedLevel) sidebarExpandedLevel.textContent = state.playerLevel || 1;
+    if (sidebarExpandedLevel) sidebarExpandedLevel.textContent = state.level || 1;
     if (sidebarPlayerXp) sidebarPlayerXp.textContent = state.xp || 0;
     if (sidebarPlayerXpNext) sidebarPlayerXpNext.textContent = state.xpToNextLevel || 100;
-    if (sidebarBtcValue) sidebarBtcValue.textContent = `$${(state.btcValueInUSD || 50000).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    // Ensure BTC price is initialized with simulation if not set
+    if (!state.btcValueInUSD) {
+        simulateBTCPriceFluctuation();
+    }
+    if (sidebarBtcValue) sidebarBtcValue.textContent = `$${state.btcValueInUSD.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     if (sidebarExpandedBtcBalance) sidebarExpandedBtcBalance.textContent = (state.btc || 0).toFixed(6);
     if (sidebarExpandedXmrBalance) sidebarExpandedXmrBalance.textContent = Math.floor(state.xmr || 0);
     if (sidebarTalentPoints) sidebarTalentPoints.textContent = state.talentPoints || 0;
@@ -715,6 +723,12 @@ function updateActivityIndicators() {
 
 function init() {
     loadState();
+    
+    // Ensure BTC price is initialized immediately
+    if (!state.btcValueInUSD) {
+        simulateBTCPriceFluctuation();
+    }
+    
     updateAllBonuses();
     updateUI();
     

@@ -418,7 +418,7 @@ const initialGameState = {
     xp: 0,
     xpToNextLevel: 100,
     talentPoints: 0,
-    btcValueInUSD: 50000,
+    btcValueInUSD: null, // Will be initialized by BTC price simulation
     unlocked: {
         'Python': 1,
         'Networking (Net)': 1
