@@ -186,6 +186,15 @@ function handleAttackConsequences(attack, successRatio, effectiveStats) {
         
         showNotification(`ATTENZIONE: L'origine del tuo attacco (${sourceIp}) è stata tracciata!`, 'error');
         state.identity.suspicion = Math.min(100, state.identity.suspicion + Math.ceil(traceIncrease / 2));
+        
+        // Integrate with Investigation State System - IP traces increase investigation level
+        if (window.InvestigationState) {
+            const investigationIncrease = Math.ceil(traceIncrease / 3); // Convert trace increase to investigation increase
+            window.InvestigationState.increaseInvestigationLevel(
+                investigationIncrease,
+                `IP tracciato durante attacco fallito su ${attack.target.name}`
+            );
+        }
     }
 
     if (state.activePage === 'profile') {
@@ -227,6 +236,19 @@ function resolveAttack(attack, progressPercentage) {
     if (successRatio < 0.5) {
         alert('Attacco Fallito! Le statistiche del tuo flusso non erano abbastanza alte per superare le difese del bersaglio.');
         return;
+    }
+
+    // Integrate with Investigation State System - increase investigation level for successful attacks
+    if (window.InvestigationState && successRatio >= 0.5) {
+        const baseInvestigationIncrease = attack.target.tier * 2; // Higher tier targets = more investigation
+        const successBasedIncrease = successRatio * baseInvestigationIncrease;
+        const sensitivityModifier = (attack.target.sensitivity || 50) / 50; // More sensitive targets = more attention
+        const finalIncrease = successBasedIncrease * sensitivityModifier * (progressPercentage / 100);
+        
+        window.InvestigationState.increaseInvestigationLevel(
+            finalIncrease,
+            `Attacco riuscito su ${attack.target.name} (Tier ${attack.target.tier})`
+        );
     }
 
     const xpGain = Math.floor(((req.rc * 10) + (req.lcs * 5) + (req.an * 5) + attack.target.sensitivity * 2) * successRatio * (progressPercentage / 100));

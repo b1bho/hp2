@@ -197,6 +197,11 @@ function initializeDynamicState() {
         state.identity.realIp = generateRandomIp();
     }
     
+    // Initialize investigation logs if not set
+    if (!state.investigationLogs) {
+        state.investigationLogs = [];
+    }
+    
     // Initialize currentActivity for existing botnet groups
     if (state.botnetGroups) {
         Object.keys(state.botnetGroups).forEach(groupName => {
@@ -720,6 +725,11 @@ function init() {
     
     // Initialize lateral menu
     initLateralMenu();
+    
+    // Initialize Investigation State System
+    if (window.InvestigationState && typeof window.InvestigationState.initializeInvestigationState === 'function') {
+        window.InvestigationState.initializeInvestigationState();
+    }
     
     // Keep legacy navigation support for any remaining elements
     document.querySelectorAll('nav .nav-btn').forEach(button => {

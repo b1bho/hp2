@@ -320,6 +320,15 @@ function applyTargetReactions(attack, reaction) {
                     });
                 }
             });
+            
+            // Integrate with Investigation State System
+            if (window.InvestigationState) {
+                const investigationIncrease = consequence.value * 0.2; // Convert traceability to investigation increase
+                window.InvestigationState.increaseInvestigationLevel(
+                    investigationIncrease, 
+                    `Tracciabilità aumentata durante attacco DDoS (+${consequence.value})`
+                );
+            }
             break;
 
         case 'target_ip_change':

@@ -176,6 +176,28 @@ function renderProfileContent() {
     const identitySection = document.getElementById('identity-section');
     identitySection.innerHTML = `
         <h2 class="text-3xl font-bold mb-4 branch-title">Stato dell'Identità</h2>
+        
+        <!-- Investigation Level Display -->
+        <div class="bg-gray-800 p-6 rounded-lg mb-6 border-l-4 border-blue-500">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-semibold text-blue-400">Livello di Indagine</h3>
+                <span id="investigation-level-display" class="investigation-level text-2xl font-bold"></span>
+            </div>
+            <div class="w-full bg-gray-700 rounded-full h-4 mb-3">
+                <div id="investigation-progress-bar" class="investigation-progress h-4 rounded-full transition-all duration-300"></div>
+            </div>
+            <div class="flex justify-between text-sm text-gray-400">
+                <span>Sicuro (0%)</span>
+                <span>Indagine Crescente (79%)</span>
+                <span>Rischio Imminente (99%)</span>
+                <span>Arresto (100%)</span>
+            </div>
+        </div>
+        
+        <!-- Active Warnings -->
+        <div id="investigation-warnings" class="mb-6"></div>
+        
+        <!-- Identity Controls -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
             <div class="bg-gray-800 p-4 rounded-lg">
                 <h3 class="text-lg font-semibold mb-2 text-yellow-400">Stato di Indagine</h3>
@@ -190,6 +212,19 @@ function renderProfileContent() {
             <div class="bg-gray-800 p-4 rounded-lg">
                  <h3 class="text-lg font-semibold mb-2 text-red-400">Tracce Digitali</h3>
                  <p class="text-sm">Tracce totali: <span id="traces-left" class="font-bold text-white"></span></p>
+            </div>
+        </div>
+        
+        <!-- Identity Actions -->
+        <div class="bg-gray-800 p-4 rounded-lg mb-6">
+            <h3 class="text-lg font-semibold mb-3 text-purple-400">Azioni Identità</h3>
+            <div class="flex space-x-4">
+                <button id="wipe-identity-btn" class="bg-red-600 hover:bg-red-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-bold py-2 px-4 rounded transition-colors">
+                    <i class="fas fa-user-times mr-2"></i>Wipe Identità
+                </button>
+                <button id="view-investigation-log-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition-colors">
+                    <i class="fas fa-history mr-2"></i>Log Indagini
+                </button>
             </div>
         </div>
         
@@ -232,6 +267,9 @@ function updateProfileData() {
     if (!identity.hasOwnProperty('suspicion')) {
         identity.suspicion = 0;
     }
+    if (!identity.hasOwnProperty('investigationLevel')) {
+        identity.investigationLevel = identity.suspicion || 0;
+    }
     
     // Safety check: ensure traceLogs array exists
     let traceLogs = state.traceLogs;
@@ -241,6 +279,57 @@ function updateProfileData() {
         saveState();
     }
     
+    // Update investigation level display
+    const investigationLevel = identity.investigationLevel || 0;
+    const investigationState = window.InvestigationState ? window.InvestigationState.getInvestigationState(investigationLevel) : 'safe';
+    
+    // Update investigation level
+    const levelDisplay = document.getElementById('investigation-level-display');
+    if (levelDisplay) {
+        levelDisplay.textContent = `${investigationLevel.toFixed(1)}%`;
+    }
+    
+    // Update investigation progress bar
+    const progressBar = document.getElementById('investigation-progress-bar');
+    if (progressBar) {
+        progressBar.style.width = `${investigationLevel}%`;
+        // Set color based on investigation state
+        progressBar.className = 'investigation-progress h-4 rounded-full transition-all duration-300';
+        if (investigationLevel >= 100) {
+            progressBar.classList.add('bg-red-500');
+        } else if (investigationLevel >= 80) {
+            progressBar.classList.add('bg-orange-500');
+        } else if (investigationLevel > 0) {
+            progressBar.classList.add('bg-yellow-500');
+        } else {
+            progressBar.classList.add('bg-green-500');
+        }
+    }
+    
+    // Update identity wipe button
+    const wipeButton = document.getElementById('wipe-identity-btn');
+    if (wipeButton) {
+        const canWipe = investigationLevel >= 80 && (identity.canWipeIdentity !== false);
+        wipeButton.disabled = !canWipe;
+        wipeButton.title = canWipe ? 'Esegui Wipe Identità per ridurre il livello di indagine' : 
+                          investigationLevel < 80 ? 'Disponibile solo quando il livello di indagine raggiunge l\'80%' : 
+                          'Wipe Identità non disponibile';
+                          
+        // Add click handler
+        wipeButton.onclick = () => {
+            if (canWipe && window.InvestigationState) {
+                window.InvestigationState.showIdentityWipeModal();
+            }
+        };
+    }
+    
+    // Update investigation log button
+    const logButton = document.getElementById('view-investigation-log-btn');
+    if (logButton) {
+        logButton.onclick = () => showInvestigationLogModal();
+    }
+    
+    // Update legacy displays
     document.getElementById('traces-left').textContent = identity.traces;
     document.getElementById('investigated-by').textContent = identity.investigatedBy;
     document.getElementById('suspicion-bar').style.width = `${identity.suspicion}%`;
@@ -249,6 +338,156 @@ function updateProfileData() {
     if (morality < -33) document.getElementById('morality-status').textContent = 'White Hat';
     else if (morality > 33) document.getElementById('morality-status').textContent = 'Black Hat';
     else document.getElementById('morality-status').textContent = 'Grey Hat';
+}
+
+/**
+ * Show investigation log modal
+ */
+function showInvestigationLogModal() {
+    const logs = state.investigationLogs || [];
+    
+    const modalHtml = `
+        <div id="investigation-log-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div class="bg-gray-800 rounded-lg shadow-xl max-w-4xl w-full mx-4 p-6 max-h-screen overflow-hidden">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold text-white">Log delle Indagini</h2>
+                    <button id="close-investigation-log" class="text-gray-400 hover:text-white text-xl">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                
+                <div class="max-h-96 overflow-y-auto">
+                    ${logs.length === 0 ? `
+                        <div class="text-center text-gray-400 py-8">
+                            <i class="fas fa-history text-4xl mb-4"></i>
+                            <p>Nessun evento di indagine registrato</p>
+                        </div>
+                    ` : logs.slice().reverse().map(log => {
+                        const date = new Date(log.timestamp).toLocaleString();
+                        let content = '';
+                        
+                        switch (log.type) {
+                            case 'increase':
+                                content = `
+                                    <div class="bg-yellow-900/30 border border-yellow-500 rounded-lg p-4 mb-3">
+                                        <div class="flex justify-between items-start">
+                                            <div>
+                                                <h4 class="font-semibold text-yellow-400">Aumento Livello Indagine</h4>
+                                                <p class="text-sm text-gray-300 mt-1">${log.reason}</p>
+                                                <p class="text-xs text-gray-400 mt-1">${date}</p>
+                                            </div>
+                                            <div class="text-right">
+                                                <span class="text-yellow-300 font-bold">+${log.increase}%</span>
+                                                <p class="text-xs text-gray-400">${log.oldLevel}% → ${log.newLevel}%</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                `;
+                                break;
+                                
+                            case 'identity_wipe':
+                                content = `
+                                    <div class="bg-blue-900/30 border border-blue-500 rounded-lg p-4 mb-3">
+                                        <div class="flex justify-between items-start">
+                                            <div>
+                                                <h4 class="font-semibold text-blue-400">Wipe Identità Eseguito</h4>
+                                                <p class="text-sm text-gray-300 mt-1">Identità ripulita con successo</p>
+                                                <p class="text-xs text-gray-400 mt-1">${date}</p>
+                                            </div>
+                                            <div class="text-right text-xs text-gray-400">
+                                                <p>BTC persi: ${log.summary.lostBTC.toFixed(4)}</p>
+                                                <p>XMR persi: ${log.summary.lostXMR.toFixed(2)}</p>
+                                                <p>Host persi: ${log.summary.lostHosts}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                `;
+                                break;
+                                
+                            case 'arrest':
+                                content = `
+                                    <div class="bg-red-900/30 border border-red-500 rounded-lg p-4 mb-3">
+                                        <div class="flex justify-between items-start">
+                                            <div>
+                                                <h4 class="font-semibold text-red-400">Arresto Eseguito</h4>
+                                                <p class="text-sm text-gray-300 mt-1">Nuova identità: ${log.newIdentity}</p>
+                                                <p class="text-xs text-gray-400 mt-1">${date}</p>
+                                            </div>
+                                            <div class="text-right text-xs text-gray-400">
+                                                <p>BTC persi: ${log.summary.lostBTC.toFixed(4)}</p>
+                                                <p>XMR persi: ${log.summary.lostXMR.toFixed(2)}</p>
+                                                <p>Talenti preservati: ${log.summary.preservedTalents}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                `;
+                                break;
+                                
+                            case 'event':
+                                content = `
+                                    <div class="bg-gray-900/30 border border-gray-500 rounded-lg p-4 mb-3">
+                                        <div class="flex justify-between items-start">
+                                            <div>
+                                                <h4 class="font-semibold text-gray-400">Eventi Indagine</h4>
+                                                <p class="text-sm text-gray-300 mt-1">${log.message}</p>
+                                                <p class="text-xs text-gray-400 mt-1">${date}</p>
+                                            </div>
+                                            <div class="text-right">
+                                                <span class="text-gray-400 text-xs">${log.level.toFixed(1)}%</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                `;
+                                break;
+                                
+                            default:
+                                content = `
+                                    <div class="bg-gray-800 rounded-lg p-4 mb-3">
+                                        <p class="text-sm text-gray-300">${JSON.stringify(log)}</p>
+                                        <p class="text-xs text-gray-400 mt-1">${date}</p>
+                                    </div>
+                                `;
+                        }
+                        
+                        return content;
+                    }).join('')}
+                </div>
+                
+                <div class="mt-6 text-center">
+                    <button id="clear-investigation-log" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded mr-4">
+                        Cancella Log
+                    </button>
+                    <button id="close-investigation-log-btn" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">
+                        Chiudi
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    
+    // Add event listeners
+    document.getElementById('close-investigation-log').addEventListener('click', closeInvestigationLogModal);
+    document.getElementById('close-investigation-log-btn').addEventListener('click', closeInvestigationLogModal);
+    document.getElementById('clear-investigation-log').addEventListener('click', () => {
+        if (confirm('Sei sicuro di voler cancellare tutti i log delle indagini?')) {
+            state.investigationLogs = [];
+            saveState();
+            closeInvestigationLogModal();
+            showNotification('Log delle indagini cancellato', 'success');
+        }
+    });
+}
+
+/**
+ * Close investigation log modal
+ */
+function closeInvestigationLogModal() {
+    const modal = document.getElementById('investigation-log-modal');
+    if (modal) {
+        modal.remove();
+    }
 
     const tableBody = document.getElementById('trace-logs-table');
     if (tableBody) {

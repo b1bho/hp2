@@ -428,7 +428,14 @@ const initialGameState = {
         traces: 5,
         realIp: null, // Will be set by initializeDynamicState
         investigatedBy: 'Nessuna',
-        suspicion: 0
+        suspicion: 0,
+        // Investigation State System
+        investigationLevel: 0, // 0-100% - Main investigation level percentage
+        lastWipeTimestamp: null, // Timestamp of last identity wipe
+        arrestCount: 0, // Number of times player has been arrested
+        canWipeIdentity: true, // Whether identity wipe is currently available
+        wipeInProgress: false, // Whether a wipe is currently in progress
+        activeWarnings: [] // Active investigation warnings
     },
     morality: 0,
     traceLogs: [],
@@ -595,6 +602,9 @@ const initialGameState = {
     worldData: {},
     newsFeed: [],
     studying: {},
+    
+    // Investigation logs
+    investigationLogs: [],
     
     // FIX 2: Clan inizialmente nullo - deve essere creato dal giocatore
     clan: null
