@@ -228,6 +228,7 @@ function renderInfectedHostsList() {
                             <p class="text-xs font-bold ${statusColor}">${host.status}</p>
                         </div>
                         <p class="text-xs text-gray-400">${host.location}</p>
+                        ${host.sourcePOI ? `<p class="text-xs text-cyan-400 mt-1"><i class="fas fa-crosshairs mr-1"></i>${host.sourcePOI}</p>` : ''}
                         <div class="trace-bar-bg mt-2">
                             <div class="trace-bar-fill ${traceColorClass}" style="width: ${traceScore}%" title="Tracciabilità: ${traceScore}%"></div>
                         </div>
@@ -378,7 +379,8 @@ function renderHostDetailsPanel() {
 
         container.innerHTML = `
             <h3 class="text-xl font-bold font-mono text-white mb-2">${host.ipAddress}</h3>
-            <p class="text-sm text-gray-400 mb-4">${host.location}</p>
+            <p class="text-sm text-gray-400 mb-2">${host.location}</p>
+            ${host.sourcePOI ? `<p class="text-sm text-cyan-400 mb-4"><i class="fas fa-crosshairs mr-2"></i><strong>Origine:</strong> ${host.sourcePOI}</p>` : ''}
             
             <div class="grid grid-cols-2 gap-4 text-sm mb-6">
                 <div><span class="font-semibold text-gray-300">Status:</span> <span class="font-bold text-green-400">${host.status}</span></div>
