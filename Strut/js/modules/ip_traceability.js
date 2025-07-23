@@ -180,20 +180,57 @@ function initializeInfectedHostIpTraceability() {
     if (!state.infectedHostPool) return;
     
     state.infectedHostPool.forEach(host => {
-        if (host.ipAddress && !state.ipTraceability[host.ipAddress]) {
-            state.ipTraceability[host.ipAddress] = {
-                ip: host.ipAddress,
-                type: IP_TYPES.INFECTED_HOST,
-                score: host.traceabilityScore || 0,
-                usageCount: 0,
-                lastUsed: null,
-                status: 'active',
-                traces: [],
-                canRegenerate: false,
-                hostId: host.id
-            };
+        if (host.ipAddress) {
+            if (!state.ipTraceability[host.ipAddress]) {
+                // Create new traceability entry
+                state.ipTraceability[host.ipAddress] = {
+                    ip: host.ipAddress,
+                    type: IP_TYPES.INFECTED_HOST,
+                    score: host.traceabilityScore || 0,
+                    usageCount: 0,
+                    lastUsed: null,
+                    status: 'active',
+                    traces: [],
+                    canRegenerate: false,
+                    hostId: host.id
+                };
+            } else {
+                // Update existing entry to ensure hostId is correct
+                const ipData = state.ipTraceability[host.ipAddress];
+                if (!ipData.hostId || ipData.hostId !== host.id) {
+                    console.log(`[IP Traceability] Updating hostId for IP ${host.ipAddress}: ${ipData.hostId} -> ${host.id}`);
+                    ipData.hostId = host.id;
+                }
+                // Also ensure the type is correct
+                if (ipData.type !== IP_TYPES.INFECTED_HOST) {
+                    ipData.type = IP_TYPES.INFECTED_HOST;
+                }
+            }
         }
     });
+}
+
+/**
+ * Register a newly infected host in the traceability system
+ * Should be called whenever a new host is added to the infectedHostPool
+ * @param {Object} host - The infected host object
+ */
+function registerNewInfectedHost(host) {
+    if (!host || !host.ipAddress) return;
+    
+    console.log(`[IP Traceability] Registering new infected host: ${host.id} with IP ${host.ipAddress}`);
+    
+    state.ipTraceability[host.ipAddress] = {
+        ip: host.ipAddress,
+        type: IP_TYPES.INFECTED_HOST,
+        score: host.traceabilityScore || 0,
+        usageCount: 0,
+        lastUsed: null,
+        status: 'active',
+        traces: [],
+        canRegenerate: false,
+        hostId: host.id
+    };
 }
 
 /**
@@ -440,15 +477,26 @@ function checkTraceabilityConsequences(ipAddress) {
  */
 function burnIpAddress(ipAddress) {
     const ipData = state.ipTraceability[ipAddress];
-    if (!ipData) return;
+    if (!ipData) {
+        console.warn(`[IP Traceability] Attempted to burn non-existent IP: ${ipAddress}`);
+        return;
+    }
+    
+    console.log(`[IP Traceability] Burning IP ${ipAddress} (type: ${ipData.type}, score: ${ipData.score})`);
     
     ipData.status = 'burned';
     
     // Handle special cases based on IP type
     switch (ipData.type) {
         case IP_TYPES.INFECTED_HOST:
-            removeInfectedHost(ipData.hostId);
-            showNotification(`Host infetto ${ipAddress} è stato pulito dalle autorità!`, 'error');
+            console.log(`[IP Traceability] Burning infected host IP ${ipAddress} with hostId: ${ipData.hostId}`);
+            if (ipData.hostId) {
+                removeInfectedHost(ipData.hostId);
+                showNotification(`Host infetto ${ipAddress} è stato pulito dalle autorità!`, 'error');
+            } else {
+                console.error(`[IP Traceability] No hostId found for infected host IP ${ipAddress}`);
+                showNotification(`IP host infetto ${ipAddress} è stato bruciato!`, 'error');
+            }
             break;
             
         case IP_TYPES.PERSONAL:
@@ -467,6 +515,11 @@ function burnIpAddress(ipAddress) {
     // Auto-regenerate if possible
     if (ipData.canRegenerate) {
         scheduleIpRegeneration(ipAddress);
+    }
+    
+    // Update UI if profile page is visible
+    if (typeof renderProfileContent === 'function') {
+        renderProfileContent();
     }
 }
 
@@ -531,22 +584,60 @@ function applyMediumConsequences(ipAddress) {
 function removeInfectedHost(hostId) {
     if (!state.infectedHostPool) return;
     
+    console.log(`[IP Traceability] Attempting to remove infected host: ${hostId}`);
+    
+    // Find the host before removal for logging
+    const hostToRemove = state.infectedHostPool.find(host => host.id === hostId);
+    if (!hostToRemove) {
+        console.warn(`[IP Traceability] Host ${hostId} not found in infectedHostPool`);
+        return;
+    }
+    
+    console.log(`[IP Traceability] Found host ${hostId} with IP ${hostToRemove.ipAddress}, removing...`);
+    
     // Remove from infected host pool
+    const initialCount = state.infectedHostPool.length;
     state.infectedHostPool = state.infectedHostPool.filter(host => host.id !== hostId);
+    console.log(`[IP Traceability] Infected host pool size: ${initialCount} -> ${state.infectedHostPool.length}`);
     
     // Remove from botnet groups
+    let removedFromGroups = 0;
     if (state.botnetGroups) {
-        Object.values(state.botnetGroups).forEach(group => {
+        Object.keys(state.botnetGroups).forEach(groupName => {
+            const group = state.botnetGroups[groupName];
             if (group.hostIds) {
+                const initialGroupSize = group.hostIds.length;
                 group.hostIds = group.hostIds.filter(id => id !== hostId);
+                if (group.hostIds.length < initialGroupSize) {
+                    removedFromGroups++;
+                    console.log(`[IP Traceability] Removed host ${hostId} from group "${groupName}"`);
+                }
             }
         });
     }
     
     // Clean up empty groups
     if (typeof cleanupEmptyGroups === 'function') {
-        cleanupEmptyGroups();
+        const cleanedGroups = cleanupEmptyGroups();
+        if (cleanedGroups > 0) {
+            console.log(`[IP Traceability] Cleaned up ${cleanedGroups} empty groups`);
+        }
+    } else {
+        console.warn('[IP Traceability] cleanupEmptyGroups function not available');
     }
+    
+    // Update UI if botnet page is currently visible
+    if (typeof updateBotnetAggregateStats === 'function') {
+        updateBotnetAggregateStats();
+    }
+    if (typeof updateBotnetGroupsUI === 'function') {
+        updateBotnetGroupsUI();
+    }
+    
+    // Save state
+    saveState();
+    
+    console.log(`[IP Traceability] Successfully removed host ${hostId} from ${removedFromGroups} groups`);
 }
 
 /**
@@ -835,5 +926,6 @@ window.handleDDoSTraceability = handleDDoSTraceability;
 window.handleMiningTraceability = handleMiningTraceability;
 window.getAllIpTraceabilityData = getAllIpTraceabilityData;
 window.scheduleIpRegeneration = scheduleIpRegeneration;
+window.registerNewInfectedHost = registerNewInfectedHost;
 window.IP_TYPES = IP_TYPES;
 window.TRACEABILITY_THRESHOLDS = TRACEABILITY_THRESHOLDS;
