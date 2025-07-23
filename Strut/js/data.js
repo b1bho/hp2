@@ -462,6 +462,10 @@ const initialGameState = {
     ipTraceability: {},
     news: [],
     
+    // Mining system
+    miningOperations: [],
+    miningLogs: [],
+    
     // FIX 1: Aggiunte le nuove strutture dati necessarie
     data: {
         sensitive_data: [] // Per la retrocompatibilità con le quest
