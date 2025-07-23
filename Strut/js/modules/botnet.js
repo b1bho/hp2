@@ -1519,8 +1519,14 @@ function launchDDoSAttack() {
     let busyGroups = [];
     selectedBotGroups.forEach(groupName => {
         const group = state.botnetGroups[groupName];
-        if (group && (group.currentActivity === 'Mining' || group.currentActivity === 'DDoSing')) {
+        if (group && (group.currentActivity === 'Mining' || group.currentActivity === 'DDoSing' || group.currentActivity === 'Ransomware')) {
             busyGroups.push(groupName);
+        }
+        
+        // Also check for active ransomware operations
+        const isInActiveRansomware = activeRansomwareOperations.some(op => op.botGroups.includes(groupName));
+        if (isInActiveRansomware) {
+            busyGroups.push(`${groupName} (Ransomware)`);
         }
     });
 
@@ -1537,7 +1543,7 @@ function launchDDoSAttack() {
     selectedBotGroups.forEach(groupName => {
         const group = state.botnetGroups[groupName];
         if (group) {
-            if (group.currentActivity === 'Mining') {
+            if (group.currentActivity === 'Mining' || group.currentActivity === 'Ransomware') {
                 hasConflicts = true;
                 conflictGroups.push(groupName);
             }
@@ -1557,7 +1563,7 @@ function launchDDoSAttack() {
 
     // Notify about conflicts
     if (hasConflicts) {
-        showNotification(`Resource conflict detected! Groups ${conflictGroups.join(', ')} are mining. Attack power reduced by 50%.`, 'warning');
+        showNotification(`Resource conflict detected! Groups ${conflictGroups.join(', ')} are busy with other operations. Attack power reduced by 50%.`, 'warning');
     }
 
     // Calculate effective Operational Efficiency (EO) and Code Robustness (RC)
@@ -2680,13 +2686,13 @@ function startMining() {
         return;
     }
     
-    // Check for conflicts with DDoS operations
+    // Check for conflicts with DDoS and Ransomware operations
     let hasConflicts = false;
     let conflictGroups = [];
     
     selectedGroupsArray.forEach(groupName => {
         const group = state.botnetGroups[groupName];
-        if (group && group.currentActivity === 'DDoSing') {
+        if (group && (group.currentActivity === 'DDoSing' || group.currentActivity === 'Ransomware')) {
             hasConflicts = true;
             conflictGroups.push(groupName);
         }
@@ -2698,10 +2704,17 @@ function startMining() {
             const attack = activeDDoSAttacks.find(attack => attack.botGroups.includes(groupName));
             conflictGroups.push(`${groupName} (attacking ${attack.target})`);
         }
+        
+        // Also check if any group is involved in an active Ransomware operation
+        const isInActiveRansomware = activeRansomwareOperations.some(op => op.botGroups.includes(groupName));
+        if (isInActiveRansomware) {
+            hasConflicts = true;
+            conflictGroups.push(`${groupName} (Ransomware)`);
+        }
     });
     
     if (hasConflicts) {
-        showNotification(`Cannot start mining: Groups ${conflictGroups.join(', ')} are currently performing DDoS attacks.`, 'error');
+        showNotification(`Cannot start mining: Groups ${conflictGroups.join(', ')} are currently performing other operations.`, 'error');
         return;
     }
     
@@ -3867,17 +3880,20 @@ function renderActiveRansomwareOperations() {
         let statusText = '';
         let statusClass = '';
         let statusIcon = '';
+        let showCancelButton = false;
         
         switch (operation.phase) {
             case 'encryption':
                 statusText = 'Crittografia in corso...';
                 statusClass = 'text-yellow-400';
                 statusIcon = 'fa-spinner fa-spin';
+                showCancelButton = true;
                 break;
             case 'ransom_sent':
                 statusText = 'Richiesta inviata';
                 statusClass = 'text-blue-400';
                 statusIcon = 'fa-envelope';
+                showCancelButton = true;
                 break;
             case 'completed':
                 statusText = operation.result === 'accepted' ? 'Riscatto pagato!' : 'Riscatto rifiutato';
@@ -3907,6 +3923,11 @@ function renderActiveRansomwareOperations() {
                             <i class="fas ${statusIcon} mr-1"></i>
                             ${statusText}
                         </div>
+                        ${showCancelButton ? `
+                            <button class="text-xs text-red-400 hover:text-red-300 mt-1" onclick="stopRansomwareOperation('${operation.id}')">
+                                <i class="fas fa-stop mr-1"></i>Stop
+                            </button>
+                        ` : ''}
                     </div>
                 </div>
                 
@@ -3961,4 +3982,38 @@ function renderRansomRequestsStatus() {
     });
     
     listContainer.innerHTML = html;
+}
+
+function stopRansomwareOperation(operationId) {
+    const operationIndex = activeRansomwareOperations.findIndex(op => op.id === operationId);
+    if (operationIndex === -1) return;
+    
+    const operation = activeRansomwareOperations[operationIndex];
+    
+    // Reset CurrentActivity to Idle for all participating groups
+    operation.botGroups.forEach(groupName => {
+        const group = state.botnetGroups[groupName];
+        if (group) {
+            group.currentActivity = 'Idle';
+        }
+    });
+    
+    // Remove the operation from active operations
+    activeRansomwareOperations.splice(operationIndex, 1);
+    
+    // Also remove any pending ransom requests for this operation
+    const requestIndex = activeRansomRequests.findIndex(req => req.operationId === operationId);
+    if (requestIndex !== -1) {
+        clearTimeout(activeRansomRequests[requestIndex].timeoutId);
+        activeRansomRequests.splice(requestIndex, 1);
+    }
+    
+    // Refresh the UI
+    renderActiveRansomwareOperations();
+    renderRansomRequestsStatus();
+    renderRansomwareBotGroupSelection();
+    renderBotGroupSelection(); // Update the main bot group selection too
+    
+    showNotification('Operazione ransomware annullata.', 'info');
+    saveState();
 }
