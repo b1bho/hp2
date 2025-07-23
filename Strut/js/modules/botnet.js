@@ -5,6 +5,7 @@ let selectedHostIds = new Set();
 let currentActiveTab = 'management'; // Track current active tab
 let selectedBotGroups = new Set(); // Track selected bot groups for DDoS attacks
 let activeDDoSAttacks = []; // Track multiple active DDoS attacks
+let ddosImpactTracking = new Map(); // Track DIS scores and status for active attacks
 let selectedMiningGroups = new Set(); // Track selected bot groups for Mining
 let activeMiningOperation = null; // Track active Mining operation
 
@@ -528,6 +529,11 @@ function deactivateHost(hostId, skipConfirm = false) {
     const confirmed = skipConfirm || confirm(`Sei sicuro di voler disattivare permanentemente l'host ${host.ipAddress}? Questa azione è irreversibile.`);
 
     if (confirmed) {
+        // Handle DDoS impact if host is involved in active attacks
+        if (typeof handleInfectedHostCleaned === 'function') {
+            handleInfectedHostCleaned(hostId);
+        }
+        
         if (host.traceabilityScore > 50) {
             const penalty = Math.ceil(host.traceabilityScore / 10);
             state.identity.traces += penalty;
@@ -1205,6 +1211,9 @@ function updateSelectedResources() {
         
         launchBtn.disabled = !(activeHosts > 0 && targetIp && selectedFlow);
     }
+
+    // Update DIS prediction if we have valid parameters
+    updateDISPreview(totalPower, activeHosts);
 }
 
 function renderDDoSFlowOptions() {
@@ -1417,6 +1426,9 @@ function updateAttackPreview() {
     lossRiskEl.className = `font-bold ${getRiskColor(lossRisk)}`;
 
     previewEl.classList.remove('hidden');
+    
+    // Also update DIS preview
+    updateDISPreview(totalPower, totalHosts);
 }
 
 function calculateAttackImpact(totalPower, duration) {
@@ -1569,14 +1581,15 @@ function launchDDoSAttack() {
     // Apply attack effects immediately
     applyDDoSAttackEffects(newAttack);
     
-    // Set up attack countdown
+    // Set up attack countdown with DIS tracking
     const attackInterval = setInterval(() => {
         updateAttackProgress(attackId);
+        updateDDoSImpactTracking(attackId); // Add DIS tracking update
         
         const attack = activeDDoSAttacks.find(a => a.id === attackId);
         if (attack && attack.progress >= 100) {
             clearInterval(attackInterval);
-            completeDDoSAttack(attackId);
+            completeDDoSAttackEnhanced(attackId); // Use enhanced completion
         }
     }, 1000);
 
@@ -1666,8 +1679,9 @@ function stopDDoSAttack(attackId) {
         }
     });
     
-    // Remove attack from active list
+    // Remove attack from active list and clean up tracking
     activeDDoSAttacks.splice(attackIndex, 1);
+    ddosImpactTracking.delete(attackId);
     
     showNotification(`DDoS attack against ${attack.target} stopped manually.`, 'info');
     
@@ -1713,79 +1727,6 @@ function applyDDoSAttackEffects(attack) {
     });
 }
 
-function completeDDoSAttack(attackId) {
-    const attackIndex = activeDDoSAttacks.findIndex(a => a.id === attackId);
-    if (attackIndex === -1) return;
-
-    const attack = activeDDoSAttacks[attackIndex];
-    
-    // Reset CurrentActivity to Idle for all participating groups
-    attack.botGroups.forEach(groupName => {
-        const group = state.botnetGroups[groupName];
-        if (group) {
-            group.currentActivity = 'Idle';
-        }
-    });
-    
-    // Remove attack from active list
-    activeDDoSAttacks.splice(attackIndex, 1);
-
-    // Calculate success and consequences based on effective power
-    const attackPower = attack.effectivePower || calculateTotalAttackPower(attack.botGroups);
-    const baseSuccessRate = 0.8;
-    const conflictPenalty = attack.hasConflicts ? 0.1 : 0; // 10% penalty for conflicts
-    const isSuccess = Math.random() < (baseSuccessRate - conflictPenalty);
-
-    if (isSuccess) {
-        // Successful attack rewards (adjusted for effective power)
-        const xpGain = Math.floor(attackPower / 10) + (attack.duration / 10);
-        addXp(xpGain);
-        
-        const btcReward = (attackPower / 1000) * 0.001; // Small BTC reward
-        state.btc += btcReward;
-        
-        showNotification(`DDoS attack against ${attack.target} successful! Gained ${xpGain} XP and ${btcReward.toFixed(6)} BTC`, 'success');
-        
-        // Add log entry for successful attack with source IPs
-        addLogToAttackingSources(attack.sourceIPs, `DDoS attack against ${attack.target} completed successfully`);
-    } else {
-        // Attack failed - increase consequences
-        const failureMessage = attack.hasConflicts ? 
-            `DDoS attack against ${attack.target} failed! Resource conflicts reduced effectiveness.` : 
-            `DDoS attack against ${attack.target} failed! Target defenses held strong.`;
-        showNotification(failureMessage, 'error');
-        
-        // Additional traceability increase for failure
-        attack.botGroups.forEach(groupName => {
-            const group = state.botnetGroups[groupName];
-            if (group) {
-                group.hostIds.forEach(hostId => {
-                    const host = state.infectedHostPool.find(h => h.id === hostId);
-                    if (host) {
-                        const additionalTrace = attack.hasConflicts ? 15 : 10; // Higher penalty for conflicts
-                        host.traceabilityScore = Math.min(100, host.traceabilityScore + additionalTrace);
-                        
-                        // Risk of losing some bots
-                        if (host.traceabilityScore > 80 && Math.random() < 0.1) {
-                            addLogToHost(hostId, 'Host compromised and lost due to failed DDoS attack');
-                            deactivateHost(hostId, true);
-                        }
-                    }
-                });
-            }
-        });
-        
-        // Add log entry for failed attack
-        addLogToAttackingSources(attack.sourceIPs, `DDoS attack against ${attack.target} failed`);
-    }
-
-    updateMultiAttackStatus();
-    saveState();
-    updateUI();
-    renderInfectedHostsList();
-    renderBotGroupSelection(); // Refresh to show updated CurrentActivity status
-}
-
 function addLogToAttackingSources(sourceIPs, message) {
     sourceIPs.forEach(ip => {
         const host = state.infectedHostPool.find(h => h.ipAddress === ip);
@@ -1804,6 +1745,454 @@ function calculateTotalAttackPower(botGroups) {
         }
     });
     return totalPower;
+}
+
+// ====================================================================
+// DDoS IMPACT SYSTEM FUNCTIONS
+// ====================================================================
+
+/**
+ * Update DDoS Impact tracking for an active attack
+ * @param {string} attackId - Attack ID to update
+ */
+function updateDDoSImpactTracking(attackId) {
+    const attack = activeDDoSAttacks.find(a => a.id === attackId);
+    if (!attack) return;
+
+    // Get current effective resources (may have changed due to cleaned hosts)
+    const currentResources = calculateEffectiveDDoSResources(new Set(attack.botGroups));
+    
+    // Get DDoS flow parameters
+    const ddosFlowParams = {
+        attackPower: attack.flow.stats?.attack || 1000,
+        completeness: attack.flow.fc || 100
+    };
+
+    // Get target defenses (with any temporary modifications)
+    const targetDefenses = {
+        ddosResistance: 50 + (attack.targetDefenseModifiers?.ddosResistance || 0)
+    };
+
+    // Calculate current DIS
+    const elapsed = (Date.now() - attack.startTime) / 1000;
+    const disResult = calculateDDoSImpactScore({
+        effectiveResourcesDDoS: currentResources.totalPower,
+        ddosFlowParams: ddosFlowParams,
+        targetDefenses: targetDefenses,
+        playerLevel: state.level,
+        routingFactor: 0.8, // Could be enhanced with actual routing quality
+        duration: elapsed
+    });
+
+    // Determine target status
+    const targetStatus = determineTargetStatus(disResult.score, targetDefenses);
+    
+    // Get or create tracking data
+    let trackingData = ddosImpactTracking.get(attackId);
+    if (!trackingData) {
+        trackingData = {
+            disHistory: [],
+            statusHistory: [],
+            currentStatus: TARGET_STATUS.STABLE,
+            statusDuration: 0,
+            lastReactionCheck: Date.now()
+        };
+        ddosImpactTracking.set(attackId, trackingData);
+    }
+
+    // Update tracking data
+    const now = Date.now();
+    if (targetStatus !== trackingData.currentStatus) {
+        // Status changed - reset duration
+        trackingData.statusHistory.push({
+            status: trackingData.currentStatus,
+            duration: trackingData.statusDuration,
+            timestamp: now
+        });
+        trackingData.currentStatus = targetStatus;
+        trackingData.statusDuration = 0;
+    } else {
+        // Same status - increment duration
+        trackingData.statusDuration += 1; // 1 second interval
+    }
+
+    // Add to DIS history (keep last 60 data points for 1-minute graph)
+    trackingData.disHistory.push({
+        timestamp: now,
+        score: disResult.score,
+        status: targetStatus
+    });
+    
+    if (trackingData.disHistory.length > 60) {
+        trackingData.disHistory.shift();
+    }
+
+    // Check for target reactions every 15 seconds
+    if (now - trackingData.lastReactionCheck > 15000) {
+        const reaction = simulateTargetReactions(targetStatus, attack.target, trackingData.statusDuration);
+        if (reaction.triggered) {
+            applyTargetReactions(attack, reaction);
+            showNotification(reaction.description, 'warning');
+            
+            // Log the reaction
+            addLogToAttackingSources(attack.sourceIPs.slice(0, 3), `Target reaction: ${reaction.description}`);
+        }
+        trackingData.lastReactionCheck = now;
+    }
+
+    // Update UI if visible
+    updateDDoSStatusDisplay();
+}
+
+/**
+ * Update the DDoS status display in the UI
+ */
+function updateDDoSStatusDisplay() {
+    if (state.activePage !== 'botnet' || currentActiveTab !== 'ddos') return;
+
+    // Update multi-attack status with DIS information
+    updateMultiAttackStatusWithDIS();
+    
+    // Update any visible impact graphs
+    updateDDoSImpactGraphs();
+}
+
+/**
+ * Enhanced multi-attack status display with DIS information
+ */
+function updateMultiAttackStatusWithDIS() {
+    const statusContainer = document.getElementById('multi-ddos-status');
+    if (!statusContainer) return;
+
+    if (activeDDoSAttacks.length === 0) {
+        statusContainer.classList.add('hidden');
+        return;
+    }
+
+    statusContainer.classList.remove('hidden');
+    
+    let statusHTML = `
+        <h4 class="text-lg font-semibold text-orange-300 mb-3">
+            <i class="fas fa-crosshairs mr-2"></i>
+            Active DDoS Attacks (${activeDDoSAttacks.length})
+        </h4>
+        <div class="space-y-3 max-h-60 overflow-y-auto">
+    `;
+
+    activeDDoSAttacks.forEach(attack => {
+        const elapsed = Date.now() - attack.startTime;
+        const remaining = Math.max(0, attack.duration - Math.floor(elapsed / 1000));
+        const minutes = Math.floor(remaining / 60);
+        const seconds = remaining % 60;
+        const timeString = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        
+        const groupNames = attack.botGroups.join(', ');
+        const sourceCount = attack.sourceIPs.length;
+        
+        // Get DIS tracking data
+        const trackingData = ddosImpactTracking.get(attack.id);
+        const currentStatus = trackingData?.currentStatus || TARGET_STATUS.STABLE;
+        const currentDIS = trackingData?.disHistory[trackingData.disHistory.length - 1]?.score || 0;
+        const statusConfig = getStatusConfig(currentStatus);
+        
+        statusHTML += `
+            <div class="bg-gray-900/70 rounded-lg p-3 border ${statusConfig.borderClass}">
+                <div class="flex justify-between items-center mb-2">
+                    <div>
+                        <div class="font-semibold text-white">Target: ${attack.target}</div>
+                        <div class="text-xs text-gray-400">Groups: ${groupNames}</div>
+                        <div class="text-xs text-gray-400">${sourceCount} bot sources</div>
+                    </div>
+                    <div class="text-right">
+                        <div class="font-bold text-orange-300">${timeString}</div>
+                        <button class="text-xs text-red-400 hover:text-red-300 mt-1" onclick="stopDDoSAttack('${attack.id}')">
+                            <i class="fas fa-stop mr-1"></i>Stop
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- DIS Status Display -->
+                <div class="flex items-center space-x-2 mb-2">
+                    <div class="w-3 h-3 rounded-full ${statusConfig.color === 'green' ? 'bg-green-400' : statusConfig.color === 'yellow' ? 'bg-yellow-400' : 'bg-red-400'}"></div>
+                    <span class="text-xs font-semibold ${statusConfig.textClass}">${statusConfig.label} - ${statusConfig.description}</span>
+                    <span class="text-xs text-gray-400">DIS: ${currentDIS}</span>
+                </div>
+                
+                <!-- Progress Bar -->
+                <div class="w-full bg-gray-700 rounded-full h-2 mb-2">
+                    <div class="bg-orange-500 h-2 rounded-full transition-all" style="width: ${attack.progress}%"></div>
+                </div>
+                
+                <!-- Mini Impact Graph -->
+                <div class="mini-impact-graph bg-gray-800/50 rounded p-2 h-12" data-attack-id="${attack.id}">
+                    <canvas class="w-full h-full" id="mini-graph-${attack.id}"></canvas>
+                </div>
+            </div>
+        `;
+    });
+
+    statusHTML += '</div>';
+    statusContainer.innerHTML = statusHTML;
+    
+    // Update mini graphs
+    activeDDoSAttacks.forEach(attack => {
+        updateMiniImpactGraph(attack.id);
+    });
+}
+
+/**
+ * Update mini impact graph for an attack
+ * @param {string} attackId - Attack ID
+ */
+function updateMiniImpactGraph(attackId) {
+    const canvas = document.getElementById(`mini-graph-${attackId}`);
+    if (!canvas) return;
+
+    const trackingData = ddosImpactTracking.get(attackId);
+    if (!trackingData || trackingData.disHistory.length === 0) return;
+
+    const ctx = canvas.getContext('2d');
+    const width = canvas.offsetWidth;
+    const height = canvas.offsetHeight;
+    
+    // Set canvas size
+    canvas.width = width;
+    canvas.height = height;
+
+    // Clear canvas
+    ctx.clearRect(0, 0, width, height);
+
+    const history = trackingData.disHistory;
+    if (history.length < 2) return;
+
+    // Find max DIS for scaling
+    const maxDIS = Math.max(...history.map(h => h.score), 500);
+
+    // Draw background grid
+    ctx.strokeStyle = 'rgba(75, 85, 99, 0.3)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (let i = 0; i <= 4; i++) {
+        const y = (height / 4) * i;
+        ctx.moveTo(0, y);
+        ctx.lineTo(width, y);
+    }
+    ctx.stroke();
+
+    // Draw DIS line
+    ctx.strokeStyle = '#f59e0b';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    
+    history.forEach((point, index) => {
+        const x = (width / (history.length - 1)) * index;
+        const y = height - (height * (point.score / maxDIS));
+        
+        if (index === 0) {
+            ctx.moveTo(x, y);
+        } else {
+            ctx.lineTo(x, y);
+        }
+    });
+    ctx.stroke();
+
+    // Draw status color indicators
+    history.forEach((point, index) => {
+        const x = (width / (history.length - 1)) * index;
+        const y = height - (height * (point.score / maxDIS));
+        
+        const statusConfig = getStatusConfig(point.status);
+        ctx.fillStyle = statusConfig.color === 'green' ? '#10b981' : 
+                       statusConfig.color === 'yellow' ? '#f59e0b' : '#ef4444';
+        ctx.beginPath();
+        ctx.arc(x, y, 2, 0, 2 * Math.PI);
+        ctx.fill();
+    });
+}
+
+/**
+ * Update all DDoS impact graphs
+ */
+function updateDDoSImpactGraphs() {
+    activeDDoSAttacks.forEach(attack => {
+        updateMiniImpactGraph(attack.id);
+    });
+}
+
+/**
+ * Enhanced attack completion with DIS tracking cleanup
+ */
+function completeDDoSAttackEnhanced(attackId) {
+    const attackIndex = activeDDoSAttacks.findIndex(a => a.id === attackId);
+    if (attackIndex === -1) return;
+
+    const attack = activeDDoSAttacks[attackIndex];
+    const trackingData = ddosImpactTracking.get(attackId);
+    
+    // Calculate final impact based on DIS history
+    let avgDIS = 0;
+    let maxStatus = TARGET_STATUS.STABLE;
+    
+    if (trackingData && trackingData.disHistory.length > 0) {
+        avgDIS = trackingData.disHistory.reduce((sum, point) => sum + point.score, 0) / trackingData.disHistory.length;
+        
+        // Find highest status achieved
+        trackingData.statusHistory.forEach(statusEntry => {
+            if (statusEntry.status === TARGET_STATUS.DOWN) {
+                maxStatus = TARGET_STATUS.DOWN;
+            } else if (statusEntry.status === TARGET_STATUS.PARTIAL && maxStatus === TARGET_STATUS.STABLE) {
+                maxStatus = TARGET_STATUS.PARTIAL;
+            }
+        });
+        
+        if (trackingData.currentStatus === TARGET_STATUS.DOWN) {
+            maxStatus = TARGET_STATUS.DOWN;
+        } else if (trackingData.currentStatus === TARGET_STATUS.PARTIAL && maxStatus === TARGET_STATUS.STABLE) {
+            maxStatus = TARGET_STATUS.PARTIAL;
+        }
+    }
+    
+    // Reset CurrentActivity to Idle for all participating groups
+    attack.botGroups.forEach(groupName => {
+        const group = state.botnetGroups[groupName];
+        if (group) {
+            group.currentActivity = 'Idle';
+        }
+    });
+    
+    // Remove attack from active list and clean up tracking
+    activeDDoSAttacks.splice(attackIndex, 1);
+    ddosImpactTracking.delete(attackId);
+
+    // Calculate enhanced success and rewards based on DIS performance
+    const attackPower = attack.effectivePower || calculateTotalAttackPower(attack.botGroups);
+    let baseSuccessRate = 0.8;
+    const conflictPenalty = attack.hasConflicts ? 0.1 : 0;
+    
+    // Adjust success rate based on max status achieved
+    if (maxStatus === TARGET_STATUS.DOWN) {
+        baseSuccessRate = 0.95; // Very high success for complete saturation
+    } else if (maxStatus === TARGET_STATUS.PARTIAL) {
+        baseSuccessRate = 0.85; // Good success for partial impact
+    }
+    
+    const finalSuccessRate = baseSuccessRate - conflictPenalty;
+    const isSuccess = Math.random() < finalSuccessRate;
+
+    if (isSuccess) {
+        // Enhanced rewards based on impact performance
+        const statusMultiplier = maxStatus === TARGET_STATUS.DOWN ? 2.0 : 
+                                maxStatus === TARGET_STATUS.PARTIAL ? 1.5 : 1.0;
+        
+        const xpGain = Math.floor((attackPower / 10) * statusMultiplier + (attack.duration / 10));
+        addXp(xpGain);
+        
+        const btcReward = (attackPower / 1000) * 0.001 * statusMultiplier;
+        state.btc += btcReward;
+        
+        const statusConfig = getStatusConfig(maxStatus);
+        showNotification(`DDoS attack successful! Max status: ${statusConfig.label}. Gained ${xpGain} XP and ${btcReward.toFixed(6)} BTC`, 'success');
+        
+        addLogToAttackingSources(attack.sourceIPs, `DDoS attack completed successfully with max status: ${statusConfig.label}`);
+    } else {
+        // Enhanced failure handling
+        const failureMessage = attack.hasConflicts ? 
+            `DDoS attack failed! Resource conflicts reduced effectiveness. Max status reached: ${getStatusConfig(maxStatus).label}` : 
+            `DDoS attack failed! Target defenses held strong. Max status reached: ${getStatusConfig(maxStatus).label}`;
+        showNotification(failureMessage, 'error');
+        
+        // Apply consequences as before but consider achieved status
+        attack.botGroups.forEach(groupName => {
+            const group = state.botnetGroups[groupName];
+            if (group) {
+                group.hostIds.forEach(hostId => {
+                    const host = state.infectedHostPool.find(h => h.id === hostId);
+                    if (host) {
+                        let additionalTrace = attack.hasConflicts ? 15 : 10;
+                        // Reduce penalty if we achieved some impact
+                        if (maxStatus === TARGET_STATUS.PARTIAL) additionalTrace *= 0.7;
+                        else if (maxStatus === TARGET_STATUS.DOWN) additionalTrace *= 0.5;
+                        
+                        host.traceabilityScore = Math.min(100, host.traceabilityScore + additionalTrace);
+                        
+                        if (host.traceabilityScore > 80 && Math.random() < 0.1) {
+                            addLogToHost(hostId, 'Host compromised and lost due to failed DDoS attack');
+                            deactivateHost(hostId, true);
+                        }
+                    }
+                });
+            }
+        });
+        
+        addLogToAttackingSources(attack.sourceIPs, `DDoS attack failed with max status: ${getStatusConfig(maxStatus).label}`);
+    }
+
+    updateMultiAttackStatus();
+    saveState();
+    updateUI();
+    renderInfectedHostsList();
+    renderBotGroupSelection();
+}
+
+// ====================================================================
+// END DDoS IMPACT SYSTEM FUNCTIONS
+// ====================================================================
+
+/**
+ * Update DIS prediction preview based on current selection
+ * @param {number} totalPower - Total effective power
+ * @param {number} activeHosts - Number of active hosts
+ */
+function updateDISPreview(totalPower, activeHosts) {
+    const previewContainer = document.getElementById('ddos-impact-preview');
+    if (!previewContainer) return;
+
+    const targetIp = document.getElementById('ddos-target-ip')?.value;
+    const selectedFlowId = document.getElementById('ddos-flow-select')?.value;
+    const duration = parseInt(document.getElementById('ddos-duration')?.value || '60');
+
+    if (!targetIp || !selectedFlowId || activeHosts === 0) {
+        previewContainer.classList.add('hidden');
+        return;
+    }
+
+    const flow = getSavedFlowsAsArray().find(f => f.id === selectedFlowId);
+    if (!flow) {
+        previewContainer.classList.add('hidden');
+        return;
+    }
+
+    // Calculate predicted DIS
+    const ddosFlowParams = {
+        attackPower: flow.stats?.attack || 1000,
+        completeness: flow.fc || 100
+    };
+
+    const targetDefenses = {
+        ddosResistance: 50 // Default resistance
+    };
+
+    const disResult = calculateDDoSImpactScore({
+        effectiveResourcesDDoS: totalPower,
+        ddosFlowParams: ddosFlowParams,
+        targetDefenses: targetDefenses,
+        playerLevel: state.level,
+        routingFactor: 0.8,
+        duration: duration
+    });
+
+    const predictedStatus = determineTargetStatus(disResult.score, targetDefenses);
+    const statusConfig = getStatusConfig(predictedStatus);
+
+    // Update UI
+    document.getElementById('predicted-dis').textContent = disResult.score;
+    document.getElementById('predicted-status-text').textContent = statusConfig.label;
+    document.getElementById('predicted-status-text').className = `font-bold ${statusConfig.textClass}`;
+    
+    const indicator = document.getElementById('predicted-status-indicator');
+    indicator.className = `w-3 h-3 rounded-full ${statusConfig.color === 'green' ? 'bg-green-400' : statusConfig.color === 'yellow' ? 'bg-yellow-400' : 'bg-red-400'}`;
+
+    previewContainer.classList.remove('hidden');
 }
 
 function showDDoSFlowGuidance() {

@@ -5,13 +5,97 @@ let selectedNation = null;
 let selectedTarget = null;
 let currentRoutingChain = [];
 
+/**
+ * Get DDoS status for a specific target IP
+ * @param {string} targetIp - Target IP address
+ * @returns {Object} DDoS status information
+ */
+function getTargetDDoSStatus(targetIp) {
+    if (typeof activeDDoSAttacks === 'undefined' || !activeDDoSAttacks) {
+        return { isUnderAttack: false };
+    }
+
+    const attack = activeDDoSAttacks.find(a => a.target === targetIp);
+    if (!attack) {
+        return { isUnderAttack: false };
+    }
+
+    const trackingData = typeof ddosImpactTracking !== 'undefined' && ddosImpactTracking.has(attack.id) 
+        ? ddosImpactTracking.get(attack.id) 
+        : null;
+
+    const currentStatus = trackingData?.currentStatus || 'stable';
+    let statusColor, textColor, statusText;
+
+    switch (currentStatus) {
+        case 'stable':
+            statusColor = 'bg-green-400';
+            textColor = 'text-green-400';
+            statusText = 'Stabile';
+            break;
+        case 'partial':
+            statusColor = 'bg-yellow-400';
+            textColor = 'text-yellow-400';
+            statusText = 'Problemi';
+            break;
+        case 'down':
+            statusColor = 'bg-red-400';
+            textColor = 'text-red-400';
+            statusText = 'Down';
+            break;
+        default:
+            statusColor = 'bg-gray-400';
+            textColor = 'text-gray-400';
+            statusText = 'Sconosciuto';
+    }
+
+    return {
+        isUnderAttack: true,
+        currentStatus: currentStatus,
+        statusColor: statusColor,
+        textColor: textColor,
+        statusText: statusText,
+        attackId: attack.id
+    };
+}
+
+/**
+ * Get information about DDoS targets
+ * @returns {Object} DDoS targets information
+ */
+function getDDoSTargetsInfo() {
+    if (typeof activeDDoSAttacks === 'undefined' || !activeDDoSAttacks) {
+        return {
+            underAttack: 0,
+            targets: []
+        };
+    }
+
+    const targets = activeDDoSAttacks.map(attack => ({
+        ip: attack.target,
+        status: typeof ddosImpactTracking !== 'undefined' && ddosImpactTracking.has(attack.id) 
+            ? ddosImpactTracking.get(attack.id).currentStatus 
+            : 'stable'
+    }));
+
+    return {
+        underAttack: targets.length,
+        targets: targets
+    };
+}
+
 function renderLiveStats() {
     const leftPanel = document.getElementById('left-stats-panel');
     const rightPanel = document.getElementById('right-stats-panel');
     if (!leftPanel || !rightPanel) return;
     const createStat = (label, value) => `<div class="stat-item"><div class="stat-label">${label}</div><div class="stat-value">${value}</div></div>`;
-    leftPanel.innerHTML = `${createStat('Attacchi Globali /s', (Math.random() * 100 + 350).toFixed(0))}${createStat('Dati Trasferiti', `${(Math.random() * 50 + 80).toFixed(2)} PB/s`)}${createStat('Vulnerabilità Scoperte', (Math.random() * 5 + 10).toFixed(0))}${createStat('Botnet Attive', '7')}`;
-    rightPanel.innerHTML = `${createStat('Top Paese Attaccante', 'Russia')}${createStat('Top Paese Bersaglio', 'USA')}${createStat('Protocollo Comune', 'HTTPS/SSL')}${createStat('Tipo Attacco Comune', 'DDoS')}`;
+    
+    // Add DDoS status to live stats
+    const activeDDoSCount = typeof activeDDoSAttacks !== 'undefined' ? activeDDoSAttacks.length : 0;
+    const ddosTargetsInfo = getDDoSTargetsInfo();
+    
+    leftPanel.innerHTML = `${createStat('Attacchi Globali /s', (Math.random() * 100 + 350).toFixed(0))}${createStat('Dati Trasferiti', `${(Math.random() * 50 + 80).toFixed(2)} PB/s`)}${createStat('Vulnerabilità Scoperte', (Math.random() * 5 + 10).toFixed(0))}${createStat('I Tuoi Attacchi DDoS', activeDDoSCount)}`;
+    rightPanel.innerHTML = `${createStat('Top Paese Attaccante', 'Russia')}${createStat('Top Paese Bersaglio', 'USA')}${createStat('Protocollo Comune', 'HTTPS/SSL')}${createStat('Target Sotto Attacco', ddosTargetsInfo.underAttack)}`;
 }
 
 
@@ -173,15 +257,27 @@ function showNationPanel(nation) {
 
     let categoriesHtml = Object.keys(targetsByCategory).map(categoryId => {
         const category = targetCategories[categoryId];
-        const targetsHtml = targetsByCategory[categoryId].map(t => `
-            <div class="target-item p-3 rounded-lg cursor-pointer" data-target-id="${t.id}">
-                <div class="flex justify-between items-center">
-                    <h4 class="font-bold text-base">${t.name}</h4>
-                    <span class="font-mono text-xs text-gray-500">Tier ${t.tier}</span>
+        const targetsHtml = targetsByCategory[categoryId].map(t => {
+            // Check if target is under DDoS attack
+            const ddosStatus = getTargetDDoSStatus(t.ipAddress);
+            const ddosIndicator = ddosStatus.isUnderAttack 
+                ? `<div class="flex items-center space-x-1 mt-1">
+                     <div class="w-2 h-2 rounded-full ${ddosStatus.statusColor}"></div>
+                     <span class="text-xs ${ddosStatus.textColor}">DDoS: ${ddosStatus.statusText}</span>
+                   </div>`
+                : '';
+            
+            return `
+                <div class="target-item p-3 rounded-lg cursor-pointer" data-target-id="${t.id}">
+                    <div class="flex justify-between items-center">
+                        <h4 class="font-bold text-base">${t.name}</h4>
+                        <span class="font-mono text-xs text-gray-500">Tier ${t.tier}</span>
+                    </div>
+                    <p class="text-sm text-gray-400 mt-1">${t.rewardType}</p>
+                    ${ddosIndicator}
                 </div>
-                <p class="text-sm text-gray-400 mt-1">${t.rewardType}</p>
-            </div>
-        `).join('');
+            `;
+        }).join('');
 
         return `
             <div class="mb-4">
