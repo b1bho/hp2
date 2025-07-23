@@ -195,7 +195,12 @@ function handleAttackConsequences(attack, successRatio, effectiveStats) {
 
 
 function resolveAttack(attack, progressPercentage) {
-    const req = attack.target.req;
+    // Get modified target requirements (considering active countermeasures)
+    let req = attack.target.req;
+    if (typeof getModifiedTargetRequirements === 'function' && attack.target.id) {
+        req = getModifiedTargetRequirements(attack.target.id);
+    }
+    
     const stats = attack.flowStats;
     const fcModifier = (attack.flowFc || 100) / 100;
 
@@ -214,6 +219,11 @@ function resolveAttack(attack, progressPercentage) {
     const passedChecks = checks.filter(Boolean).length;
     const totalChecks = checks.length;
     const successRatio = passedChecks / totalChecks;
+
+    // Evaluate dynamic countermeasures based on attack performance
+    if (typeof evaluateCountermeasures === 'function') {
+        evaluateCountermeasures(attack, successRatio);
+    }
 
     const isDetected = effectiveStats.rl > req.rl;
     if (isDetected && (attack.target.tier >= 3)) {
