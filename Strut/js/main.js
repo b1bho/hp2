@@ -603,7 +603,7 @@ function updateSidebarInfo() {
     const sidebarBtcBalance = document.getElementById('sidebar-btc-balance');
     const sidebarXmrBalance = document.getElementById('sidebar-xmr-balance');
     
-    if (sidebarLevel) sidebarLevel.textContent = state.playerLevel || 1;
+    if (sidebarLevel) sidebarLevel.textContent = state.level || 1;
     if (sidebarPlayerName) sidebarPlayerName.textContent = state.playerName || 'Hacker';
     if (sidebarBtcBalance) sidebarBtcBalance.textContent = (state.btc || 0).toFixed(6);
     if (sidebarXmrBalance) sidebarXmrBalance.textContent = Math.floor(state.xmr || 0);
@@ -618,7 +618,7 @@ function updateSidebarInfo() {
     const sidebarExpandedXmrBalance = document.getElementById('sidebar-expanded-xmr-balance');
     const sidebarTalentPoints = document.getElementById('sidebar-talent-points');
     
-    if (sidebarExpandedLevel) sidebarExpandedLevel.textContent = state.playerLevel || 1;
+    if (sidebarExpandedLevel) sidebarExpandedLevel.textContent = state.level || 1;
     if (sidebarPlayerXp) sidebarPlayerXp.textContent = state.xp || 0;
     if (sidebarPlayerXpNext) sidebarPlayerXpNext.textContent = state.xpToNextLevel || 100;
     if (sidebarBtcValue) sidebarBtcValue.textContent = `$${(state.btcValueInUSD || 50000).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
