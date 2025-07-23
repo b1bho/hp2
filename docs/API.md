@@ -30,7 +30,7 @@ let state = {
     
     // Economia
     btcBalance: number,        // Saldo Bitcoin
-    xmrBalance: number,        // Saldo Monero
+    xmrBalance: number,        // Saldo Monero (default 1000)
     talentPoints: number,      // Punti talento disponibili
     currentBtcValue: number,   // Valore attuale BTC in USD
     
@@ -47,6 +47,99 @@ let state = {
         startTime: timestamp,  // Inizio studio
         duration: number       // Durata totale in ms
     },
+    
+    // Botnet Avanzata
+    infectedHostPool: [{       // Pool host infetti
+        id: string,
+        ip: string,
+        location: string,
+        status: string,        // "Active|Inactive|Compromised"
+        resources: {
+            cpuPower: number,  // GHz
+            ram: number,       // MB
+            bandwidth: number  // Mbps
+        },
+        capabilities: string[],
+        riskLevel: string,
+        groupId: string        // Assegnazione gruppo
+    }],
+    
+    botnetGroups: {            // Organizzazione bot in gruppi
+        [groupName]: {
+            name: string,
+            hostIds: string[],
+            currentActivity: string, // "Idle|DDoSing|Mining"
+            createdDate: timestamp
+        }
+    },
+    
+    activeDDoSAttacks: [{      // Attacchi DDoS attivi
+        id: string,
+        target: string,        // IP target
+        botGroups: string[],   // Gruppi utilizzati
+        flow: object,          // Flusso DDoS utilizzato
+        startTime: timestamp,
+        duration: number,      // Durata in secondi
+        estimatedImpact: number,
+        status: string         // "active|completed|failed"
+    }],
+    
+    activeMiningOperation: {   // Operazione mining attiva
+        groups: string[],      // Gruppi mining
+        startTime: timestamp,
+        hashrate: number,      // GFLOPS totali
+        estimatedReward: number // XMR/ora stimato
+    },
+    
+    // Sistema Fazioni
+    factionReputation: {       // Reputazione per fazione (-100 a +100)
+        governmental: number,
+        terrorist: number,
+        eco_terrorist: number,
+        population: number
+    },
+    
+    // Intelligence
+    dataArchives: [{           // Archivi dati raccolti
+        id: string,
+        name: string,
+        source: string,        // Fonte dei dati
+        dateAcquired: timestamp,
+        dataType: string,      // Tipo dati
+        size: string,          // Dimensione
+        purity: number,        // % utilizzabile (0-100)
+        analysisStatus: string, // "pending|in_progress|completed"
+        marketValue: number    // Valore XMR
+    }],
+    
+    analysisResults: {         // Risultati analisi intelligence
+        [archiveId]: {
+            insights: string[],
+            crossReferences: string[],
+            actionableIntel: string[]
+        }
+    },
+    
+    // Operazioni Attive
+    activeAttacks: [{          // Attacchi in corso monitoraggio
+        id: string,
+        type: string,          // Tipo attacco
+        target: object,        // Dati target
+        startTime: timestamp,
+        finalTime: number,     // Tempo totale
+        status: string,
+        progress: number       // 0-100%
+    }],
+    
+    // Altri stati esistenti
+    savedFlows: array,         // Flussi salvati
+    permanentFlows: object,    // Flussi permanenti sistema
+    ownedHardware: object,     // Hardware posseduto
+    ipTraceability: object,    // Tracciabilità IP
+    hardwareBonuses: object,   // Bonus hardware calcolati
+    clanBonuses: object        // Bonus clan (placeholder)
+};
+```
     
     // Botnet
     infectedHostPool: HostData[], // Array host infetti
@@ -675,6 +768,290 @@ window.debugHelpers = {
         document.dispatchEvent(new CustomEvent(eventName, { detail }));
     }
 };
+```
+
+### botnet.js - Gestione Botnet Avanzata
+
+```javascript
+/**
+ * Inizializza sistema botnet multi-tab
+ */
+function initBotnetPage(): void
+
+/**
+ * Switch tra tab botnet
+ * @param {string} tabName - Nome tab ('management'|'ddos'|'mining')
+ */
+function switchTab(tabName: string): void
+
+/**
+ * Crea nuovo bot group
+ * @param {string} groupName - Nome gruppo
+ * @param {string[]} hostIds - Array ID host
+ */
+function createBotGroup(groupName: string, hostIds: string[]): void
+
+/**
+ * Calcola potenza totale gruppo
+ * @param {Object} group - Oggetto gruppo
+ * @returns {number} Potenza in GFLOPS
+ */
+function calculateGroupPower(group: Object): number
+
+/**
+ * Configura attacco DDoS
+ * @param {Object} config - Configurazione attacco
+ * @returns {Object} Configurazione validata
+ */
+function configureDDoSAttack(config: Object): Object
+
+/**
+ * Lancia attacco DDoS coordinato
+ * @param {Object} attackConfig - Configurazione attacco
+ * @returns {string} ID attacco
+ */
+function launchDDoSAttack(attackConfig: Object): string
+
+/**
+ * Calcola impatto attacco DDoS
+ * @param {Object} config - Configurazione attacco
+ * @returns {number} Impatto stimato
+ */
+function calculateAttackImpact(config: Object): number
+
+/**
+ * Avvia operazione mining
+ * @param {string[]} selectedGroups - Gruppi selezionati
+ */
+function startMiningOperation(selectedGroups: string[]): void
+
+/**
+ * Calcola reward mining
+ * @param {string[]} groups - Gruppi mining
+ * @returns {number} XMR/ora stimato
+ */
+function calculateMiningReward(groups: string[]): number
+```
+
+### factions.js - Sistema Fazioni
+
+```javascript
+/**
+ * Definizioni fazioni disponibili
+ */
+const FACTIONS: {
+    GOVERNMENTAL: FactionData,
+    TERRORIST: FactionData,
+    ECO_TERRORIST: FactionData,
+    POPULATION: FactionData
+}
+
+/**
+ * Aggiorna reputazione fazione con spillover
+ * @param {string} factionId - ID fazione
+ * @param {number} change - Cambiamento reputazione
+ * @param {string} reason - Motivo cambiamento
+ */
+function updateFactionReputation(factionId: string, change: number, reason?: string): void
+
+/**
+ * Calcola effetti spillover tra fazioni
+ * @param {string} sourceFactionId - Fazione origine
+ * @param {number} change - Cambiamento origine
+ */
+function calculateSpilloverEffects(sourceFactionId: string, change: number): void
+
+/**
+ * Controlla accesso basato su reputazione
+ * @param {string} factionId - ID fazione
+ * @param {number} minimumReputation - Reputazione minima richiesta
+ * @returns {boolean} Access consentito
+ */
+function checkFactionAccess(factionId: string, minimumReputation: number): boolean
+
+/**
+ * Ottieni relazioni fazione
+ * @param {string} factionId - ID fazione
+ * @returns {Object} Matrix relazioni con altre fazioni
+ */
+function getFactionRelationships(factionId: string): Object
+```
+
+### intelligence.js - Console Intelligence
+
+```javascript
+/**
+ * Renderizza pagina intelligence
+ */
+function renderIntelligencePage(): void
+
+/**
+ * Crea nuovo archivio dati
+ * @param {Object} attackResult - Risultato attacco
+ * @returns {string} ID archivio creato
+ */
+function createDataArchive(attackResult: Object): string
+
+/**
+ * Avvia analisi archivio dati
+ * @param {string} archiveId - ID archivio
+ */
+function analyzeDataArchive(archiveId: string): void
+
+/**
+ * Esegue analisi dati e genera insights
+ * @param {Object} archive - Archivio dati
+ * @returns {Object} Risultati analisi
+ */
+function performDataAnalysis(archive: Object): Object
+
+/**
+ * Genera insights actionable
+ * @param {Object} archive - Archivio dati
+ * @returns {string[]} Array insights
+ */
+function generateInsights(archive: Object): string[]
+
+/**
+ * Trova cross-references tra archivi
+ * @param {Object} archive - Archivio target
+ * @returns {string[]} Array riferimenti incrociati
+ */
+function findCrossReferences(archive: Object): string[]
+```
+
+### active_attacks.js - Monitoring Real-Time
+
+```javascript
+/**
+ * Aggiorna display attacchi attivi
+ */
+function updateActiveAttacks(): void
+
+/**
+ * Renderizza pannello attacchi attivi
+ */
+function renderActiveAttacksPanel(): void
+
+/**
+ * Registra nuovo attacco per monitoring
+ * @param {Object} attackConfig - Configurazione attacco
+ * @returns {string} ID attacco registrato
+ */
+function registerActiveAttack(attackConfig: Object): string
+
+/**
+ * Aggiorna progress attacco
+ * @param {string} attackId - ID attacco
+ */
+function updateAttackProgress(attackId: string): void
+
+/**
+ * Risolve attacco completato
+ * @param {Object} attack - Oggetto attacco
+ */
+function resolveAttack(attack: Object): void
+
+/**
+ * Genera host infetto da attacco riuscito
+ * @param {Object} target - Target attacco
+ * @returns {Object} Nuovo host infetto
+ */
+function generateInfectedHost(target: Object): Object
+```
+
+### admin.js - Pannello Amministrativo
+
+```javascript
+/**
+ * Renderizza pannello admin
+ */
+function renderAdminPanel(): void
+
+/**
+ * Imposta valori economia
+ * @param {number} btc - Saldo BTC
+ * @param {number} xmr - Saldo XMR  
+ * @param {number} talentPoints - Punti talento
+ */
+function setGameValues(btc: number, xmr: number, talentPoints: number): void
+
+/**
+ * Boost reputazione tutte fazioni
+ * @param {number} amount - Quantità boost (default 150)
+ */
+function boostAllFactions(amount?: number): void
+
+/**
+ * Reset completo sistema botnet
+ */
+function resetBotnet(): void
+
+/**
+ * Reset sistema missioni
+ */
+function resetMissions(): void
+
+/**
+ * Sblocca tutto il mercato
+ */
+function unlockAllMarket(): void
+
+/**
+ * Test sistema notifiche
+ */
+function testNotifications(): void
+
+/**
+ * Aumenta livello giocatore
+ * @param {number} levels - Livelli da aggiungere (default 1)
+ */
+function increaseLevels(levels?: number): void
+```
+
+### reputation_system.js - Gestione Reputazione
+
+```javascript
+/**
+ * Classe principale sistema reputazione
+ */
+class ReputationSystem {
+    /**
+     * Inizializza sistema reputazione
+     */
+    init(): void
+    
+    /**
+     * Calcola relazioni dinamiche tra fazioni
+     * @param {string} questFactionId - ID fazione quest
+     * @param {boolean} completedSuccessfully - Quest completata con successo
+     * @returns {Object} Matrix effetti reputazione
+     */
+    calculateFactionRelationships(questFactionId: string, completedSuccessfully: boolean): Object
+    
+    /**
+     * Aggiorna reputazione con gestione avanzata
+     * @param {string} factionId - ID fazione
+     * @param {number} change - Cambiamento reputazione
+     * @param {string} reason - Motivo cambiamento
+     */
+    updateFactionReputation(factionId: string, change: number, reason?: string): void
+    
+    /**
+     * Trigger eventi basati su reputazione
+     * @param {string} factionId - ID fazione
+     * @param {number} change - Cambiamento
+     * @param {string} reason - Motivo
+     */
+    triggerReputationEvents(factionId: string, change: number, reason: string): void
+    
+    /**
+     * Calcola modificatori prezzo basati su reputazione
+     * @param {string} factionId - ID fazione venditore
+     * @returns {number} Modificatore prezzo (0.0-2.0)
+     */
+    getPriceModifier(factionId: string): number
+}
 ```
 
 ---

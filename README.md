@@ -9,8 +9,13 @@ Un simulatore interattivo di hacking che consente ai giocatori di esplorare il m
 - **Mappa Globale 3D**: Visualizzazione interattiva dei target mondiali con Three.js
 - **Sistema di Talenti**: Albero delle competenze con specializzazioni in diverse aree
 - **Economia Virtuale**: Sistema monetario basato su Bitcoin e Monero
-- **Gestione Botnet**: Controlla e orchestra reti di computer infetti
+- **Gestione Botnet Avanzata**: Interfaccia tabbed per gestione, DDoS e mining
+- **Sistema DDoS Impact**: Attacchi coordinati multi-target con calcolo impatto real-time
+- **Sistema Fazioni**: Reputazione dinamica con governmental, terrorist, eco-terrorist e population
+- **Console Intelligence**: Laboratorio dati per analisi intelligence e archivi
+- **Menu Laterale Dinamico**: Interface collapsible con indicators di stato e news feed
 - **Mercato Nero**: Compra e vendi strumenti, dati e servizi illeciti
+- **Pannello Admin**: Controlli debug completi per sviluppo e testing
 
 ## 🚀 Avvio Rapido
 
@@ -52,29 +57,32 @@ Un simulatore interattivo di hacking che consente ai giocatori di esplorare il m
 
 ```
 Strut/
-├── index.html              # Punto di ingresso principale
+├── index.html              # Punto di ingresso principale con menu laterale avanzato
 ├── css/
-│   └── style.css          # Stili dell'applicazione
+│   └── style.css          # Stili dell'applicazione con tema cyberpunk
 ├── js/
-│   ├── main.js            # Script principale e gestione stato
-│   ├── data.js            # Definizioni talenti e configurazioni
-│   ├── flow_logic.js      # Logica per l'editor di flussi
-│   ├── flow_validation.js # Validazione flussi di attacco
-│   ├── world_data.js      # Dati delle nazioni e target
-│   ├── quest_data.js      # Definizioni missioni e quest
-│   ├── news_data.js       # Sistema di notizie dinamiche
-│   └── modules/           # Moduli specializzati
-│       ├── hq.js          # Quartier generale
-│       ├── world.js       # Mappa mondiale e target
-│       ├── botnet.js      # Gestione botnet
-│       ├── editor.js      # Editor flussi drag-and-drop
-│       ├── market.js      # Mercato legale
-│       ├── dark_market.js # Mercato nero
-│       ├── profile.js     # Sistema profilo e talenti
-│       ├── quests.js      # Sistema missioni
-│       ├── intelligence.js # Raccolta intelligence
-│       ├── active_attacks.js # Attacchi attivi
-│       └── admin.js       # Pannello amministrativo
+│   ├── main.js            # Script principale e gestione stato globale
+│   ├── data.js            # Definizioni talenti e configurazioni di gioco
+│   ├── flow_logic.js      # Logica per l'editor di flussi e validazione
+│   ├── flow_validation.js # Validazione avanzata flussi di attacco
+│   ├── world_data.js      # Dati delle nazioni e target globali
+│   ├── world_targets_data.js # Dati dettagliati target per nazione
+│   ├── quest_data.js      # Definizioni missioni e quest system
+│   ├── news_data.js       # Sistema di notizie dinamiche e eventi
+│   └── modules/           # Moduli specializzati per funzionalità
+│       ├── hq.js          # Quartier generale e dashboard
+│       ├── world.js       # Mappa mondiale 3D con Three.js
+│       ├── botnet.js      # Gestione botnet avanzata (Management/DDoS/Mining)
+│       ├── editor.js      # Editor flussi drag-and-drop con griglia
+│       ├── market.js      # Mercato legale per hardware/software
+│       ├── dark_market.js # Mercato nero per servizi illeciti
+│       ├── profile.js     # Sistema profilo, talenti e progressione
+│       ├── quests.js      # Sistema missioni e obiettivi
+│       ├── intelligence.js # Console intelligence e laboratorio dati
+│       ├── active_attacks.js # Monitoring attacchi in tempo reale
+│       ├── admin.js       # Pannello amministrativo e debug
+│       ├── factions.js    # Sistema fazioni (governmental/terrorist/eco/population)
+│       └── reputation_system.js # Gestione reputazione e relazioni fazioni
 ```
 
 ## 🎮 Meccaniche di Gioco
@@ -82,24 +90,41 @@ Strut/
 ### Sistema di Progressione
 
 - **Punti Esperienza (XP)**: Ottenuti completando attacchi e missioni
-- **Livelli**: Progressione che sblocca nuove funzionalità
-- **Punti Talento**: Valuta per acquisire nuove competenze
-- **Reputazione**: Influenza l'accesso a mercati e servizi
+- **Livelli**: Progressione che sblocca nuove funzionalità e aumenta capacità
+- **Punti Talento**: Valuta per acquisire nuove competenze specializzate
+- **Reputazione Multi-Faction**: Sistema avanzato con 4 fazioni (Governmental, Terrorist, Eco-Terrorist, Population)
 
 ### Specializzazioni
 
-1. **Ingegneria Sociale**: Phishing, social engineering, manipolazione
-2. **Sviluppo Software**: Python, automazione, creazione malware
-3. **Network Security**: Scansioni, exploit, penetration testing
+1. **Ingegneria Sociale**: Phishing, social engineering, manipolazione psicologica
+2. **Sviluppo Software**: Python, automazione, creazione malware avanzato
+3. **Network Security**: Scansioni, exploit, penetration testing avanzato
 4. **Crittografia**: Protezione dati, anonimizzazione, steganografia
-5. **Forensics**: Analisi, recupero dati, investigazione
-6. **Hardware Hacking**: Modifiche fisiche, elettronica
+5. **Forensics**: Analisi digitale, recupero dati, investigazione
+6. **Hardware Hacking**: Modifiche fisiche, elettronica, firmware
+
+### Sistema Botnet Avanzato
+
+- **Gestione Multi-Tab**: Interface separata per Management, DDoS e Mining
+- **Bot Groups**: Organizzazione host infetti in gruppi per operazioni coordinate
+- **DDoS Impact System**: Attacchi distribuiti con calcolo impatto real-time
+- **Mining Operations**: Operazioni cryptocurrency parallele agli attacchi
+- **Monitoring Real-time**: Dashboard live per stato botnet e operazioni attive
+
+### Sistema DDoS
+
+- **Target Selection**: Selezione IP target con validazione
+- **Flow Integration**: Utilizzo flussi DDoS creati nell'editor
+- **Impact Calculation**: Calcolo automatico impatto basato su potenza botnet
+- **Risk Assessment**: Valutazione rischio tracciabilità e perdita bot
+- **Multi-Attack**: Gestione attacchi simultanei su target multipli
 
 ### Economia del Gioco
 
-- **Bitcoin (BTC)**: Valuta principale per acquisti legali
-- **Monero (XMR)**: Valuta anonima per il mercato nero
-- **Valore Dinamico**: I prezzi delle criptovalute fluttuano realisticamente
+- **Bitcoin (BTC)**: Valuta principale per acquisti legali con prezzi fluttuanti
+- **Monero (XMR)**: Valuta anonima per il mercato nero e operazioni illecite
+- **Valore Dinamico**: Simulazione realistica mercato cryptocurrency
+- **Mining Integration**: Generazione XMR tramite botnet mining operations
 
 ## 🔧 Tecnologie Utilizzate
 

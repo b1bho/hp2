@@ -52,12 +52,17 @@ Hacker Tycoon implementa un'architettura **Single Page Application (SPA)** basat
 |--------|----------|-------------|
 | `hq.js` | Quartier generale e statistiche | Media |
 | `world.js` | Mappa 3D e target globali | Alta |
-| `botnet.js` | Gestione botnet e host infetti | Alta |
-| `editor.js` | Editor drag-and-drop | Molto Alta |
+| `botnet.js` | Gestione botnet multi-tab (Management/DDoS/Mining) | Molto Alta |
+| `editor.js` | Editor drag-and-drop con validazione | Molto Alta |
 | `market.js` | Mercato legale | Media |
 | `dark_market.js` | Mercato nero | Media |
 | `profile.js` | Sistema profilo e talenti | Media |
 | `quests.js` | Sistema missioni | Bassa |
+| `factions.js` | Sistema fazioni multi-level | Alta |
+| `reputation_system.js` | Gestione reputazione avanzata | Alta |
+| `intelligence.js` | Console intelligence e laboratorio dati | Media |
+| `active_attacks.js` | Monitoring attacchi real-time | Alta |
+| `admin.js` | Pannello amministrativo e debug | Media |
 
 ## 🎨 Pattern di Design
 
@@ -124,28 +129,51 @@ let state = {
         name: "Anonymous",
         level: 1,
         xp: 0,
-        // ...
+        xpToNext: 100,
+        realIp: "192.168.1.1"
     },
     
     // Economia
     btcBalance: 0,
-    xmrBalance: 0,
+    xmrBalance: 1000,
     talentPoints: 0,
+    currentBtcValue: 50000,
     
     // Talenti acquisiti
     acquiredTalents: {},
+    unlockedBlocks: [],
     
-    // Botnet
+    // Botnet avanzata
     infectedHostPool: [],
+    botnetGroups: {},           // Organizzazione host in gruppi
+    activeDDoSAttacks: [],      // Attacchi DDoS attivi
+    activeMiningOperation: {},  // Operazioni mining
     
     // Flussi salvati
     savedFlows: [],
+    permanentFlows: {},
     
     // Hardware posseduto
     ownedHardware: {},
     
+    // Sistema fazioni
+    factionReputation: {
+        governmental: 0,
+        terrorist: 0,
+        eco_terrorist: 0,
+        population: 0
+    },
+    
+    // Intelligence
+    dataArchives: [],
+    analysisResults: {},
+    
     // Tracciabilità IP
-    ipTraceability: {}
+    ipTraceability: {},
+    
+    // Operazioni attive
+    activeAttacks: [],
+    studyProgress: null
 };
 ```
 

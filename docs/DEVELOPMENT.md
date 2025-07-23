@@ -8,6 +8,7 @@ Questa guida fornisce tutte le informazioni necessarie per contribuire allo svil
 - [Struttura del Progetto](#struttura-del-progetto)
 - [Convenzioni di Codice](#convenzioni-di-codice)
 - [Workflow di Sviluppo](#workflow-di-sviluppo)
+- [Nuove Funzionalità](#nuove-funzionalità)
 - [Testing e Debug](#testing-e-debug)
 - [Performance Guidelines](#performance-guidelines)
 - [Contribuire al Progetto](#contribuire-al-progetto)
@@ -394,7 +395,142 @@ Segue Semantic Versioning: `MAJOR.MINOR.PATCH`
 - [ ] Mobile responsiveness check
 - [ ] Accessibility check
 
-## 🧪 Testing e Debug
+## 🆕 Nuove Funzionalità
+
+### Sistema DDoS Impact
+
+**Implementazione:**
+- Interface tabbed in `botnet.js` (Management/DDoS/Mining)
+- Calcolo impatto real-time basato su potenza aggregata
+- Bot groups per coordinazione attacchi
+- Risk assessment tracciabilità e perdita bot
+- Multi-attack support simultaneo
+
+**File Coinvolti:**
+- `js/modules/botnet.js`: Core logic DDoS system
+- `js/modules/active_attacks.js`: Monitoring real-time
+- `js/flow_logic.js`: Validazione flussi DDoS
+- `css/style.css`: Styling interface tabbed
+
+**Testing:**
+```bash
+# Test DDoS flow validation
+node js/tests/ddos-flow-integration.test.js
+
+# Test bot groups functionality  
+node js/tests/botnet-fixes.test.js
+```
+
+### Sistema Fazioni Multi-Level
+
+**Componenti:**
+- 4 fazioni: Governmental, Terrorist, Eco-Terrorist, Population
+- Reputation system con spillover effects
+- Quest integration basata su fazioni
+- Color coding e tematizzazione UI
+
+**File Coinvolti:**
+- `js/modules/factions.js`: Definizioni fazioni
+- `js/modules/reputation_system.js`: Logic reputazione avanzata
+- `js/modules/quests.js`: Integration quest-fazioni
+- `js/modules/admin.js`: Controlli debug fazioni
+
+**Implementazione Reputazione:**
+```javascript
+// Esempio spillover effects
+const factionRelationships = {
+    governmental: {
+        terrorist: -0.2,     // Opposizione
+        population: 0.05     // Allineamento
+    }
+};
+```
+
+### Console Intelligence
+
+**Features:**
+- Data archives da attacchi riusciti
+- Laboratorio analisi intelligence
+- Cross-reference analysis tra archivi
+- Market valuation dati raccolti
+
+**File Coinvolti:**
+- `js/modules/intelligence.js`: Core intelligence system
+- UI integration nel menu laterale
+- Storage e retrieval archivi dati
+
+### Menu Laterale Dinamico
+
+**Miglioramenti:**
+- Design collapsible/expandable responsive
+- Real-time indicators per DDoS attivi
+- Sezione Active Operations con progress
+- News feed integrato con ticker
+- Statistiche player live (XP, level, currencies)
+
+**Implementazione:**
+- CSS animations per smooth transitions
+- JavaScript event listeners per toggle states
+- Local storage per preferenze menu
+- Integration con tutti i moduli per status updates
+
+## 🔧 Testing e Debug Avanzato
+
+### Pannello Admin
+
+**Funzionalità Debug:**
+```javascript
+// Controlli economia
+setGameValues(btc, xmr, talentPoints);
+
+// Gestione fazioni
+boostAllFactions(150);
+resetFactionReputation();
+
+// Reset selettivi
+resetBotnet();
+resetMissions();
+
+// Testing
+testNotifications();
+```
+
+**Accesso:**
+- Toggle con tasto speciale (implementazione sicura)
+- Controlli completi per sviluppo
+- Non disponibile in produzione
+
+### Browser Developer Tools
+
+**Console Commands Utili:**
+```javascript
+// Inspection stato avanzato
+console.log('DDoS Attacks:', state.activeDDoSAttacks);
+console.log('Bot Groups:', state.botnetGroups);
+console.log('Faction Rep:', state.factionReputation);
+
+// Debugging botnet
+updateBotnetAggregateStats();
+cleanupEmptyGroups();
+
+// Force state updates
+saveState();
+loadState();
+```
+
+### Performance Monitoring
+
+**Metriche Chiave:**
+- Numero host infetti (target: <50 per performance ottimale)
+- Attacchi DDoS simultanei (max raccomandato: 3-4)
+- Update frequency per real-time monitoring
+- Memory usage per large datasets
+
+**Ottimizzazioni Implementate:**
+- Lazy loading per bot groups
+- Event delegation per large lists
+- Throttling su updates real-time
+- Cleanup automatico operazioni completate
 
 ### Manual Testing Strategy
 
