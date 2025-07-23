@@ -323,9 +323,11 @@ async function switchPage(pageName) {
     saveState();
 }
 function updateUI() {
-    btcBalanceEl.textContent = state.btc.toFixed(6);
-    xmrBalanceEl.textContent = state.xmr;
-    talentPointsEl.textContent = state.talentPoints;
+    // Update legacy elements (if they exist)
+    if (btcBalanceEl) btcBalanceEl.textContent = state.btc.toFixed(6);
+    if (xmrBalanceEl) xmrBalanceEl.textContent = state.xmr;
+    if (talentPointsEl) talentPointsEl.textContent = state.talentPoints;
+    
     const btcValueEl = document.getElementById('btc-value');
     if (btcValueEl) {
         const btcValue = state.btcValueInUSD || 50000; // Default value if not set
@@ -346,13 +348,18 @@ function updateUI() {
         const existingBtn = dynamicNavContainer.querySelector('button');
         if (state.clan && state.clan.darkMarket) {
             if (!existingBtn) {
-                dynamicNavContainer.innerHTML = `<button data-page="dark_market" class="nav-btn px-3 py-2 font-semibold text-gray-300"><i class="fas fa-spider mr-2"></i>Dark Market</button>`;
+                dynamicNavContainer.innerHTML = `<button data-page="dark_market" class="nav-btn"><i class="fas fa-spider"></i><span>Dark Market</span></button>`;
                 dynamicNavContainer.querySelector('button').addEventListener('click', () => switchPage('dark_market'));
             }
         } else {
             dynamicNavContainer.innerHTML = '';
         }
     }
+    
+    // Update sidebar information
+    updateSidebarInfo();
+    updateActivityIndicators();
+    
     if (typeof updateAdminPanelUI === 'function') {
         updateAdminPanelUI();
     }
@@ -512,10 +519,162 @@ function checkTargetUnlocks() {
         initWorldPage();
     }
 }
+// Lateral Menu Functionality
+function initLateralMenu() {
+    const lateralMenu = document.getElementById('lateral-menu');
+    const menuToggle = document.getElementById('menu-toggle');
+    const menuClose = document.getElementById('menu-close');
+    
+    // Toggle menu function
+    function toggleMenu() {
+        lateralMenu.classList.toggle('expanded');
+        
+        // Update toggle button icon
+        const toggleIcon = menuToggle.querySelector('i');
+        if (lateralMenu.classList.contains('expanded')) {
+            toggleIcon.className = 'fas fa-chevron-left';
+        } else {
+            toggleIcon.className = 'fas fa-bars';
+        }
+    }
+    
+    // Event listeners
+    menuToggle.addEventListener('click', toggleMenu);
+    menuClose.addEventListener('click', toggleMenu);
+    
+    // Close menu when clicking outside on mobile
+    document.addEventListener('click', (e) => {
+        if (window.innerWidth <= 768) {
+            if (!lateralMenu.contains(e.target) && lateralMenu.classList.contains('expanded')) {
+                lateralMenu.classList.remove('expanded');
+                menuToggle.querySelector('i').className = 'fas fa-bars';
+            }
+        }
+    });
+    
+    // Close menu on escape key
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && lateralMenu.classList.contains('expanded')) {
+            toggleMenu();
+        }
+    });
+    
+    // Setup navigation buttons in sidebar
+    lateralMenu.querySelectorAll('.nav-btn').forEach(button => {
+        button.addEventListener('click', () => {
+            switchPage(button.dataset.page);
+            // Close menu on mobile after navigation
+            if (window.innerWidth <= 768) {
+                lateralMenu.classList.remove('expanded');
+                menuToggle.querySelector('i').className = 'fas fa-bars';
+            }
+        });
+    });
+    
+    // Setup reset button in sidebar
+    const sidebarResetButton = lateralMenu.querySelector('#reset-button');
+    if (sidebarResetButton) {
+        sidebarResetButton.addEventListener('click', resetState);
+    }
+}
+
+// Update sidebar information
+function updateSidebarInfo() {
+    // Update collapsed info
+    const sidebarLevel = document.getElementById('sidebar-player-level');
+    const sidebarPlayerName = document.getElementById('sidebar-player-name');
+    const sidebarBtcBalance = document.getElementById('sidebar-btc-balance');
+    const sidebarXmrBalance = document.getElementById('sidebar-xmr-balance');
+    
+    if (sidebarLevel) sidebarLevel.textContent = state.playerLevel || 1;
+    if (sidebarPlayerName) sidebarPlayerName.textContent = state.playerName || 'Hacker';
+    if (sidebarBtcBalance) sidebarBtcBalance.textContent = (state.btc || 0).toFixed(6);
+    if (sidebarXmrBalance) sidebarXmrBalance.textContent = Math.floor(state.xmr || 0);
+    
+    // Update expanded info
+    const sidebarExpandedLevel = document.getElementById('sidebar-expanded-player-level');
+    const sidebarPlayerXp = document.getElementById('sidebar-player-xp');
+    const sidebarPlayerXpNext = document.getElementById('sidebar-player-xp-next');
+    const sidebarPlayerXpBarFill = document.getElementById('sidebar-player-xp-bar-fill');
+    const sidebarBtcValue = document.getElementById('sidebar-btc-value');
+    const sidebarExpandedBtcBalance = document.getElementById('sidebar-expanded-btc-balance');
+    const sidebarExpandedXmrBalance = document.getElementById('sidebar-expanded-xmr-balance');
+    const sidebarTalentPoints = document.getElementById('sidebar-talent-points');
+    
+    if (sidebarExpandedLevel) sidebarExpandedLevel.textContent = state.playerLevel || 1;
+    if (sidebarPlayerXp) sidebarPlayerXp.textContent = state.xp || 0;
+    if (sidebarPlayerXpNext) sidebarPlayerXpNext.textContent = state.xpToNextLevel || 100;
+    if (sidebarBtcValue) sidebarBtcValue.textContent = `$${(state.btcValue || 50000).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    if (sidebarExpandedBtcBalance) sidebarExpandedBtcBalance.textContent = (state.btc || 0).toFixed(6);
+    if (sidebarExpandedXmrBalance) sidebarExpandedXmrBalance.textContent = Math.floor(state.xmr || 0);
+    if (sidebarTalentPoints) sidebarTalentPoints.textContent = state.talentPoints || 0;
+    
+    // Update XP bar
+    if (sidebarPlayerXpBarFill) {
+        const xpPercentage = ((state.xp || 0) / (state.xpToNextLevel || 100)) * 100;
+        sidebarPlayerXpBarFill.style.width = `${Math.min(xpPercentage, 100)}%`;
+    }
+}
+
+// Update activity indicators
+function updateActivityIndicators() {
+    const miningIndicator = document.getElementById('mining-indicator');
+    const ddosIndicator = document.getElementById('ddos-indicator');
+    const attackIndicator = document.getElementById('attack-indicator');
+    
+    // Check for active mining
+    let isMiningActive = false;
+    if (typeof activeMiningOperation !== 'undefined' && activeMiningOperation) {
+        isMiningActive = true;
+    }
+    
+    // Check for active DDoS attacks
+    let isDDoSActive = false;
+    if (typeof activeDDoSAttacks !== 'undefined' && activeDDoSAttacks && activeDDoSAttacks.length > 0) {
+        isDDoSActive = true;
+    }
+    
+    // Check for active attacks (from world module)
+    let isAttackActive = false;
+    if (state.activeAttacks && state.activeAttacks.length > 0) {
+        isAttackActive = true;
+    }
+    
+    // Update indicators
+    if (miningIndicator) {
+        if (isMiningActive) {
+            miningIndicator.classList.remove('hidden');
+        } else {
+            miningIndicator.classList.add('hidden');
+        }
+    }
+    
+    if (ddosIndicator) {
+        if (isDDoSActive) {
+            ddosIndicator.classList.remove('hidden');
+        } else {
+            ddosIndicator.classList.add('hidden');
+        }
+    }
+    
+    if (attackIndicator) {
+        if (isAttackActive) {
+            attackIndicator.classList.remove('hidden');
+        } else {
+            attackIndicator.classList.add('hidden');
+        }
+    }
+}
+
 function init() {
     loadState();
     updateAllBonuses();
     updateUI();
+    
+    // Initialize lateral menu
+    initLateralMenu();
+    
+    // Keep legacy navigation support for any remaining elements
     document.querySelectorAll('nav .nav-btn').forEach(button => {
         button.addEventListener('click', () => switchPage(button.dataset.page));
     });
@@ -536,6 +695,10 @@ function init() {
         if (typeof updateMiningUI === 'function') {
             updateMiningUI();
         }
+        
+        // Update sidebar info and activity indicators
+        updateSidebarInfo();
+        updateActivityIndicators();
     }, 1000);
     initQuestSystem();
     setInterval(() => {
