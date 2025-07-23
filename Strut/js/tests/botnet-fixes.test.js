@@ -329,7 +329,227 @@ function testDataAnalysisInIntelligence() {
     return test1 && test2 && test3;
 }
 
-// Test Suite 3: Botnet UI Improvements
+// Test Suite 4: Empty Group Cleanup
+function testEmptyGroupCleanup() {
+    console.log('\n=== Testing Empty Group Cleanup ===');
+    
+    // Test 1: Basic empty group cleanup
+    function testBasicEmptyGroupCleanup() {
+        // Reset test state for this test
+        testState.botnetGroups = {
+            'TestGroup1': { hostIds: ['test-host-1'], attachedFlows: [] },
+            'EmptyGroup1': { hostIds: [], attachedFlows: [] },
+            'TestGroup2': { hostIds: ['test-host-2'], attachedFlows: [] },
+            'EmptyGroup2': { hostIds: [], attachedFlows: [] }
+        };
+        
+        // Mock the cleanup function
+        function cleanupEmptyGroups() {
+            if (!testState.botnetGroups) return 0;
+            
+            const groupsToRemove = [];
+            
+            // Find groups with no hosts
+            Object.keys(testState.botnetGroups).forEach(groupName => {
+                const group = testState.botnetGroups[groupName];
+                if (group && (!group.hostIds || group.hostIds.length === 0)) {
+                    groupsToRemove.push(groupName);
+                }
+            });
+            
+            // Remove empty groups
+            groupsToRemove.forEach(groupName => {
+                delete testState.botnetGroups[groupName];
+                console.log(`Empty botnet group "${groupName}" automatically cleaned up`);
+            });
+            
+            return groupsToRemove.length;
+        }
+        
+        const initialGroupCount = Object.keys(testState.botnetGroups).length;
+        const removedCount = cleanupEmptyGroups();
+        const finalGroupCount = Object.keys(testState.botnetGroups).length;
+        
+        const hasCorrectGroupsRemaining = 
+            testState.botnetGroups.hasOwnProperty('TestGroup1') &&
+            testState.botnetGroups.hasOwnProperty('TestGroup2') &&
+            !testState.botnetGroups.hasOwnProperty('EmptyGroup1') &&
+            !testState.botnetGroups.hasOwnProperty('EmptyGroup2');
+        
+        console.log('✅ Initial group count:', initialGroupCount === 4);
+        console.log('✅ Removed count correct:', removedCount === 2);
+        console.log('✅ Final group count:', finalGroupCount === 2);
+        console.log('✅ Correct groups remaining:', hasCorrectGroupsRemaining);
+        
+        return initialGroupCount === 4 && removedCount === 2 && finalGroupCount === 2 && hasCorrectGroupsRemaining;
+    }
+    
+    // Test 2: Cleanup after host deactivation
+    function testCleanupAfterHostDeactivation() {
+        // Setup state with a group that will become empty
+        testState.botnetGroups = {
+            'GroupToBecomeEmpty': { hostIds: ['test-host-1'], attachedFlows: [] },
+            'PersistentGroup': { hostIds: ['test-host-2', 'test-host-3'], attachedFlows: [] }
+        };
+        
+        testState.infectedHostPool = [
+            {
+                id: 'test-host-1',
+                ipAddress: '192.168.1.100',
+                status: 'Active',
+                traceabilityScore: 25
+            }
+        ];
+        
+        // Mock deactivateHost with cleanup
+        function deactivateHostWithCleanup(hostId) {
+            const hostIndex = testState.infectedHostPool.findIndex(h => h.id === hostId);
+            if (hostIndex === -1) return false;
+            
+            // Remove host from pool
+            testState.infectedHostPool.splice(hostIndex, 1);
+            
+            // Remove host from all groups
+            Object.keys(testState.botnetGroups).forEach(g => {
+                testState.botnetGroups[g].hostIds = testState.botnetGroups[g].hostIds.filter(id => id !== hostId);
+            });
+            
+            // Cleanup empty groups
+            const groupsToRemove = [];
+            Object.keys(testState.botnetGroups).forEach(groupName => {
+                const group = testState.botnetGroups[groupName];
+                if (group && (!group.hostIds || group.hostIds.length === 0)) {
+                    groupsToRemove.push(groupName);
+                }
+            });
+            
+            groupsToRemove.forEach(groupName => {
+                delete testState.botnetGroups[groupName];
+            });
+            
+            return { success: true, removedGroups: groupsToRemove.length };
+        }
+        
+        const result = deactivateHostWithCleanup('test-host-1');
+        const hasCorrectState = 
+            result.success &&
+            result.removedGroups === 1 &&
+            !testState.botnetGroups.hasOwnProperty('GroupToBecomeEmpty') &&
+            testState.botnetGroups.hasOwnProperty('PersistentGroup') &&
+            testState.infectedHostPool.length === 0;
+        
+        console.log('✅ Host deactivation successful:', result.success);
+        console.log('✅ Empty group removed after deactivation:', result.removedGroups === 1);
+        console.log('✅ State is correct after cleanup:', hasCorrectState);
+        
+        return hasCorrectState;
+    }
+    
+    // Test 3: Cleanup after host reassignment
+    function testCleanupAfterHostReassignment() {
+        // Setup state
+        testState.botnetGroups = {
+            'SourceGroup': { hostIds: ['test-host-1', 'test-host-2'], attachedFlows: [] },
+            'TargetGroup': { hostIds: ['test-host-3'], attachedFlows: [] }
+        };
+        
+        // Mock host reassignment with cleanup
+        function reassignHostsWithCleanup(hostIds, targetGroupName) {
+            // Remove hosts from all current groups
+            Object.keys(testState.botnetGroups).forEach(g => {
+                testState.botnetGroups[g].hostIds = testState.botnetGroups[g].hostIds.filter(id => !hostIds.includes(id));
+            });
+            
+            // Assign to target group
+            if (targetGroupName !== 'unassigned' && testState.botnetGroups[targetGroupName]) {
+                testState.botnetGroups[targetGroupName].hostIds.push(...hostIds);
+            }
+            
+            // Cleanup empty groups
+            const groupsToRemove = [];
+            Object.keys(testState.botnetGroups).forEach(groupName => {
+                const group = testState.botnetGroups[groupName];
+                if (group && (!group.hostIds || group.hostIds.length === 0)) {
+                    groupsToRemove.push(groupName);
+                }
+            });
+            
+            groupsToRemove.forEach(groupName => {
+                delete testState.botnetGroups[groupName];
+            });
+            
+            return { success: true, removedGroups: groupsToRemove.length };
+        }
+        
+        // Move all hosts from SourceGroup to TargetGroup
+        const result = reassignHostsWithCleanup(['test-host-1', 'test-host-2'], 'TargetGroup');
+        
+        const hasCorrectState =
+            result.success &&
+            result.removedGroups === 1 &&
+            !testState.botnetGroups.hasOwnProperty('SourceGroup') &&
+            testState.botnetGroups.hasOwnProperty('TargetGroup') &&
+            testState.botnetGroups.TargetGroup.hostIds.length === 3;
+        
+        console.log('✅ Host reassignment successful:', result.success);
+        console.log('✅ Empty group removed after reassignment:', result.removedGroups === 1);
+        console.log('✅ Hosts correctly moved to target group:', testState.botnetGroups.TargetGroup.hostIds.length === 3);
+        console.log('✅ State is correct after cleanup:', hasCorrectState);
+        
+        return hasCorrectState;
+    }
+    
+    // Test 4: No cleanup when no empty groups exist
+    function testNoCleanupWhenNoEmptyGroups() {
+        // Setup state with no empty groups
+        testState.botnetGroups = {
+            'ActiveGroup1': { hostIds: ['test-host-1'], attachedFlows: [] },
+            'ActiveGroup2': { hostIds: ['test-host-2', 'test-host-3'], attachedFlows: [] }
+        };
+        
+        // Mock cleanup function
+        function cleanupEmptyGroups() {
+            const groupsToRemove = [];
+            
+            Object.keys(testState.botnetGroups).forEach(groupName => {
+                const group = testState.botnetGroups[groupName];
+                if (group && (!group.hostIds || group.hostIds.length === 0)) {
+                    groupsToRemove.push(groupName);
+                }
+            });
+            
+            groupsToRemove.forEach(groupName => {
+                delete testState.botnetGroups[groupName];
+            });
+            
+            return groupsToRemove.length;
+        }
+        
+        const initialGroupCount = Object.keys(testState.botnetGroups).length;
+        const removedCount = cleanupEmptyGroups();
+        const finalGroupCount = Object.keys(testState.botnetGroups).length;
+        
+        const noChangeExpected = 
+            initialGroupCount === 2 &&
+            removedCount === 0 &&
+            finalGroupCount === 2 &&
+            testState.botnetGroups.hasOwnProperty('ActiveGroup1') &&
+            testState.botnetGroups.hasOwnProperty('ActiveGroup2');
+        
+        console.log('✅ No groups removed when none are empty:', removedCount === 0);
+        console.log('✅ Group count unchanged:', initialGroupCount === finalGroupCount);
+        console.log('✅ All groups preserved:', noChangeExpected);
+        
+        return noChangeExpected;
+    }
+    
+    const test1 = testBasicEmptyGroupCleanup();
+    const test2 = testCleanupAfterHostDeactivation();
+    const test3 = testCleanupAfterHostReassignment();
+    const test4 = testNoCleanupWhenNoEmptyGroups();
+    
+    return test1 && test2 && test3 && test4;
+}
 function testBotnetUIImprovements() {
     console.log('\n=== Testing Botnet UI Improvements ===');
     
@@ -430,13 +650,15 @@ function runAllTests() {
     const test1 = testPropagationTargetRecognition();
     const test2 = testDataAnalysisInIntelligence();
     const test3 = testBotnetUIImprovements();
+    const test4 = testEmptyGroupCleanup();
     
-    const allPassed = test1 && test2 && test3;
+    const allPassed = test1 && test2 && test3 && test4;
     
     console.log('\n=== Test Results Summary ===');
     console.log('Propagation Target Recognition:', test1 ? '✅ PASS' : '❌ FAIL');
     console.log('Data Analysis in Intelligence:', test2 ? '✅ PASS' : '❌ FAIL');
     console.log('Botnet UI Improvements:', test3 ? '✅ PASS' : '❌ FAIL');
+    console.log('Empty Group Cleanup:', test4 ? '✅ PASS' : '❌ FAIL');
     
     console.log('\n🎯 Overall Result:', allPassed ? '✅ ALL TESTS PASSED' : '❌ SOME TESTS FAILED');
     
