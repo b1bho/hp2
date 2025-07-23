@@ -98,11 +98,58 @@ function ensureDetectedNodesIsSet(targetState) {
 }
 
 /**
+ * Trigger target countermeasures due to high traceability
+ * Integration with IP traceability system
+ * @param {string} triggerReason - Reason for countermeasure activation
+ */
+function triggerCountermeasuresFromTraceability(triggerReason = 'high_traceability') {
+    // Get available targets based on current game state
+    const availableTargets = Object.keys(state.dynamicTargetStates || {});
+    if (availableTargets.length === 0) return;
+    
+    // Select random targets to apply countermeasures
+    const numTargets = Math.min(3, availableTargets.length);
+    const selectedTargets = [];
+    
+    while (selectedTargets.length < numTargets) {
+        const randomTarget = availableTargets[Math.floor(Math.random() * availableTargets.length)];
+        if (!selectedTargets.includes(randomTarget)) {
+            selectedTargets.push(randomTarget);
+        }
+    }
+    
+    selectedTargets.forEach(targetId => {
+        const target = worldTargets[targetId];
+        if (!target) return;
+        
+        const tier = target.tier || 1;
+        const probabilities = COUNTERMEASURE_PROBABILITIES[tier];
+        
+        // Higher probability for Tier 2+ targets
+        let activationChance = tier >= 2 ? 0.7 : 0.3;
+        
+        if (Math.random() < activationChance) {
+            // Determine which countermeasure to apply
+            const rand = Math.random();
+            
+            if (rand < probabilities.ip_rotation) {
+                executeIpRotation(targetId, null);
+                showNotification(`${target.name} ha cambiato IP per contromisure di sicurezza avanzate.`, 'warning');
+            } else if (rand < probabilities.ip_rotation + probabilities.defense_hardening) {
+                executeDefenseHardening(targetId, null);
+                showNotification(`${target.name} ha rafforzato le difese in risposta all'attività sospetta.`, 'warning');
+            } else if (rand < probabilities.ip_rotation + probabilities.defense_hardening + probabilities.last_node_detection) {
+                executeLastNodeDetection(targetId, null);
+                showNotification(`${target.name} ha migliorato il sistema di rilevamento delle connessioni.`, 'warning');
+            }
+        }
+    });
+}
+/**
  * Generate a new random IP address for a target
  * @param {string} targetId - Target identifier
  * @returns {string} New IP address
  */
-function generateNewTargetIp(targetId) {
     // Generate a realistic IP that's different from current
     const currentState = state.dynamicTargetStates[targetId];
     let newIp;
@@ -501,6 +548,10 @@ if (typeof module !== 'undefined' && module.exports) {
         getModifiedTargetRequirements,
         checkLastNodeBlocking,
         getTargetStatus,
+        triggerCountermeasuresFromTraceability,
         COUNTERMEASURE_TYPES
     };
 }
+
+// Global exports for browser environment
+window.triggerCountermeasuresFromTraceability = triggerCountermeasuresFromTraceability;

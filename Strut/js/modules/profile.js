@@ -16,6 +16,8 @@ function switchProfileSection(sectionName) {
         renderClanSection();
     } else if (sectionName === 'data-locker') {
         renderDataLockerSection();
+    } else if (sectionName === 'ip-traceability') {
+        renderIpTraceabilitySection();
     }
     
     saveState();
@@ -1000,4 +1002,164 @@ function performAnalysisSearch(packet, keyword) {
                                          <p class="text-xs text-gray-400 mt-2">I dati potrebbero essere troppo corrotti (bassa purezza). Prova a ottenere un archivio di qualità superiore.</p>`;
         }
     }, 2000);
+}
+
+/**
+ * Render IP Traceability section
+ */
+function renderIpTraceabilitySection() {
+    const container = document.getElementById('ip-traceability-section');
+    if (!container) return;
+    
+    // Get all IP data
+    const ipData = typeof getAllIpTraceabilityData === 'function' ? 
+                   getAllIpTraceabilityData() : [];
+    
+    // Get player traces data
+    const playerTraces = state.playerTraces || {
+        totalTraces: 0,
+        investigationLevel: 0,
+        traceHistory: [],
+        investigatedBy: 'Nessuna'
+    };
+    
+    const levelLabels = ['Nessuna', 'Locale', 'Nazionale', 'Internazionale', 'Globale', 'Massima'];
+    const levelColors = ['text-green-400', 'text-yellow-400', 'text-orange-400', 'text-red-400', 'text-red-600', 'text-red-800'];
+    
+    container.innerHTML = `
+        <div class="space-y-6">
+            <!-- Investigation Status -->
+            <div class="bg-gray-800 rounded-lg p-6 border border-indigo-500">
+                <h3 class="text-xl font-bold text-indigo-300 mb-4">
+                    <i class="fas fa-search mr-2"></i>
+                    Stato Indagini
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="text-center">
+                        <div class="text-sm text-gray-400">Tracce Totali</div>
+                        <div class="text-2xl font-bold ${playerTraces.totalTraces > 500 ? 'text-red-400' : playerTraces.totalTraces > 200 ? 'text-orange-400' : 'text-green-400'}">
+                            ${playerTraces.totalTraces}
+                        </div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-sm text-gray-400">Livello Indagine</div>
+                        <div class="text-2xl font-bold ${levelColors[Math.min(playerTraces.investigationLevel, levelColors.length - 1)]}">
+                            ${levelLabels[Math.min(playerTraces.investigationLevel, levelLabels.length - 1)]}
+                        </div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-sm text-gray-400">Investigato da</div>
+                        <div class="text-lg font-bold text-white">
+                            ${playerTraces.investigatedBy}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- IP Address Status -->
+            <div class="bg-gray-800 rounded-lg p-6 border border-orange-500">
+                <h3 class="text-xl font-bold text-orange-300 mb-4">
+                    <i class="fas fa-network-wired mr-2"></i>
+                    Stato Indirizzi IP
+                </h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead>
+                            <tr class="border-b border-gray-600">
+                                <th class="text-left py-2">IP Address</th>
+                                <th class="text-left py-2">Tipo</th>
+                                <th class="text-left py-2">Score</th>
+                                <th class="text-left py-2">Status</th>
+                                <th class="text-left py-2">Utilizzi</th>
+                                <th class="text-left py-2">Azioni</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${ipData.length === 0 ? 
+                                '<tr><td colspan="6" class="text-center py-4 text-gray-500">Nessun IP tracciato</td></tr>' : 
+                                ipData.map(ip => {
+                                    const statusColor = ip.level === 'burned' ? 'text-red-600' :
+                                                      ip.level === 'critical' ? 'text-red-400' :
+                                                      ip.level === 'high' ? 'text-orange-400' :
+                                                      ip.level === 'medium' ? 'text-yellow-400' : 'text-green-400';
+                                    
+                                    const typeLabel = {
+                                        'personal': 'Personale',
+                                        'clan_server': 'Server Clan',
+                                        'clan_vpn': 'VPN Clan', 
+                                        'public_vpn': 'VPN Pubblica',
+                                        'tor_node': 'Nodo Tor',
+                                        'infected_host': 'Host Infetto'
+                                    }[ip.type] || ip.type;
+                                    
+                                    const lastUsed = ip.lastUsed ? 
+                                        new Date(ip.lastUsed).toLocaleDateString() : 'Mai';
+                                    
+                                    const regenerateBtn = ip.canRegenerate && ip.level === 'burned' ?
+                                        `<button class="regenerate-ip-btn px-2 py-1 text-xs bg-blue-600 hover:bg-blue-700 rounded" data-ip="${ip.ip}">
+                                            Rigenera (${ip.regenerationCost || 25} XMR)
+                                        </button>` : '';
+                                    
+                                    return `
+                                        <tr class="border-b border-gray-700 hover:bg-gray-700/50">
+                                            <td class="py-2 font-mono">${ip.ip}</td>
+                                            <td class="py-2">${typeLabel}</td>
+                                            <td class="py-2 font-bold ${statusColor}">${ip.score}</td>
+                                            <td class="py-2 ${statusColor}">${ip.status}</td>
+                                            <td class="py-2">${ip.usageCount} (${lastUsed})</td>
+                                            <td class="py-2">${regenerateBtn}</td>
+                                        </tr>
+                                    `;
+                                }).join('')
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- Recent Traces -->
+            <div class="bg-gray-800 rounded-lg p-6 border border-purple-500">
+                <h3 class="text-xl font-bold text-purple-300 mb-4">
+                    <i class="fas fa-history mr-2"></i>
+                    Tracce Recenti
+                </h3>
+                <div class="space-y-2 max-h-60 overflow-y-auto">
+                    ${playerTraces.traceHistory.length === 0 ? 
+                        '<div class="text-center text-gray-500">Nessuna traccia registrata</div>' :
+                        playerTraces.traceHistory.slice(-10).reverse().map(trace => {
+                            const date = new Date(trace.timestamp).toLocaleString();
+                            const typeColor = trace.ipType === 'personal' ? 'text-red-400' :
+                                           trace.ipType === 'infected_host' ? 'text-orange-400' : 'text-blue-400';
+                            
+                            return `
+                                <div class="bg-gray-700/50 rounded p-3 text-sm">
+                                    <div class="flex justify-between items-start mb-1">
+                                        <span class="font-bold ${typeColor}">${trace.ip}</span>
+                                        <span class="text-xs text-gray-400">${date}</span>
+                                    </div>
+                                    <div class="text-gray-300">
+                                        Target: ${trace.target} | Aumento: +${trace.increase} | Totale: ${trace.totalScore}
+                                    </div>
+                                    <div class="text-xs text-gray-400">
+                                        ${trace.event} - ${trace.flow}
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')
+                    }
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Add event listeners for regenerate buttons
+    container.querySelectorAll('.regenerate-ip-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const ip = btn.dataset.ip;
+            if (typeof scheduleIpRegeneration === 'function') {
+                scheduleIpRegeneration(ip);
+                renderIpTraceabilitySection(); // Refresh the display
+            }
+        });
+    });
 }

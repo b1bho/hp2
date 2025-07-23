@@ -2079,6 +2079,37 @@ function completeDDoSAttackEnhanced(attackId) {
     const finalSuccessRate = baseSuccessRate - conflictPenalty;
     const isSuccess = Math.random() < finalSuccessRate;
 
+    // Prepare attack result for traceability system
+    const attackResult = {
+        status: isSuccess ? 'success' : 'failure',
+        impact: avgDIS,
+        duration: attack.duration,
+        maxStatus: maxStatus
+    };
+
+    // Apply IP traceability to all participating hosts using the new system
+    if (typeof handleDDoSTraceability === 'function') {
+        const participatingHostIds = [];
+        attack.botGroups.forEach(groupName => {
+            const group = state.botnetGroups[groupName];
+            if (group && group.hostIds) {
+                participatingHostIds.push(...group.hostIds);
+            }
+        });
+        
+        handleDDoSTraceability(participatingHostIds, attack.target, attackResult);
+    }
+    
+    // Adjust success rate based on max status achieved
+    if (maxStatus === TARGET_STATUS.DOWN) {
+        baseSuccessRate = 0.95; // Very high success for complete saturation
+    } else if (maxStatus === TARGET_STATUS.PARTIAL) {
+        baseSuccessRate = 0.85; // Good success for partial impact
+    }
+    
+    const finalSuccessRate = baseSuccessRate - conflictPenalty;
+    const isSuccess = Math.random() < finalSuccessRate;
+
     if (isSuccess) {
         // Enhanced rewards based on impact performance
         const statusMultiplier = maxStatus === TARGET_STATUS.DOWN ? 2.0 : 
@@ -2737,6 +2768,21 @@ function stopMining() {
     const operation = activeMiningOperation;
     const duration = Date.now() - operation.startTime;
     const durationHours = duration / (1000 * 60 * 60);
+    
+    // Apply mining traceability using the new system
+    if (typeof handleMiningTraceability === 'function') {
+        const participatingHostIds = [];
+        operation.groups.forEach(groupName => {
+            const group = state.botnetGroups[groupName];
+            if (group && group.hostIds) {
+                participatingHostIds.push(...group.hostIds);
+            }
+        });
+        
+        // Duration in seconds for traceability calculation
+        const durationSeconds = duration / 1000;
+        handleMiningTraceability(participatingHostIds, durationSeconds);
+    }
     
     // Reset CurrentActivity to Idle for all participating groups
     operation.groups.forEach(groupName => {

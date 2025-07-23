@@ -307,6 +307,11 @@ function initializeDynamicState() {
     if (typeof initializeDynamicTargetStates === 'function') {
         initializeDynamicTargetStates();
     }
+    
+    // Initialize IP traceability system
+    if (typeof initializeIpTraceability === 'function') {
+        initializeIpTraceability();
+    }
 }
 function destroyLines() {
     lines.forEach(line => line.remove());
