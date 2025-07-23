@@ -8,6 +8,9 @@ let activeDDoSAttacks = []; // Track multiple active DDoS attacks
 let ddosImpactTracking = new Map(); // Track DIS scores and status for active attacks
 let selectedMiningGroups = new Set(); // Track selected bot groups for Mining
 let activeMiningOperation = null; // Track active Mining operation
+let selectedRansomwareGroups = new Set(); // Track selected bot groups for Ransomware
+let activeRansomwareOperations = []; // Track active Ransomware operations
+let activeRansomRequests = []; // Track active ransom requests
 
 // Funzione helper per garantire che i flussi salvati siano sempre un array,
 // gestendo anche formati legacy dove potevano essere un oggetto.
@@ -54,6 +57,7 @@ function setupTabNavigation() {
     const managementTab = document.getElementById('tab-management');
     const ddosTab = document.getElementById('tab-ddos');
     const miningTab = document.getElementById('tab-mining');
+    const ransomwareTab = document.getElementById('tab-ransomware');
     
     if (managementTab) {
         managementTab.addEventListener('click', () => switchTab('management'));
@@ -63,6 +67,9 @@ function setupTabNavigation() {
     }
     if (miningTab) {
         miningTab.addEventListener('click', () => switchTab('mining'));
+    }
+    if (ransomwareTab) {
+        ransomwareTab.addEventListener('click', () => switchTab('ransomware'));
     }
 }
 
@@ -101,6 +108,12 @@ function switchTab(tabName) {
         if (typeof updateMiningLogsDisplay === 'function') {
             updateMiningLogsDisplay();
         }
+    } else if (tabName === 'ransomware') {
+        renderRansomwareBotGroupSelection();
+        updateRansomwareSelectedResources();
+        renderRansomwareFlowOptions();
+        updateRansomwarePARPreview();
+        renderActiveRansomwareOperations();
     }
 }
 
@@ -1042,8 +1055,9 @@ function renderBotGroupSelection() {
         const isSelected = selectedBotGroups.has(groupName);
         const currentActivity = group.currentActivity || 'Idle';
         
-        // Check if this group is involved in any active DDoS attack
+        // Check if this group is involved in any active operations
         const isInActiveDDoS = activeDDoSAttacks.some(attack => attack.botGroups.includes(groupName));
+        const isInActiveRansomware = activeRansomwareOperations.some(op => op.botGroups.includes(groupName));
         const currentDDoSTarget = isInActiveDDoS ? activeDDoSAttacks.find(attack => attack.botGroups.includes(groupName))?.target : null;
         
         let activityIcon = 'fa-circle';
@@ -1058,6 +1072,15 @@ function renderBotGroupSelection() {
             activityColor = 'text-red-400';
             if (currentDDoSTarget) {
                 activityText = `DDoSing ${currentDDoSTarget}`;
+            }
+        } else if (currentActivity === 'Ransomware' || isInActiveRansomware) {
+            activityIcon = 'fa-lock';
+            activityColor = 'text-red-400';
+            if (isInActiveRansomware) {
+                const operation = activeRansomwareOperations.find(op => op.botGroups.includes(groupName));
+                if (operation) {
+                    activityText = `Ransomware ${operation.targetType}`;
+                }
             }
         }
         
@@ -1506,8 +1529,14 @@ function launchDDoSAttack() {
     let busyGroups = [];
     selectedBotGroups.forEach(groupName => {
         const group = state.botnetGroups[groupName];
-        if (group && (group.currentActivity === 'Mining' || group.currentActivity === 'DDoSing')) {
+        if (group && (group.currentActivity === 'Mining' || group.currentActivity === 'DDoSing' || group.currentActivity === 'Ransomware')) {
             busyGroups.push(groupName);
+        }
+        
+        // Also check for active ransomware operations
+        const isInActiveRansomware = activeRansomwareOperations.some(op => op.botGroups.includes(groupName));
+        if (isInActiveRansomware) {
+            busyGroups.push(`${groupName} (Ransomware)`);
         }
     });
 
@@ -1524,7 +1553,7 @@ function launchDDoSAttack() {
     selectedBotGroups.forEach(groupName => {
         const group = state.botnetGroups[groupName];
         if (group) {
-            if (group.currentActivity === 'Mining') {
+            if (group.currentActivity === 'Mining' || group.currentActivity === 'Ransomware') {
                 hasConflicts = true;
                 conflictGroups.push(groupName);
             }
@@ -1544,7 +1573,7 @@ function launchDDoSAttack() {
 
     // Notify about conflicts
     if (hasConflicts) {
-        showNotification(`Resource conflict detected! Groups ${conflictGroups.join(', ')} are mining. Attack power reduced by 50%.`, 'warning');
+        showNotification(`Resource conflict detected! Groups ${conflictGroups.join(', ')} are busy with other operations. Attack power reduced by 50%.`, 'warning');
     }
 
     // Calculate effective Operational Efficiency (EO) and Code Robustness (RC)
@@ -2667,13 +2696,13 @@ function startMining() {
         return;
     }
     
-    // Check for conflicts with DDoS operations
+    // Check for conflicts with DDoS and Ransomware operations
     let hasConflicts = false;
     let conflictGroups = [];
     
     selectedGroupsArray.forEach(groupName => {
         const group = state.botnetGroups[groupName];
-        if (group && group.currentActivity === 'DDoSing') {
+        if (group && (group.currentActivity === 'DDoSing' || group.currentActivity === 'Ransomware')) {
             hasConflicts = true;
             conflictGroups.push(groupName);
         }
@@ -2685,10 +2714,17 @@ function startMining() {
             const attack = activeDDoSAttacks.find(attack => attack.botGroups.includes(groupName));
             conflictGroups.push(`${groupName} (attacking ${attack.target})`);
         }
+        
+        // Also check if any group is involved in an active Ransomware operation
+        const isInActiveRansomware = activeRansomwareOperations.some(op => op.botGroups.includes(groupName));
+        if (isInActiveRansomware) {
+            hasConflicts = true;
+            conflictGroups.push(`${groupName} (Ransomware)`);
+        }
     });
     
     if (hasConflicts) {
-        showNotification(`Cannot start mining: Groups ${conflictGroups.join(', ')} are currently performing DDoS attacks.`, 'error');
+        showNotification(`Cannot start mining: Groups ${conflictGroups.join(', ')} are currently performing other operations.`, 'error');
         return;
     }
     
@@ -3011,4 +3047,1172 @@ function applyMiningRisks() {
             });
         }
     });
+}
+
+// ============================================================================
+// RANSOMWARE SYSTEM FUNCTIONS
+// ============================================================================
+
+function renderRansomwareBotGroupSelection() {
+    const container = document.getElementById('ransomware-botgroup-selection');
+    if (!container) return;
+
+    const groups = Object.keys(state.botnetGroups);
+    
+    if (groups.length === 0) {
+        container.innerHTML = `
+            <div class="text-center p-4 bg-gray-900/30 rounded-lg border border-gray-600">
+                <i class="fas fa-exclamation-triangle text-yellow-400 text-2xl mb-2"></i>
+                <p class="text-gray-400">Nessun gruppo botnet disponibile</p>
+                <p class="text-xs text-gray-500 mt-1">Crea gruppi dalla sezione Gestione Botnet</p>
+            </div>
+        `;
+        return;
+    }
+
+    let html = '';
+    groups.forEach(groupName => {
+        const group = state.botnetGroups[groupName];
+        const activeHosts = group.hostIds.filter(hostId => {
+            const host = state.infectedHostPool.find(h => h.id === hostId);
+            return host && host.status === 'Active';
+        }).length;
+        
+        const totalHosts = group.hostIds.length;
+        const isSelected = selectedRansomwareGroups.has(groupName);
+        const currentActivity = group.currentActivity || 'Idle';
+        
+        // Check if this group is involved in any active operations
+        const isInActiveDDoS = activeDDoSAttacks.some(attack => attack.botGroups.includes(groupName));
+        const isInActiveMining = activeMiningOperation && activeMiningOperation.groups.includes(groupName);
+        const isInActiveRansomware = activeRansomwareOperations.some(op => op.botGroups.includes(groupName));
+        
+        let statusText = '';
+        let statusClass = '';
+        let isDisabled = false;
+        
+        if (isInActiveRansomware) {
+            statusText = 'Ransomware Active';
+            statusClass = 'text-red-400';
+        } else if (isInActiveMining) {
+            statusText = 'Mining Active';
+            statusClass = 'text-yellow-400';
+            isDisabled = true;
+        } else if (isInActiveDDoS) {
+            const attack = activeDDoSAttacks.find(attack => attack.botGroups.includes(groupName));
+            statusText = `DDoSing ${attack?.target || ''}`;
+            statusClass = 'text-red-400';
+            isDisabled = true;
+        }
+        
+        html += `
+            <div class="ransomware-group-card ${isSelected ? 'selected' : ''} ${isInActiveRansomware ? 'ransomware-active' : ''} ${isDisabled ? 'disabled' : ''}
+                      bg-gray-800/70 border border-gray-600 rounded-lg p-4 cursor-pointer transition-all hover:bg-gray-700/50" 
+                 data-group-name="${groupName}">
+                <div class="flex items-center justify-between mb-2">
+                    <div class="flex items-center">
+                        <input type="checkbox" class="ransomware-group-checkbox mr-3" ${isSelected ? 'checked' : ''} 
+                               ${isInActiveRansomware || isDisabled ? 'disabled' : ''}>
+                        <h4 class="font-semibold text-white">${groupName}</h4>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        ${isInActiveRansomware ? '<i class="fas fa-lock text-red-400"></i>' : ''}
+                        ${isInActiveMining ? '<i class="fas fa-cog fa-spin text-yellow-400"></i>' : ''}
+                        ${isInActiveDDoS ? '<i class="fas fa-crosshairs text-red-400"></i>' : ''}
+                        ${statusText ? `<span class="text-xs ${statusClass}">${statusText.length > 15 ? statusText.substring(0, 15) + '...' : statusText}</span>` : ''}
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-2 text-xs">
+                    <div>
+                        <span class="text-gray-400">Host Attivi:</span>
+                        <span class="font-bold text-green-400">${activeHosts}/${totalHosts}</span>
+                    </div>
+                    <div>
+                        <span class="text-gray-400">Potenza:</span>
+                        <span class="font-bold text-red-400">${calculateGroupCryptoPower(group).toFixed(1)} GFLOPS</span>
+                    </div>
+                    <div>
+                        <span class="text-gray-400">Stabilità:</span>
+                        <span class="font-bold ${getStabilityColor(calculateGroupStability(group))}">${calculateGroupStability(group).toFixed(0)}%</span>
+                    </div>
+                    <div>
+                        <span class="text-gray-400">Tracciabilità:</span>
+                        <span class="font-bold ${getTraceabilityColor(calculateGroupTraceability(group))}">${calculateGroupTraceability(group).toFixed(0)}%</span>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+
+    container.innerHTML = html;
+
+    // Add event listeners
+    container.querySelectorAll('.ransomware-group-card:not(.disabled)').forEach(card => {
+        const groupName = card.dataset.groupName;
+        const isInActiveRansomware = activeRansomwareOperations.some(op => op.botGroups.includes(groupName));
+        
+        if (!isInActiveRansomware) {
+            card.addEventListener('click', (e) => {
+                if (e.target.type === 'checkbox') return;
+                
+                const checkbox = card.querySelector('.ransomware-group-checkbox');
+                
+                if (selectedRansomwareGroups.has(groupName)) {
+                    selectedRansomwareGroups.delete(groupName);
+                    checkbox.checked = false;
+                    card.classList.remove('selected');
+                } else {
+                    selectedRansomwareGroups.add(groupName);
+                    checkbox.checked = true;
+                    card.classList.add('selected');
+                }
+                
+                updateRansomwareSelectedResources();
+                updateRansomwarePARPreview();
+            });
+            
+            const checkbox = card.querySelector('.ransomware-group-checkbox');
+            if (checkbox && !checkbox.disabled) {
+                checkbox.addEventListener('change', (e) => {
+                    if (e.target.checked) {
+                        selectedRansomwareGroups.add(groupName);
+                        card.classList.add('selected');
+                    } else {
+                        selectedRansomwareGroups.delete(groupName);
+                        card.classList.remove('selected');
+                    }
+                    
+                    updateRansomwareSelectedResources();
+                    updateRansomwarePARPreview();
+                });
+            }
+        }
+    });
+}
+
+function calculateGroupCryptoPower(group) {
+    // Crypto power is the same as regular CPU power for ransomware operations
+    return calculateGroupPower(group);
+}
+
+function updateRansomwareSelectedResources() {
+    const hostCountEl = document.getElementById('ransomware-host-count');
+    const activeCountEl = document.getElementById('ransomware-active-count');
+    const cryptoPowerEl = document.getElementById('ransomware-crypto-power');
+    const stabilityEl = document.getElementById('ransomware-stability');
+
+    let totalHosts = 0;
+    let activeHosts = 0;
+    let totalCryptoPower = 0;
+    let totalStability = 0;
+    let groupCount = 0;
+
+    selectedRansomwareGroups.forEach(groupName => {
+        const group = state.botnetGroups[groupName];
+        if (group) {
+            totalHosts += group.hostIds.length;
+            totalCryptoPower += calculateGroupCryptoPower(group);
+            totalStability += calculateGroupStability(group);
+            groupCount++;
+            
+            group.hostIds.forEach(hostId => {
+                const host = state.infectedHostPool.find(h => h.id === hostId);
+                if (host && host.status === 'Active') {
+                    activeHosts++;
+                }
+            });
+        }
+    });
+
+    const avgStability = groupCount > 0 ? totalStability / groupCount : 0;
+
+    if (hostCountEl) hostCountEl.textContent = totalHosts;
+    if (activeCountEl) activeCountEl.textContent = activeHosts;
+    if (cryptoPowerEl) cryptoPowerEl.textContent = `${totalCryptoPower.toFixed(1)} GFLOPS`;
+    if (stabilityEl) {
+        stabilityEl.textContent = `${avgStability.toFixed(0)}%`;
+        stabilityEl.className = `font-bold ${getStabilityColor(avgStability)}`;
+    }
+    
+    // Enable/disable launch button
+    const launchBtn = document.getElementById('launch-ransomware-btn');
+    if (launchBtn) {
+        const selectedFlow = document.getElementById('ransomware-flow-select')?.value;
+        launchBtn.disabled = !(activeHosts > 0 && selectedFlow);
+    }
+}
+
+function renderRansomwareFlowOptions() {
+    const select = document.getElementById('ransomware-flow-select');
+    if (!select) return;
+
+    const flows = getSavedFlowsAsArray();
+    const ransomwareFlows = flows.filter(flow => isRansomwareFlow(flow));
+
+    let optionsHtml = '<option value="">-- Seleziona Flusso Ransomware --</option>';
+    
+    if (ransomwareFlows.length === 0) {
+        if (flows.length === 0) {
+            optionsHtml += '<option value="" disabled>Nessun flusso disponibile. Crea flussi nell\'Editor prima.</option>';
+        } else {
+            optionsHtml += '<option value="" disabled>Nessun flusso ransomware disponibile. Crea flussi con obiettivo ransomware.</option>';
+        }
+    } else {
+        ransomwareFlows.forEach(flow => {
+            const objective = flow.objective || 'ransomware';
+            const powerLevel = flow.stats?.attack ? Math.floor(flow.stats.attack / 50000) : 1;
+            const powerIndicator = '★'.repeat(Math.min(powerLevel, 5)) + '☆'.repeat(Math.max(0, 5 - powerLevel));
+            optionsHtml += `<option value="${flow.id}">${flow.name} (${objective}) ${powerIndicator}</option>`;
+        });
+    }
+
+    select.innerHTML = optionsHtml;
+
+    // Add event listeners
+    select.addEventListener('change', updateRansomwarePARPreview);
+    
+    const targetTypeSelect = document.getElementById('ransomware-target-type');
+    if (targetTypeSelect) {
+        targetTypeSelect.addEventListener('change', updateRansomwarePARPreview);
+    }
+    
+    const dataSensitivitySelect = document.getElementById('ransomware-data-sensitivity');
+    if (dataSensitivitySelect) {
+        dataSensitivitySelect.addEventListener('change', updateRansomwarePARPreview);
+    }
+    
+    const amountInput = document.getElementById('ransomware-amount');
+    if (amountInput) {
+        amountInput.addEventListener('input', updateRansomwarePARPreview);
+    }
+    
+    const strategySelect = document.getElementById('ransomware-strategy');
+    if (strategySelect) {
+        strategySelect.addEventListener('change', updateRansomwarePARPreview);
+    }
+    
+    const launchBtn = document.getElementById('launch-ransomware-btn');
+    if (launchBtn) {
+        launchBtn.addEventListener('click', launchRansomwareOperation);
+    }
+}
+
+function isRansomwareFlow(flow) {
+    if (!flow) return false;
+    
+    // Check if flow objective is explicitly set to ransomware
+    if (flow.objective === 'ransomware') {
+        return true;
+    }
+    
+    // Check if flow contains ransomware-specific blocks
+    if (!flow.blocks) return false;
+    
+    const ransomwareBlocks = [
+        'Sviluppa ransomware semplice',
+        'Crittografa payload',
+        'Crea tool eseguibile'
+    ];
+    
+    return flow.blocks.some(block => {
+        const blockType = typeof block === 'string' ? block : block.type;
+        return ransomwareBlocks.includes(blockType);
+    });
+}
+
+function updateRansomwarePARPreview() {
+    const probabilityEl = document.getElementById('par-probability');
+    const responseTimeEl = document.getElementById('par-response-time');
+    const traceRiskEl = document.getElementById('par-trace-risk');
+    const expectedGainEl = document.getElementById('par-expected-gain');
+    
+    const targetType = document.getElementById('ransomware-target-type')?.value || 'individual';
+    const dataSensitivity = document.getElementById('ransomware-data-sensitivity')?.value || 'low';
+    const ransomAmount = parseFloat(document.getElementById('ransomware-amount')?.value || '0.1');
+    const strategy = document.getElementById('ransomware-strategy')?.value || 'fast';
+    const selectedFlow = document.getElementById('ransomware-flow-select')?.value;
+    
+    if (!selectedFlow || selectedRansomwareGroups.size === 0) {
+        if (probabilityEl) probabilityEl.textContent = '0%';
+        if (responseTimeEl) responseTimeEl.textContent = '0h';
+        if (traceRiskEl) traceRiskEl.textContent = 'N/A';
+        if (expectedGainEl) expectedGainEl.textContent = '0.000 BTC';
+        return;
+    }
+    
+    // Calculate PAR (Probability of Acceptance Rate)
+    const par = calculateRansomAcceptanceProbability(targetType, dataSensitivity, ransomAmount, strategy);
+    
+    // Calculate expected response time
+    const responseTime = calculateRansomResponseTime(targetType, dataSensitivity);
+    
+    // Calculate traceability risk
+    const traceRisk = calculateRansomwareTraceRisk(targetType, strategy, selectedRansomwareGroups.size);
+    
+    // Calculate expected gain
+    const expectedGain = ransomAmount * (par.probability / 100);
+    
+    // Update UI
+    if (probabilityEl) {
+        probabilityEl.textContent = `${par.probability.toFixed(1)}%`;
+        probabilityEl.className = `font-bold ${par.probability > 70 ? 'text-green-400' : par.probability > 40 ? 'text-yellow-400' : 'text-red-400'}`;
+    }
+    if (responseTimeEl) responseTimeEl.textContent = `${responseTime}h`;
+    if (traceRiskEl) {
+        traceRiskEl.textContent = traceRisk;
+        traceRiskEl.className = `font-bold ${getRiskColor(traceRisk)}`;
+    }
+    if (expectedGainEl) expectedGainEl.textContent = `${expectedGain.toFixed(3)} BTC`;
+    
+    // Update launch button state
+    const launchBtn = document.getElementById('launch-ransomware-btn');
+    if (launchBtn) {
+        const hasActiveHosts = selectedRansomwareGroups.size > 0;
+        launchBtn.disabled = !(hasActiveHosts && selectedFlow);
+    }
+}
+
+function calculateRansomAcceptanceProbability(targetType, dataSensitivity, amount, strategy) {
+    // Base probability by target type
+    const targetProbabilities = {
+        'individual': 65,
+        'small_business': 45,
+        'corporation': 25,
+        'government': 10,
+        'hospital': 80,
+        'education': 55
+    };
+    
+    let baseProbability = targetProbabilities[targetType] || 50;
+    
+    // Data sensitivity modifier
+    const sensitivityModifiers = {
+        'low': 0.8,
+        'medium': 1.0,
+        'high': 1.2,
+        'critical': 1.4
+    };
+    
+    baseProbability *= sensitivityModifiers[dataSensitivity] || 1.0;
+    
+    // Amount modifier (higher amounts reduce probability)
+    if (amount > 1.0) {
+        baseProbability *= 0.7;
+    } else if (amount > 0.5) {
+        baseProbability *= 0.85;
+    } else if (amount < 0.05) {
+        baseProbability *= 1.1;
+    }
+    
+    // Strategy modifier
+    const strategyModifiers = {
+        'fast': 0.9, // Less convincing but faster
+        'thorough': 1.1, // More convincing due to complete encryption
+        'selective': 1.0 // Balanced approach
+    };
+    
+    baseProbability *= strategyModifiers[strategy] || 1.0;
+    
+    // Random factor
+    const randomFactor = 0.9 + (Math.random() * 0.2); // 0.9 to 1.1
+    baseProbability *= randomFactor;
+    
+    return {
+        probability: Math.min(95, Math.max(5, baseProbability)),
+        factors: {
+            targetType,
+            dataSensitivity,
+            amount,
+            strategy
+        }
+    };
+}
+
+function calculateRansomResponseTime(targetType, dataSensitivity) {
+    const baseResponseTimes = {
+        'individual': 2, // 2 hours
+        'small_business': 8,
+        'corporation': 24,
+        'government': 72,
+        'hospital': 1, // Very fast due to urgency
+        'education': 12
+    };
+    
+    let responseTime = baseResponseTimes[targetType] || 12;
+    
+    // Data sensitivity affects urgency
+    const sensitivityMultipliers = {
+        'low': 1.5,
+        'medium': 1.0,
+        'high': 0.7,
+        'critical': 0.5
+    };
+    
+    responseTime *= sensitivityMultipliers[dataSensitivity] || 1.0;
+    
+    return Math.max(1, Math.round(responseTime));
+}
+
+function calculateRansomwareTraceRisk(targetType, strategy, groupCount) {
+    let riskScore = 0;
+    
+    // Target type risk
+    const targetRisks = {
+        'individual': 10,
+        'small_business': 20,
+        'corporation': 40,
+        'government': 80,
+        'hospital': 60,
+        'education': 30
+    };
+    
+    riskScore += targetRisks[targetType] || 30;
+    
+    // Strategy risk
+    const strategyRisks = {
+        'fast': 15,
+        'thorough': 35,
+        'selective': 25
+    };
+    
+    riskScore += strategyRisks[strategy] || 25;
+    
+    // Group count risk
+    riskScore += groupCount * 5;
+    
+    if (riskScore < 25) return 'Basso';
+    if (riskScore < 50) return 'Medio';
+    if (riskScore < 75) return 'Alto';
+    return 'Critico';
+}
+
+function launchRansomwareOperation() {
+    const selectedFlow = document.getElementById('ransomware-flow-select')?.value;
+    const targetType = document.getElementById('ransomware-target-type')?.value || 'individual';
+    const dataSensitivity = document.getElementById('ransomware-data-sensitivity')?.value || 'low';
+    const ransomAmount = parseFloat(document.getElementById('ransomware-amount')?.value || '0.1');
+    const strategy = document.getElementById('ransomware-strategy')?.value || 'fast';
+    
+    const selectedGroupsArray = Array.from(selectedRansomwareGroups);
+    
+    if (selectedGroupsArray.length === 0) {
+        showNotification('Seleziona almeno un gruppo bot per lanciare l\'operazione ransomware.', 'error');
+        return;
+    }
+    
+    if (!selectedFlow) {
+        showNotification('Seleziona un flusso ransomware valido.', 'error');
+        return;
+    }
+    
+    const flow = getSavedFlowsAsArray().find(f => f.id === selectedFlow);
+    if (!flow) {
+        showNotification('Flusso ransomware non trovato.', 'error');
+        return;
+    }
+    
+    // Check for conflicts with other operations
+    let hasConflicts = false;
+    let conflictGroups = [];
+    
+    selectedGroupsArray.forEach(groupName => {
+        const group = state.botnetGroups[groupName];
+        if (group && (group.currentActivity === 'DDoSing' || group.currentActivity === 'Mining')) {
+            hasConflicts = true;
+            conflictGroups.push(`${groupName} (${group.currentActivity})`);
+        }
+        
+        const isInActiveDDoS = activeDDoSAttacks.some(attack => attack.botGroups.includes(groupName));
+        const isInActiveMining = activeMiningOperation && activeMiningOperation.groups.includes(groupName);
+        
+        if (isInActiveDDoS || isInActiveMining) {
+            hasConflicts = true;
+            const activity = isInActiveDDoS ? 'DDoS' : 'Mining';
+            conflictGroups.push(`${groupName} (${activity})`);
+        }
+    });
+    
+    if (hasConflicts) {
+        showNotification(`Impossibile avviare ransomware: Gruppi ${conflictGroups.join(', ')} sono impegnati in altre operazioni.`, 'error');
+        return;
+    }
+    
+    // Calculate operation parameters
+    let totalActiveHosts = 0;
+    let totalCryptoPower = 0;
+    
+    selectedGroupsArray.forEach(groupName => {
+        const group = state.botnetGroups[groupName];
+        if (group) {
+            // Set currentActivity to Ransomware
+            group.currentActivity = 'Ransomware';
+            totalCryptoPower += calculateGroupCryptoPower(group);
+            
+            group.hostIds.forEach(hostId => {
+                const host = state.infectedHostPool.find(h => h.id === hostId);
+                if (host && host.status === 'Active') {
+                    totalActiveHosts++;
+                }
+            });
+        }
+    });
+    
+    if (totalActiveHosts === 0) {
+        // Reset activity if no active hosts
+        selectedGroupsArray.forEach(groupName => {
+            const group = state.botnetGroups[groupName];
+            if (group) {
+                group.currentActivity = 'Idle';
+            }
+        });
+        showNotification('Nessun host attivo nei gruppi selezionati.', 'error');
+        return;
+    }
+    
+    // Calculate operation duration based on strategy
+    const strategyDurations = {
+        'fast': 30, // 30 seconds
+        'thorough': 180, // 3 minutes  
+        'selective': 90 // 1.5 minutes
+    };
+    
+    const duration = strategyDurations[strategy] || 90;
+    
+    // Create ransomware operation
+    const operationId = `ransomware_${Date.now()}`;
+    const operation = {
+        id: operationId,
+        botGroups: selectedGroupsArray,
+        targetType: targetType,
+        dataSensitivity: dataSensitivity,
+        ransomAmount: ransomAmount,
+        strategy: strategy,
+        flow: flow,
+        startTime: Date.now(),
+        duration: duration,
+        cryptoPower: totalCryptoPower,
+        activeHosts: totalActiveHosts,
+        progress: 0,
+        phase: 'encryption' // encryption -> ransom_sent -> awaiting_response -> completed
+    };
+    
+    activeRansomwareOperations.push(operation);
+    
+    // Initialize ransomware state if not exists
+    if (!state.ransomwareOperations) {
+        state.ransomwareOperations = [];
+    }
+    if (!state.ransomRequests) {
+        state.ransomRequests = [];
+    }
+    
+    // Add to state
+    state.ransomwareOperations.push(operation);
+    
+    showNotification(`Operazione ransomware avviata con ${selectedGroupsArray.length} gruppi (${totalActiveHosts} host attivi).`, 'success');
+    
+    // Clear selections
+    selectedRansomwareGroups.clear();
+    
+    // Start operation timer
+    setTimeout(() => {
+        completeRansomwareEncryption(operationId);
+    }, duration * 1000);
+    
+    renderRansomwareBotGroupSelection();
+    updateRansomwareSelectedResources();
+    renderActiveRansomwareOperations();
+    saveState();
+    updateUI();
+}
+
+function completeRansomwareEncryption(operationId) {
+    const operationIndex = activeRansomwareOperations.findIndex(op => op.id === operationId);
+    if (operationIndex === -1) return;
+    
+    const operation = activeRansomwareOperations[operationIndex];
+    
+    // Calculate encryption success rate
+    const baseSuccessRate = 0.85;
+    const powerBonus = Math.min(0.1, operation.cryptoPower / 10000); // Up to 10% bonus
+    const finalSuccessRate = baseSuccessRate + powerBonus;
+    
+    const isSuccess = Math.random() < finalSuccessRate;
+    
+    if (isSuccess) {
+        // Encryption successful, create ransom request
+        const requestId = `ransom_${Date.now()}`;
+        const par = calculateRansomAcceptanceProbability(
+            operation.targetType, 
+            operation.dataSensitivity, 
+            operation.ransomAmount, 
+            operation.strategy
+        );
+        
+        const responseTime = calculateRansomResponseTime(operation.targetType, operation.dataSensitivity);
+        
+        const ransomRequest = {
+            id: requestId,
+            operationId: operationId,
+            targetType: operation.targetType,
+            dataSensitivity: operation.dataSensitivity,
+            amount: operation.ransomAmount,
+            probability: par.probability,
+            sentTime: Date.now(),
+            responseTime: responseTime * 3600000, // Convert hours to milliseconds
+            status: 'awaiting_response',
+            botGroups: operation.botGroups
+        };
+        
+        activeRansomRequests.push(ransomRequest);
+        state.ransomRequests.push(ransomRequest);
+        
+        // Update operation phase
+        operation.phase = 'ransom_sent';
+        operation.progress = 100;
+        
+        showNotification(`Crittografia completata! Richiesta di riscatto inviata per ${operation.ransomAmount} BTC.`, 'success');
+        
+        // Set timer for ransom response and store timeout ID
+        ransomRequest.timeoutId = setTimeout(() => {
+            processRansomResponse(requestId);
+        }, responseTime * 3600000);
+        
+        // Apply traceability increase to participating hosts
+        applyRansomwareTraceability(operation);
+        
+    } else {
+        // Encryption failed
+        showNotification(`Operazione ransomware fallita! Rilevate contromisure di sicurezza.`, 'error');
+        
+        // Apply failure consequences
+        operation.botGroups.forEach(groupName => {
+            const group = state.botnetGroups[groupName];
+            if (group) {
+                group.hostIds.forEach(hostId => {
+                    const host = state.infectedHostPool.find(h => h.id === hostId);
+                    if (host) {
+                        // Increase traceability for failed operation
+                        host.traceabilityScore = Math.min(100, host.traceabilityScore + 15 + Math.random() * 10);
+                        // Decrease stability
+                        host.stabilityScore = Math.max(0, host.stabilityScore - (5 + Math.random() * 10));
+                        
+                        addLogToHost(hostId, 'Operazione ransomware fallita - rilevate contromisure');
+                        
+                        // Small chance of host being compromised
+                        if (host.traceabilityScore > 85 && Math.random() < 0.15) {
+                            addLogToHost(hostId, 'Host compromesso e perso a causa del fallimento ransomware');
+                            deactivateHost(hostId, true);
+                        }
+                    }
+                });
+            }
+        });
+        
+        // Remove failed operation
+        activeRansomwareOperations.splice(operationIndex, 1);
+        operation.phase = 'failed';
+    }
+    
+    // Reset CurrentActivity to Idle for all participating groups
+    operation.botGroups.forEach(groupName => {
+        const group = state.botnetGroups[groupName];
+        if (group) {
+            group.currentActivity = 'Idle';
+        }
+    });
+    
+    renderActiveRansomwareOperations();
+    renderRansomRequestsStatus();
+    renderRansomwareBotGroupSelection();
+    saveState();
+    updateUI();
+}
+
+function processRansomResponse(requestId) {
+    const requestIndex = activeRansomRequests.findIndex(req => req.id === requestId);
+    if (requestIndex === -1) return;
+    
+    const request = activeRansomRequests[requestIndex];
+    
+    // Determine if ransom is accepted based on calculated probability
+    const isAccepted = Math.random() * 100 < request.probability;
+    
+    if (isAccepted) {
+        // Ransom accepted - add Bitcoin to player wallet
+        state.btc += request.amount;
+        
+        showNotification(`🎉 Riscatto accettato! Ricevuti ${request.amount} BTC nel portafoglio.`, 'success');
+        
+        request.status = 'accepted';
+        
+        // Add XP based on target difficulty
+        const xpRewards = {
+            'individual': 20,
+            'small_business': 35,
+            'corporation': 60,
+            'government': 100,
+            'hospital': 50,
+            'education': 30
+        };
+        
+        const xpGain = xpRewards[request.targetType] || 25;
+        addXp(xpGain);
+        
+    } else {
+        // Ransom rejected
+        showNotification(`❌ Riscatto rifiutato. Il target ha scelto di non pagare.`, 'error');
+        
+        request.status = 'rejected';
+        
+        // Apply additional consequences for rejection
+        request.botGroups.forEach(groupName => {
+            const group = state.botnetGroups[groupName];
+            if (group) {
+                group.hostIds.forEach(hostId => {
+                    const host = state.infectedHostPool.find(h => h.id === hostId);
+                    if (host) {
+                        // Additional traceability increase for rejection
+                        host.traceabilityScore = Math.min(100, host.traceabilityScore + 5);
+                        addLogToHost(hostId, 'Riscatto rifiutato - aumentata attenzione delle autorità');
+                    }
+                });
+            }
+        });
+    }
+    
+    // Remove infected hosts involved in the ransomware operation
+    const hostsToRemove = [];
+    request.botGroups.forEach(groupName => {
+        const group = state.botnetGroups[groupName];
+        if (group && group.hostIds) {
+            hostsToRemove.push(...group.hostIds);
+        }
+    });
+    
+    // Remove each host using the existing removeInfectedHost function
+    if (typeof removeInfectedHost === 'function') {
+        hostsToRemove.forEach(hostId => {
+            const host = state.infectedHostPool.find(h => h.id === hostId);
+            if (host) {
+                removeInfectedHost(hostId);
+            }
+        });
+        
+        if (hostsToRemove.length > 0) {
+            showNotification(`${hostsToRemove.length} host rimossi dalla botnet dopo l'operazione ransomware.`, 'info');
+        }
+    }
+    
+    // Remove from active requests
+    activeRansomRequests.splice(requestIndex, 1);
+    
+    // Find and complete the corresponding operation
+    const operationIndex = activeRansomwareOperations.findIndex(op => op.id === request.operationId);
+    if (operationIndex !== -1) {
+        const operation = activeRansomwareOperations[operationIndex];
+        operation.phase = 'completed';
+        operation.result = isAccepted ? 'accepted' : 'rejected';
+        
+        // Remove from active operations after a delay
+        setTimeout(() => {
+            const finalIndex = activeRansomwareOperations.findIndex(op => op.id === request.operationId);
+            if (finalIndex !== -1) {
+                activeRansomwareOperations.splice(finalIndex, 1);
+                renderActiveRansomwareOperations();
+            }
+        }, 10000); // Keep visible for 10 seconds
+    }
+    
+    renderActiveRansomwareOperations();
+    renderRansomRequestsStatus();
+    saveState();
+    updateUI();
+}
+
+function instantCompleteRansom(requestId) {
+    const requestIndex = activeRansomRequests.findIndex(req => req.id === requestId);
+    if (requestIndex === -1) return;
+    
+    const request = activeRansomRequests[requestIndex];
+    
+    // Check if player has enough Monero
+    if (state.xmr < 10) {
+        showNotification('Servono 10 XMR per completare istantaneamente il riscatto!', 'error');
+        return;
+    }
+    
+    // Deduct 10 XMR from player balance
+    state.xmr -= 10;
+    
+    // Clear the existing timeout
+    clearTimeout(request.timeoutId);
+    
+    // Remove the request from active requests
+    activeRansomRequests.splice(requestIndex, 1);
+    
+    // Determine if ransom is accepted based on calculated probability (same logic as processRansomResponse)
+    const isAccepted = Math.random() * 100 < request.probability;
+    
+    if (isAccepted) {
+        // Ransom accepted - add Bitcoin to player wallet
+        state.btc += request.amount;
+        
+        showNotification(`🎉 Completamento istantaneo riuscito! Ricevuti ${request.amount} BTC nel portafoglio. (-10 XMR)`, 'success');
+        
+        request.status = 'accepted';
+        
+        // Add XP based on target difficulty
+        const xpRewards = {
+            'individual': 20,
+            'small_business': 35,
+            'corporation': 60,
+            'government': 100,
+            'hospital': 50,
+            'education': 30
+        };
+        
+        if (state.xp !== undefined && xpRewards[request.targetType]) {
+            state.xp += xpRewards[request.targetType];
+        }
+        
+    } else {
+        // Ransom rejected
+        showNotification(`❌ Completamento istantaneo fallito: il riscatto è stato rifiutato. (-10 XMR)`, 'error');
+        request.status = 'rejected';
+    }
+    
+    // Apply traceability effects based on target type
+    const traceabilityIncrease = {
+        'individual': 2,
+        'small_business': 3,
+        'corporation': 5,
+        'government': 8,
+        'hospital': 4,
+        'education': 3
+    };
+    
+    const increase = traceabilityIncrease[request.targetType] || 3;
+    if (state.traceabilityScore !== undefined) {
+        state.traceabilityScore = Math.min(100, state.traceabilityScore + increase);
+    }
+    
+    // Remove infected hosts involved in the ransomware operation
+    const hostsToRemove = [];
+    request.botGroups.forEach(groupName => {
+        const group = state.botnetGroups[groupName];
+        if (group && group.hostIds) {
+            hostsToRemove.push(...group.hostIds);
+        }
+    });
+    
+    // Remove each host using the existing removeInfectedHost function
+    if (typeof removeInfectedHost === 'function') {
+        hostsToRemove.forEach(hostId => {
+            const host = state.infectedHostPool.find(h => h.id === hostId);
+            if (host) {
+                removeInfectedHost(hostId);
+            }
+        });
+        
+        if (hostsToRemove.length > 0) {
+            showNotification(`${hostsToRemove.length} host rimossi dalla botnet dopo il completamento istantaneo.`, 'info');
+        }
+    }
+    
+    // Update UI
+    renderRansomRequestsStatus();
+    saveState();
+    updateUI();
+}
+
+function accelerateRansomResponse(requestId) {
+    const requestIndex = activeRansomRequests.findIndex(req => req.id === requestId);
+    if (requestIndex === -1) return;
+    
+    const request = activeRansomRequests[requestIndex];
+    
+    // Check if player has enough XMR
+    if (state.xmr < 25) {
+        showNotification('Servono 25 XMR per accelerare la risposta a 30 secondi!', 'error');
+        return;
+    }
+    
+    // Check if already accelerated (response time is 30 seconds or less)
+    const remaining = Math.max(0, request.responseTime - (Date.now() - request.sentTime));
+    if (remaining <= 30000) {
+        showNotification('La richiesta è già stata accelerata o è in scadenza!', 'error');
+        return;
+    }
+    
+    // Deduct 25 XMR from player balance
+    state.xmr -= 25;
+    
+    // Clear the existing timeout
+    clearTimeout(request.timeoutId);
+    
+    // Update the request to have a 30-second response time from now
+    request.responseTime = 30000; // 30 seconds in milliseconds
+    request.sentTime = Date.now(); // Reset sent time to now
+    request.accelerated = true; // Mark as accelerated
+    
+    // Set new timeout for 30 seconds
+    request.timeoutId = setTimeout(() => {
+        processRansomResponse(requestId);
+    }, 30000);
+    
+    showNotification(`⚡ Risposta accelerata a 30 secondi! (-25 XMR)`, 'success');
+    
+    // Update UI elements
+    renderRansomRequestsStatus();
+    saveState();
+    updateUI();
+}
+
+function applyRansomwareTraceability(operation) {
+    // Apply ransomware traceability using the existing system if available
+    if (typeof handleRansomwareTraceability === 'function') {
+        const participatingHostIds = [];
+        operation.botGroups.forEach(groupName => {
+            const group = state.botnetGroups[groupName];
+            if (group && group.hostIds) {
+                participatingHostIds.push(...group.hostIds);
+            }
+        });
+        
+        handleRansomwareTraceability(participatingHostIds, operation);
+    } else {
+        // Fallback manual traceability application
+        const traceabilityIncrease = calculateRansomwareTraceabilityIncrease(operation);
+        
+        operation.botGroups.forEach(groupName => {
+            const group = state.botnetGroups[groupName];
+            if (group) {
+                group.hostIds.forEach(hostId => {
+                    const host = state.infectedHostPool.find(h => h.id === hostId);
+                    if (host && host.status === 'Active') {
+                        host.traceabilityScore = Math.min(100, host.traceabilityScore + traceabilityIncrease);
+                        addLogToHost(hostId, `Partecipazione a operazione ransomware - tracciabilità aumentata di ${traceabilityIncrease}`);
+                    }
+                });
+            }
+        });
+    }
+}
+
+function calculateRansomwareTraceabilityIncrease(operation) {
+    let baseIncrease = 10;
+    
+    // Target type modifier
+    const targetModifiers = {
+        'individual': 0.5,
+        'small_business': 0.7,
+        'corporation': 1.0,
+        'government': 2.0,
+        'hospital': 1.5,
+        'education': 0.8
+    };
+    
+    baseIncrease *= targetModifiers[operation.targetType] || 1.0;
+    
+    // Strategy modifier
+    const strategyModifiers = {
+        'fast': 0.8,
+        'thorough': 1.2,
+        'selective': 1.0
+    };
+    
+    baseIncrease *= strategyModifiers[operation.strategy] || 1.0;
+    
+    // Amount modifier (higher amounts attract more attention)
+    if (operation.ransomAmount > 1.0) {
+        baseIncrease *= 1.5;
+    } else if (operation.ransomAmount > 0.5) {
+        baseIncrease *= 1.2;
+    }
+    
+    return Math.round(baseIncrease);
+}
+
+function renderActiveRansomwareOperations() {
+    const container = document.getElementById('active-ransomware-operations');
+    if (!container) return;
+    
+    if (activeRansomwareOperations.length === 0) {
+        container.innerHTML = '';
+        return;
+    }
+    
+    let html = '';
+    activeRansomwareOperations.forEach(operation => {
+        const elapsed = Date.now() - operation.startTime;
+        const progress = operation.phase === 'encryption' ? 
+            Math.min(100, (elapsed / (operation.duration * 1000)) * 100) : 100;
+        
+        let statusText = '';
+        let statusClass = '';
+        let statusIcon = '';
+        let showCancelButton = false;
+        
+        switch (operation.phase) {
+            case 'encryption':
+                statusText = 'Crittografia in corso...';
+                statusClass = 'text-yellow-400';
+                statusIcon = 'fa-spinner fa-spin';
+                showCancelButton = true;
+                break;
+            case 'ransom_sent':
+                statusText = 'Richiesta inviata';
+                statusClass = 'text-blue-400';
+                statusIcon = 'fa-envelope';
+                showCancelButton = true;
+                break;
+            case 'completed':
+                statusText = operation.result === 'accepted' ? 'Riscatto pagato!' : 'Riscatto rifiutato';
+                statusClass = operation.result === 'accepted' ? 'text-green-400' : 'text-red-400';
+                statusIcon = operation.result === 'accepted' ? 'fa-check-circle' : 'fa-times-circle';
+                break;
+            case 'failed':
+                statusText = 'Operazione fallita';
+                statusClass = 'text-red-400';
+                statusIcon = 'fa-exclamation-triangle';
+                break;
+        }
+        
+        const groupNames = operation.botGroups.join(', ');
+        
+        html += `
+            <div class="bg-red-900/50 rounded-lg p-4 border border-red-500">
+                <div class="flex justify-between items-center mb-2">
+                    <div>
+                        <div class="font-semibold text-white">Target: ${operation.targetType}</div>
+                        <div class="text-xs text-gray-400">Gruppi: ${groupNames}</div>
+                        <div class="text-xs text-gray-400">${operation.activeHosts} host attivi</div>
+                    </div>
+                    <div class="text-right">
+                        <div class="font-bold text-red-300">${operation.ransomAmount} BTC</div>
+                        <div class="text-xs ${statusClass}">
+                            <i class="fas ${statusIcon} mr-1"></i>
+                            ${statusText}
+                        </div>
+                        ${showCancelButton ? `
+                            <button class="text-xs text-red-400 hover:text-red-300 mt-1" onclick="stopRansomwareOperation('${operation.id}')">
+                                <i class="fas fa-stop mr-1"></i>Stop
+                            </button>
+                        ` : ''}
+                    </div>
+                </div>
+                
+                ${operation.phase === 'encryption' ? `
+                    <div class="w-full bg-gray-700 rounded-full h-2">
+                        <div class="bg-red-500 h-2 rounded-full transition-all" style="width: ${progress}%"></div>
+                    </div>
+                ` : ''}
+            </div>
+        `;
+    });
+    
+    container.innerHTML = html;
+}
+
+function renderRansomRequestsStatus() {
+    const container = document.getElementById('ransom-requests-status');
+    const listContainer = document.getElementById('ransom-requests-list');
+    
+    if (!container || !listContainer) return;
+    
+    if (activeRansomRequests.length === 0) {
+        container.classList.add('hidden');
+        return;
+    }
+    
+    container.classList.remove('hidden');
+    
+    let html = '';
+    activeRansomRequests.forEach(request => {
+        const elapsed = Date.now() - request.sentTime;
+        const remaining = Math.max(0, request.responseTime - elapsed);
+        const remainingHours = Math.floor(remaining / 3600000);
+        const remainingMinutes = Math.floor((remaining % 3600000) / 60000);
+        
+        const canInstantComplete = state.xmr >= 10;
+        const canAccelerate = state.xmr >= 25 && remaining > 30000 && !request.accelerated;
+        
+        html += `
+            <div class="bg-indigo-800/50 rounded-lg p-3 border border-indigo-400">
+                <div class="flex justify-between items-center mb-2">
+                    <div>
+                        <div class="font-semibold text-white">${request.targetType} - ${request.amount} BTC</div>
+                        <div class="text-xs text-gray-400">Probabilità: ${request.probability.toFixed(1)}%</div>
+                        ${request.accelerated ? '<div class="text-xs text-yellow-400">⚡ Accelerata</div>' : ''}
+                    </div>
+                    <div class="text-right">
+                        <div class="text-sm font-bold text-indigo-300">
+                            ${remainingHours}h ${remainingMinutes}m
+                        </div>
+                        <div class="text-xs text-gray-400">rimanenti</div>
+                    </div>
+                </div>
+                <div class="flex justify-between items-center">
+                    <div class="text-xs text-gray-400">
+                        Saldo XMR: ${state.xmr.toFixed(1)}
+                    </div>
+                    <div class="flex space-x-2">
+                        <button 
+                            class="text-xs px-2 py-1 rounded ${canAccelerate ? 'bg-yellow-600 hover:bg-yellow-700 text-white' : 'bg-gray-600 text-gray-400 cursor-not-allowed'}" 
+                            onclick="accelerateRansomResponse('${request.id}')"
+                            ${!canAccelerate ? 'disabled' : ''}
+                            title="${canAccelerate ? 'Accelera risposta a 30 secondi per 25 XMR' : request.accelerated ? 'Già accelerata' : remaining <= 30000 ? 'Già in scadenza' : 'Servono 25 XMR per accelerare'}"
+                        >
+                            <i class="fas fa-clock mr-1"></i>Accelera (25 XMR)
+                        </button>
+                        <button 
+                            class="text-xs px-2 py-1 rounded ${canInstantComplete ? 'bg-purple-600 hover:bg-purple-700 text-white' : 'bg-gray-600 text-gray-400 cursor-not-allowed'}" 
+                            onclick="instantCompleteRansom('${request.id}')"
+                            ${!canInstantComplete ? 'disabled' : ''}
+                            title="${canInstantComplete ? 'Completa istantaneamente per 10 XMR' : 'Servono 10 XMR per completare istantaneamente'}"
+                        >
+                            <i class="fas fa-bolt mr-1"></i>Completa Subito (10 XMR)
+                        </button>
+                    </div>
+                </div>
+            </div>`;
+    });
+    
+    listContainer.innerHTML = html;
+}
+
+function stopRansomwareOperation(operationId) {
+    const operationIndex = activeRansomwareOperations.findIndex(op => op.id === operationId);
+    if (operationIndex === -1) return;
+    
+    const operation = activeRansomwareOperations[operationIndex];
+    
+    // Reset CurrentActivity to Idle for all participating groups
+    operation.botGroups.forEach(groupName => {
+        const group = state.botnetGroups[groupName];
+        if (group) {
+            group.currentActivity = 'Idle';
+        }
+    });
+    
+    // Remove the operation from active operations
+    activeRansomwareOperations.splice(operationIndex, 1);
+    
+    // Also remove any pending ransom requests for this operation
+    const requestIndex = activeRansomRequests.findIndex(req => req.operationId === operationId);
+    if (requestIndex !== -1) {
+        clearTimeout(activeRansomRequests[requestIndex].timeoutId);
+        activeRansomRequests.splice(requestIndex, 1);
+    }
+    
+    // Refresh the UI
+    renderActiveRansomwareOperations();
+    renderRansomRequestsStatus();
+    renderRansomwareBotGroupSelection();
+    renderBotGroupSelection(); // Update the main bot group selection too
+    
+    showNotification('Operazione ransomware annullata.', 'info');
+    saveState();
 }
