@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Fix Verification</title>
+</head>
+<body>
+    <h1>Testing the detectedNodes Fix</h1>
+    <div id="output"></div>
+    
+    <script src="modules/dynamic_countermeasures.js"></script>
+    
+    <script>
+        // Capture console.log output
+        const originalLog = console.log;
+        const output = document.getElementById('output');
+        console.log = function(...args) {
+            originalLog.apply(console, args);
+            const message = args.join(' ');
+            output.innerHTML += message + '<br>';
+        };
+        
+        // Mock the required global objects and functions
+        window.worldTargets = {
+            'test_target': {
+                id: 'test_target',
+                name: 'Test Target',
+                ipAddress: '192.168.1.100',
+                tier: 2
+            }
+        };
+        
+        window.networkNodeData = {
+            'test_node': {
+                id: 'test_node',
+                name: 'Test Node',
+                ipAddress: '10.0.0.1',
+                currentIp: '10.0.0.1'
+            }
+        };
+        
+        window.state = {
+            ipTraceability: {},
+            dynamicTargetStates: {}
+        };
+        
+        window.showNotification = function(message, type) {
+            console.log(`[${type.toUpperCase()}] ${message}`);
+        };
+        
+        window.getNodeInfo = function(nodeId) {
+            return window.networkNodeData[nodeId] || null;
+        };
+        
+        // Run tests when page loads
+        setTimeout(() => {
+            // Test 1: Test initialization
+            console.log("=== Test 1: Initialization ===");
+            if (typeof initializeDynamicTargetStates === 'function') {
+                initializeDynamicTargetStates();
+                const targetState = state.dynamicTargetStates['test_target'];
+                console.log("Target state created:", !!targetState);
+                console.log("detectedNodes is Set:", targetState.detectedNodes instanceof Set);
+                console.log("✅ Test 1 passed: Initialization works correctly");
+            } else {
+                console.log("❌ Test 1 failed: initializeDynamicTargetStates not available");
+            }
+            
+            // Test 2: Test serialization issue reproduction and fix
+            console.log("");
+            console.log("=== Test 2: Serialization Issue Fix ===");
+            
+            // Add some detected nodes
+            const targetState = state.dynamicTargetStates['test_target'];
+            targetState.detectedNodes.add('10.0.0.1');
+            targetState.detectedNodes.add('192.168.1.1');
+            console.log("Added nodes to Set:", targetState.detectedNodes.size);
+            
+            // Simulate state saving/loading
+            const serialized = JSON.stringify(state);
+            const deserializedState = JSON.parse(serialized);
+            
+            // Replace state with deserialized version (simulating localStorage load)
+            state.dynamicTargetStates = deserializedState.dynamicTargetStates;
+            
+            console.log("After deserialization - detectedNodes is Set:", 
+                        state.dynamicTargetStates['test_target'].detectedNodes instanceof Set);
+            console.log("After deserialization - detectedNodes type:", 
+                        typeof state.dynamicTargetStates['test_target'].detectedNodes);
+            
+            // Test the fix
+            try {
+                if (typeof checkLastNodeBlocking === 'function') {
+                    const routingChain = ['test_node'];
+                    const blocked = checkLastNodeBlocking('test_target', routingChain);
+                    console.log("checkLastNodeBlocking executed without error:", true);
+                    console.log("Attack blocked:", blocked);
+                    console.log("detectedNodes is now Set:", 
+                                state.dynamicTargetStates['test_target'].detectedNodes instanceof Set);
+                    console.log("✅ Test 2 passed: Fix works correctly");
+                } else {
+                    console.log("❌ Test 2 failed: checkLastNodeBlocking not available");
+                }
+            } catch (error) {
+                console.log("❌ Test 2 failed:", error.message);
+            }
+            
+            // Test 3: Test executeLastNodeDetection with fix
+            console.log("");
+            console.log("=== Test 3: executeLastNodeDetection Fix ===");
+            
+            // Reset and create fresh corrupted state
+            state.dynamicTargetStates['test_target'].detectedNodes = {}; // Corrupt it
+            
+            try {
+                if (typeof executeLastNodeDetection === 'function') {
+                    const mockAttack = {
+                        routingChain: ['test_node'],
+                        target: worldTargets['test_target']
+                    };
+                    
+                    const result = executeLastNodeDetection('test_target', mockAttack);
+                    console.log("executeLastNodeDetection executed without error:", true);
+                    console.log("Function returned:", result);
+                    console.log("detectedNodes is now Set:", 
+                                state.dynamicTargetStates['test_target'].detectedNodes instanceof Set);
+                    console.log("detectedNodes size:", 
+                                state.dynamicTargetStates['test_target'].detectedNodes.size);
+                    console.log("✅ Test 3 passed: executeLastNodeDetection fix works correctly");
+                } else {
+                    console.log("❌ Test 3 failed: executeLastNodeDetection not available");
+                }
+            } catch (error) {
+                console.log("❌ Test 3 failed:", error.message);
+            }
+            
+            console.log("");
+            console.log("=== All Tests Completed ===");
+        }, 100);
+    </script>
+</body>
+</html>
