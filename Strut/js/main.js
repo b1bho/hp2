@@ -180,6 +180,16 @@ function initializeDynamicState() {
         state.identity.realIp = generateRandomIp();
     }
     
+    // Initialize currentActivity for existing botnet groups
+    if (state.botnetGroups) {
+        Object.keys(state.botnetGroups).forEach(groupName => {
+            const group = state.botnetGroups[groupName];
+            if (group && !group.currentActivity) {
+                group.currentActivity = 'Idle';
+            }
+        });
+    }
+    
     // Initialize IPs for purchased services
     for (const serviceId in state.purchasedServices) {
         if (state.purchasedServices[serviceId] && !state.purchasedServices[serviceId].currentIp) {

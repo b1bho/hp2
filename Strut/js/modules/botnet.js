@@ -437,7 +437,7 @@ function createBotnetGroup() {
         showNotification(`Un gruppo con il nome "${groupName}" esiste già.`, "error");
         return;
     }
-    state.botnetGroups[groupName] = { hostIds: [], attachedFlows: [] };
+    state.botnetGroups[groupName] = { hostIds: [], attachedFlows: [], currentActivity: 'Idle' };
     state.botnetGroups[groupName].hostIds.push(...selectedHostIds);
     
     Object.keys(state.botnetGroups).forEach(g => {
@@ -1034,18 +1034,28 @@ function renderBotGroupSelection() {
         
         const totalHosts = group.hostIds.length;
         const isSelected = selectedBotGroups.has(groupName);
+        const currentActivity = group.currentActivity || 'Idle';
+        const activityIcon = currentActivity === 'Mining' ? 'fa-coins' : currentActivity === 'DDoSing' ? 'fa-crosshairs' : 'fa-circle';
+        const activityColor = currentActivity === 'Mining' ? 'text-yellow-400' : currentActivity === 'DDoSing' ? 'text-red-400' : 'text-gray-400';
         
         html += `
             <div class="bot-group-card ${isSelected ? 'selected' : ''}" data-group-name="${groupName}">
                 <div class="flex items-center space-x-3">
                     <input type="checkbox" class="bot-group-checkbox" ${isSelected ? 'checked' : ''}>
                     <div class="flex-grow">
-                        <h4 class="font-semibold text-white">${groupName}</h4>
+                        <div class="flex items-center space-x-2">
+                            <h4 class="font-semibold text-white">${groupName}</h4>
+                            <div class="flex items-center space-x-1">
+                                <i class="fas ${activityIcon} ${activityColor} text-xs"></i>
+                                <span class="text-xs ${activityColor}">${currentActivity}</span>
+                            </div>
+                        </div>
                         <p class="text-sm text-gray-400">${activeHosts}/${totalHosts} hosts active</p>
                     </div>
                     <div class="text-right">
-                        <div class="text-sm font-bold text-purple-400">${calculateGroupPower(group).toFixed(1)} GFLOPS</div>
+                        <div class="text-sm font-bold text-purple-400">${calculateEffectiveGroupPowerForDDoS(group).toFixed(1)} GFLOPS</div>
                         <div class="text-xs text-blue-400">${calculateGroupBandwidth(group)} Mbps</div>
+                        ${currentActivity === 'Mining' ? '<div class="text-xs text-orange-400">(-50% power)</div>' : ''}
                     </div>
                 </div>
             </div>
@@ -1105,6 +1115,15 @@ function calculateGroupPower(group) {
     return totalPower;
 }
 
+function calculateEffectiveGroupPowerForDDoS(group) {
+    const basePower = calculateGroupPower(group);
+    // Apply 50% reduction if group is currently mining
+    if (group.currentActivity === 'Mining') {
+        return basePower * 0.5;
+    }
+    return basePower;
+}
+
 function calculateGroupBandwidth(group) {
     let totalBandwidth = 0;
     group.hostIds.forEach(hostId => {
@@ -1137,7 +1156,10 @@ function updateSelectedResources() {
                     if (host.status === 'Active') {
                         activeHosts++;
                         if (host.resources) {
-                            totalPower += host.resources.cpuPower;
+                            // Use effective power calculation for DDoS
+                            const effectivePower = group.currentActivity === 'Mining' ? 
+                                host.resources.cpuPower * 0.5 : host.resources.cpuPower;
+                            totalPower += effectivePower;
                             totalBandwidth += host.resources.bandwidth;
                         }
                     }
@@ -1331,18 +1353,26 @@ function updateAttackPreview() {
         return;
     }
 
-    // Calculate attack metrics
+    // Calculate attack metrics with conflict consideration
     let totalPower = 0;
     let totalHosts = 0;
+    let hasMininingConflicts = false;
+    
     selectedBotGroups.forEach(groupName => {
         const group = state.botnetGroups[groupName];
         if (group) {
+            if (group.currentActivity === 'Mining') {
+                hasMininingConflicts = true;
+            }
             group.hostIds.forEach(hostId => {
                 const host = state.infectedHostPool.find(h => h.id === hostId);
                 if (host && host.status === 'Active') {
                     totalHosts++;
                     if (host.resources) {
-                        totalPower += host.resources.cpuPower;
+                        // Apply conflict reduction
+                        const effectivePower = group.currentActivity === 'Mining' ? 
+                            host.resources.cpuPower * 0.5 : host.resources.cpuPower;
+                        totalPower += effectivePower;
                     }
                 }
             });
@@ -1350,8 +1380,8 @@ function updateAttackPreview() {
     });
 
     const impact = calculateAttackImpact(totalPower, duration);
-    const traceRisk = calculateTraceabilityRisk(totalHosts, duration);
-    const lossRisk = calculateBotLossRisk(totalHosts, duration);
+    const traceRisk = calculateTraceabilityRisk(totalHosts, duration, hasMininingConflicts);
+    const lossRisk = calculateBotLossRisk(totalHosts, duration, hasMininingConflicts);
 
     impactEl.textContent = impact;
     impactEl.className = `font-bold ${getImpactColor(impact)}`;
@@ -1373,16 +1403,22 @@ function calculateAttackImpact(totalPower, duration) {
     return 'Critical';
 }
 
-function calculateTraceabilityRisk(hostCount, duration) {
-    const riskScore = (hostCount * 2) + (duration / 10);
+function calculateTraceabilityRisk(hostCount, duration, hasConflicts = false) {
+    const baseRiskScore = (hostCount * 2) + (duration / 10);
+    const conflictPenalty = hasConflicts ? 10 : 0; // Additional risk for conflicts
+    const riskScore = baseRiskScore + conflictPenalty;
+    
     if (riskScore < 20) return 'Low';
     if (riskScore < 50) return 'Medium';
     if (riskScore < 100) return 'High';
     return 'Critical';
 }
 
-function calculateBotLossRisk(hostCount, duration) {
-    const lossScore = (hostCount / 10) + (duration / 30);
+function calculateBotLossRisk(hostCount, duration, hasConflicts = false) {
+    const baseLossScore = (hostCount / 10) + (duration / 30);
+    const conflictPenalty = hasConflicts ? 5 : 0; // Additional risk for conflicts
+    const lossScore = baseLossScore + conflictPenalty;
+    
     if (lossScore < 5) return 'Low';
     if (lossScore < 15) return 'Medium';
     if (lossScore < 30) return 'High';
@@ -1430,17 +1466,60 @@ function launchDDoSAttack() {
         return;
     }
 
-    // Start the attack
+    // Check for conflicts and calculate effective resources
+    let hasConflicts = false;
+    let conflictGroups = [];
+    let attackSourceIPs = [];
+    
+    selectedBotGroups.forEach(groupName => {
+        const group = state.botnetGroups[groupName];
+        if (group) {
+            if (group.currentActivity === 'Mining') {
+                hasConflicts = true;
+                conflictGroups.push(groupName);
+            }
+            
+            // Collect bot IPs for realistic routing
+            group.hostIds.forEach(hostId => {
+                const host = state.infectedHostPool.find(h => h.id === hostId);
+                if (host && host.status === 'Active') {
+                    attackSourceIPs.push(host.ipAddress);
+                }
+            });
+            
+            // Set CurrentActivity to DDoSing
+            group.currentActivity = 'DDoSing';
+        }
+    });
+
+    // Notify about conflicts
+    if (hasConflicts) {
+        showNotification(`Resource conflict detected! Groups ${conflictGroups.join(', ')} are mining. Attack power reduced by 50%.`, 'warning');
+    }
+
+    // Calculate effective Operational Efficiency (EO) and Code Robustness (RC)
+    let totalEffectivePower = 0;
+    selectedBotGroups.forEach(groupName => {
+        const group = state.botnetGroups[groupName];
+        if (group) {
+            totalEffectivePower += calculateEffectiveGroupPowerForDDoS(group);
+        }
+    });
+
+    // Start the attack with realistic routing
     activeDDoSAttack = {
         target: targetIp,
         flow: flow,
         botGroups: Array.from(selectedBotGroups),
         duration: duration,
         startTime: Date.now(),
-        progress: 0
+        progress: 0,
+        sourceIPs: attackSourceIPs,
+        effectivePower: totalEffectivePower,
+        hasConflicts: hasConflicts
     };
 
-    showNotification(`DDoS attack launched against ${targetIp}`, 'info');
+    showNotification(`DDoS attack launched against ${targetIp} using ${attackSourceIPs.length} bot sources`, 'info');
     showAttackStatus();
     
     // Apply attack effects immediately
@@ -1525,14 +1604,25 @@ function completeDDoSAttack() {
     if (!activeDDoSAttack) return;
 
     const attack = activeDDoSAttack;
+    
+    // Reset CurrentActivity to Idle for all participating groups
+    attack.botGroups.forEach(groupName => {
+        const group = state.botnetGroups[groupName];
+        if (group) {
+            group.currentActivity = 'Idle';
+        }
+    });
+    
     activeDDoSAttack = null;
 
-    // Calculate success and consequences
-    const attackPower = calculateTotalAttackPower(attack.botGroups);
-    const isSuccess = Math.random() < 0.8; // 80% base success rate
+    // Calculate success and consequences based on effective power
+    const attackPower = attack.effectivePower || calculateTotalAttackPower(attack.botGroups);
+    const baseSuccessRate = 0.8;
+    const conflictPenalty = attack.hasConflicts ? 0.1 : 0; // 10% penalty for conflicts
+    const isSuccess = Math.random() < (baseSuccessRate - conflictPenalty);
 
     if (isSuccess) {
-        // Successful attack rewards
+        // Successful attack rewards (adjusted for effective power)
         const xpGain = Math.floor(attackPower / 10) + (attack.duration / 10);
         addXp(xpGain);
         
@@ -1540,9 +1630,15 @@ function completeDDoSAttack() {
         state.btc += btcReward;
         
         showNotification(`DDoS attack successful! Gained ${xpGain} XP and ${btcReward.toFixed(6)} BTC`, 'success');
+        
+        // Add log entry for successful attack with source IPs
+        addLogToAttackingSources(attack.sourceIPs, `DDoS attack against ${attack.target} completed successfully`);
     } else {
         // Attack failed - increase consequences
-        showNotification('DDoS attack failed! Target defenses held strong.', 'error');
+        const failureMessage = attack.hasConflicts ? 
+            'DDoS attack failed! Resource conflicts reduced effectiveness.' : 
+            'DDoS attack failed! Target defenses held strong.';
+        showNotification(failureMessage, 'error');
         
         // Additional traceability increase for failure
         attack.botGroups.forEach(groupName => {
@@ -1551,7 +1647,8 @@ function completeDDoSAttack() {
                 group.hostIds.forEach(hostId => {
                     const host = state.infectedHostPool.find(h => h.id === hostId);
                     if (host) {
-                        host.traceabilityScore = Math.min(100, host.traceabilityScore + 10);
+                        const additionalTrace = attack.hasConflicts ? 15 : 10; // Higher penalty for conflicts
+                        host.traceabilityScore = Math.min(100, host.traceabilityScore + additionalTrace);
                         
                         // Risk of losing some bots
                         if (host.traceabilityScore > 80 && Math.random() < 0.1) {
@@ -1562,12 +1659,25 @@ function completeDDoSAttack() {
                 });
             }
         });
+        
+        // Add log entry for failed attack
+        addLogToAttackingSources(attack.sourceIPs, `DDoS attack against ${attack.target} failed`);
     }
 
     hideAttackStatus();
     saveState();
     updateUI();
     renderInfectedHostsList();
+    renderBotGroupSelection(); // Refresh to show updated CurrentActivity status
+}
+
+function addLogToAttackingSources(sourceIPs, message) {
+    sourceIPs.forEach(ip => {
+        const host = state.infectedHostPool.find(h => h.ipAddress === ip);
+        if (host) {
+            addLogToHost(host.id, message);
+        }
+    });
 }
 
 function calculateTotalAttackPower(botGroups) {
@@ -2016,11 +2126,31 @@ function startMining() {
         return;
     }
     
+    // Check for conflicts with DDoS operations
+    let hasConflicts = false;
+    let conflictGroups = [];
+    
+    selectedGroupsArray.forEach(groupName => {
+        const group = state.botnetGroups[groupName];
+        if (group && group.currentActivity === 'DDoSing') {
+            hasConflicts = true;
+            conflictGroups.push(groupName);
+        }
+    });
+    
+    if (hasConflicts) {
+        showNotification(`Cannot start mining: Groups ${conflictGroups.join(', ')} are currently performing DDoS attacks.`, 'error');
+        return;
+    }
+    
     // Calculate total active hosts
     let totalActiveHosts = 0;
     selectedGroupsArray.forEach(groupName => {
         const group = state.botnetGroups[groupName];
         if (group) {
+            // Set currentActivity to Mining
+            group.currentActivity = 'Mining';
+            
             group.hostIds.forEach(hostId => {
                 const host = state.infectedHostPool.find(h => h.id === hostId);
                 if (host && host.status === 'Active') {
@@ -2031,6 +2161,13 @@ function startMining() {
     });
     
     if (totalActiveHosts === 0) {
+        // Reset activity if no active hosts
+        selectedGroupsArray.forEach(groupName => {
+            const group = state.botnetGroups[groupName];
+            if (group) {
+                group.currentActivity = 'Idle';
+            }
+        });
         showNotification('Nessun host attivo nei gruppi selezionati.', 'error');
         return;
     }
@@ -2062,6 +2199,7 @@ function startMining() {
     showNotification(`Mining ${currency.toUpperCase()} avviato con successo!`, 'success');
     
     updateMiningUI();
+    renderBotGroupSelection(); // Refresh to show updated CurrentActivity status
     saveState();
 }
 
@@ -2071,6 +2209,14 @@ function stopMining() {
     const operation = activeMiningOperation;
     const duration = Date.now() - operation.startTime;
     const durationHours = duration / (1000 * 60 * 60);
+    
+    // Reset CurrentActivity to Idle for all participating groups
+    operation.groups.forEach(groupName => {
+        const group = state.botnetGroups[groupName];
+        if (group) {
+            group.currentActivity = 'Idle';
+        }
+    });
     
     // Final reward calculation
     processMiningRewards(true); // Force final reward
@@ -2089,6 +2235,7 @@ function stopMining() {
     
     updateMiningUI();
     renderMiningGroups();
+    renderBotGroupSelection(); // Refresh to show updated CurrentActivity status
     updateMiningSelectedResources();
     saveState();
     updateUI();
@@ -2191,7 +2338,7 @@ function updateMiningLogsDisplay() {
     logsContainer.innerHTML = html;
 }
 
-// Process mining rewards periodically
+// Process mining rewards periodically - should be called from main.js
 function processMiningRewards(forceFinal = false) {
     if (!activeMiningOperation) return;
     
@@ -2268,6 +2415,9 @@ function processMiningRewards(forceFinal = false) {
         }
     }
 }
+
+// Auto-process mining rewards every 30 seconds
+setInterval(processMiningRewards, 30000);
 
 function applyMiningRisks() {
     if (!activeMiningOperation) return;

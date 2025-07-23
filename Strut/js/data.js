@@ -553,11 +553,13 @@ const initialGameState = {
     botnetGroups: {
         "Test Group": {
             hostIds: ["host_sample_1", "host_sample_2"],
-            attachedFlows: []
+            attachedFlows: [],
+            currentActivity: 'Idle'
         },
         "Italy Bots": {
             hostIds: ["host_sample_3"],
-            attachedFlows: []
+            attachedFlows: [],
+            currentActivity: 'Idle'
         }
     },
     ownedHardware: {},
