@@ -150,6 +150,7 @@ function triggerCountermeasuresFromTraceability(triggerReason = 'high_traceabili
  * @param {string} targetId - Target identifier
  * @returns {string} New IP address
  */
+function generateNewTargetIp(targetId) {
     // Generate a realistic IP that's different from current
     const currentState = state.dynamicTargetStates[targetId];
     let newIp;

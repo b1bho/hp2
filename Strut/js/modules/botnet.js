@@ -2099,16 +2099,6 @@ function completeDDoSAttackEnhanced(attackId) {
         
         handleDDoSTraceability(participatingHostIds, attack.target, attackResult);
     }
-    
-    // Adjust success rate based on max status achieved
-    if (maxStatus === TARGET_STATUS.DOWN) {
-        baseSuccessRate = 0.95; // Very high success for complete saturation
-    } else if (maxStatus === TARGET_STATUS.PARTIAL) {
-        baseSuccessRate = 0.85; // Good success for partial impact
-    }
-    
-    const finalSuccessRate = baseSuccessRate - conflictPenalty;
-    const isSuccess = Math.random() < finalSuccessRate;
 
     if (isSuccess) {
         // Enhanced rewards based on impact performance
