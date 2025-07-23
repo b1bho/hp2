@@ -163,16 +163,33 @@ async function updateBTCValue() {
             state.btcValueInUSD = data.bitcoin.usd;
         }
     } catch (error) {
-        console.error("Impossibile aggiornare il prezzo di BTC dall'API. Verrà usato l'ultimo valore noto.", error);
-        // Fallback to a default value if no value is set
-        if (!state.btcValueInUSD) {
-            state.btcValueInUSD = 50000; // Default BTC price for testing
-        }
+        console.error("Impossibile aggiornare il prezzo di BTC dall'API. Simulando fluttuazioni realistiche.", error);
+        // Simulate realistic BTC price fluctuations instead of using fixed price
+        simulateBTCPriceFluctuation();
     } finally {
         updateUI();
         if (state.activePage === 'market') renderMarket();
         if (state.activePage === 'hq') renderQuestBoard();
     }
+}
+
+function simulateBTCPriceFluctuation() {
+    // Initialize with a realistic base price if not set
+    if (!state.btcValueInUSD) {
+        state.btcValueInUSD = 45000 + Math.random() * 20000; // Random between $45k-65k
+    }
+    
+    // Simulate realistic price fluctuation (±2% typical daily volatility)
+    const volatilityFactor = 0.02; // 2% max change per update
+    const randomChange = (Math.random() - 0.5) * 2 * volatilityFactor; // -2% to +2%
+    
+    // Apply the change
+    const newPrice = state.btcValueInUSD * (1 + randomChange);
+    
+    // Keep price within reasonable bounds ($20k - $100k)
+    state.btcValueInUSD = Math.max(20000, Math.min(100000, newPrice));
+    
+    console.log(`BTC price simulated: $${state.btcValueInUSD.toFixed(2)}`);
 }
 function initializeDynamicState() {
     // Initialize real IP if not set
@@ -604,7 +621,7 @@ function updateSidebarInfo() {
     if (sidebarExpandedLevel) sidebarExpandedLevel.textContent = state.playerLevel || 1;
     if (sidebarPlayerXp) sidebarPlayerXp.textContent = state.xp || 0;
     if (sidebarPlayerXpNext) sidebarPlayerXpNext.textContent = state.xpToNextLevel || 100;
-    if (sidebarBtcValue) sidebarBtcValue.textContent = `$${(state.btcValue || 50000).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    if (sidebarBtcValue) sidebarBtcValue.textContent = `$${(state.btcValueInUSD || 50000).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     if (sidebarExpandedBtcBalance) sidebarExpandedBtcBalance.textContent = (state.btc || 0).toFixed(6);
     if (sidebarExpandedXmrBalance) sidebarExpandedXmrBalance.textContent = Math.floor(state.xmr || 0);
     if (sidebarTalentPoints) sidebarTalentPoints.textContent = state.talentPoints || 0;
@@ -621,6 +638,11 @@ function updateActivityIndicators() {
     const miningIndicator = document.getElementById('mining-indicator');
     const ddosIndicator = document.getElementById('ddos-indicator');
     const attackIndicator = document.getElementById('attack-indicator');
+    
+    // Collapsed indicators
+    const collapsedMiningIndicator = document.getElementById('collapsed-mining-indicator');
+    const collapsedDdosIndicator = document.getElementById('collapsed-ddos-indicator');
+    const collapsedAttackIndicator = document.getElementById('collapsed-attack-indicator');
     
     // Check for active mining
     let isMiningActive = false;
@@ -640,7 +662,7 @@ function updateActivityIndicators() {
         isAttackActive = true;
     }
     
-    // Update indicators
+    // Update expanded indicators
     if (miningIndicator) {
         if (isMiningActive) {
             miningIndicator.classList.remove('hidden');
@@ -662,6 +684,31 @@ function updateActivityIndicators() {
             attackIndicator.classList.remove('hidden');
         } else {
             attackIndicator.classList.add('hidden');
+        }
+    }
+    
+    // Update collapsed indicators
+    if (collapsedMiningIndicator) {
+        if (isMiningActive) {
+            collapsedMiningIndicator.classList.remove('hidden');
+        } else {
+            collapsedMiningIndicator.classList.add('hidden');
+        }
+    }
+    
+    if (collapsedDdosIndicator) {
+        if (isDDoSActive) {
+            collapsedDdosIndicator.classList.remove('hidden');
+        } else {
+            collapsedDdosIndicator.classList.add('hidden');
+        }
+    }
+    
+    if (collapsedAttackIndicator) {
+        if (isAttackActive) {
+            collapsedAttackIndicator.classList.remove('hidden');
+        } else {
+            collapsedAttackIndicator.classList.add('hidden');
         }
     }
 }
