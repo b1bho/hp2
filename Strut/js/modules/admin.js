@@ -49,12 +49,75 @@ function unlockAllMarketItems() {
 
     updateAllBonuses();
     saveState();
-
-    if (state.activePage === 'market') initMarketPage();
-    if (state.activePage === 'hq') initHqPage();
-    if (state.activePage === 'profile' && state.activeProfileSection === 'clan') renderClanSection();
     
+    if (state.activePage === 'market') initMarketPage();
     alert('Tutti gli oggetti del mercato sono stati sbloccati!');
+}
+
+// === FACTION SYSTEM ADMIN FUNCTIONS ===
+
+function addReputationToAllFactions() {
+    const xpAmount = 150; // Good amount to test level progression
+    
+    if (typeof addFactionReputation !== 'undefined') {
+        Object.values(FACTIONS).forEach(faction => {
+            addFactionReputation(faction.id, xpAmount, 'Admin Test');
+        });
+        
+        if (state.activePage === 'hq') {
+            renderFactionReputationBars();
+        }
+        
+        alert(`Aggiunto ${xpAmount} XP di reputazione a tutte le fazioni!`);
+    } else {
+        alert('Sistema fazioni non disponibile!');
+    }
+}
+
+function resetAllFactionsReputation() {
+    if (!confirm('Sei sicuro di voler resettare tutta la reputazione delle fazioni?')) return;
+    
+    if (typeof reputationSystem !== 'undefined' && reputationSystem.resetAllReputations) {
+        reputationSystem.resetAllReputations();
+        alert('Reputazione di tutte le fazioni resettata!');
+    } else {
+        // Fallback manual reset
+        if (state.factionReputation) {
+            Object.keys(state.factionReputation).forEach(factionId => {
+                state.factionReputation[factionId] = {
+                    xp: 0,
+                    level: 0,
+                    totalXpEarned: 0
+                };
+            });
+            saveState();
+            
+            if (state.activePage === 'hq') {
+                renderFactionReputationBars();
+            }
+            
+            alert('Reputazione di tutte le fazioni resettata manualmente!');
+        }
+    }
+}
+
+function testFactionNotifications() {
+    if (typeof showNotification !== 'undefined') {
+        const testMessages = [
+            'Test notifica Governativa - Livello 2 raggiunto!',
+            'Test notifica Terrorista - Operazione completata',
+            'Test notifica Eco-Terrorista - Sabotaggio riuscito',
+            'Test notifica Popolazione - Caso risolto'
+        ];
+        
+        testMessages.forEach((msg, index) => {
+            setTimeout(() => {
+                showNotification(msg, 'success');
+            }, index * 1000);
+        });
+    } else {
+        alert('Sistema notifiche non disponibile!');
+    }
 }
 
 function resetQuests() {
@@ -246,6 +309,13 @@ function initAdminPanel() {
             <button id="admin-unlock-market" class="w-full px-4 py-2 text-sm font-medium rounded-md bg-yellow-600 hover:bg-yellow-700 text-gray-900">Sblocca Tutto il Mercato</button>
             <button id="admin-reset-quests" class="w-full px-4 py-2 text-sm font-medium rounded-md bg-purple-600 hover:bg-purple-700">Reset Missioni</button>
             <button id="admin-reset-botnet" class="w-full px-4 py-2 text-sm font-medium rounded-md bg-red-600 hover:bg-red-700">Reset Botnet</button>
+            
+            <!-- FACTION SYSTEM ADMIN CONTROLS -->
+            <hr class="border-gray-600 my-3">
+            <h4 class="text-sm font-bold text-orange-400 text-center">Controlli Fazioni</h4>
+            <button id="admin-add-faction-rep" class="w-full px-4 py-2 text-sm font-medium rounded-md bg-indigo-600 hover:bg-indigo-700">+150 XP Tutte Fazioni</button>
+            <button id="admin-reset-faction-rep" class="w-full px-4 py-2 text-sm font-medium rounded-md bg-gray-600 hover:bg-gray-700">Reset Reputazione</button>
+            <button id="admin-test-notifications" class="w-full px-4 py-2 text-sm font-medium rounded-md bg-orange-600 hover:bg-orange-700">Test Notifiche</button>
         </div>
     `;
 
@@ -258,6 +328,11 @@ function initAdminPanel() {
     document.getElementById('admin-level-up').addEventListener('click', adminLevelUp);
     // NUOVO LISTENER
     document.getElementById('admin-set-level').addEventListener('click', adminSetLevel);
+    
+    // FACTION SYSTEM ADMIN LISTENERS
+    document.getElementById('admin-add-faction-rep').addEventListener('click', addReputationToAllFactions);
+    document.getElementById('admin-reset-faction-rep').addEventListener('click', resetAllFactionsReputation);
+    document.getElementById('admin-test-notifications').addEventListener('click', testFactionNotifications);
     
     updateAdminPanelUI();
 }
