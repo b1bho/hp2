@@ -510,6 +510,27 @@ const initialGameState = {
                 { type: "Coordina botnet per DDoS", id: "block-4" }
             ],
             host: { type: 'personal', name: 'Computer Personale' }
+        },
+        "Basic Ransomware Attack": {
+            id: "sample-ransomware-1",
+            name: "Basic Ransomware Attack",
+            objective: "ransomware",
+            fc: 80,
+            stats: {
+                lso: 18,
+                rc: 2.8,
+                lcs: 6,
+                an: 10,
+                eo: 15,
+                rl: 22,
+                attack: 180000
+            },
+            blocks: [
+                { type: "Scansione rete locale", id: "block-1" },
+                { type: "Sviluppa ransomware semplice", id: "block-2" },
+                { type: "Crittografa payload", id: "block-3" }
+            ],
+            host: { type: 'personal', name: 'Computer Personale' }
         }
     },
     permanentFlows: {},
@@ -584,6 +605,10 @@ const initialGameState = {
     // Mining system
     miningOperations: [],
     miningLogs: [],
+    
+    // Ransomware system
+    ransomwareOperations: [],
+    ransomRequests: [],
     
     // FIX 1: Aggiunte le nuove strutture dati necessarie
     data: {
