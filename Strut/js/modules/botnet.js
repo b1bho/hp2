@@ -27,6 +27,10 @@ function getSavedFlowsAsArray() {
 
 function initBotnetPage() {
     setupTabNavigation();
+    
+    // Clean up any empty groups on page initialization
+    cleanupEmptyGroups();
+    
     updateBotnetAggregateStats();
     renderInfectedHostsList();
     renderHostDetailsPanel();
@@ -460,6 +464,9 @@ function assignHostsToGroup() {
         state.botnetGroups[groupName].hostIds.push(...selectedHostIds);
     }
     
+    // Clean up any empty groups after host reassignment
+    cleanupEmptyGroups();
+    
     saveState();
     showNotification(`${selectedHostIds.size} host assegnati.`, "info");
     selectedHostIds.clear();
@@ -533,6 +540,9 @@ function deactivateHost(hostId, skipConfirm = false) {
         Object.keys(state.botnetGroups).forEach(g => {
             state.botnetGroups[g].hostIds = state.botnetGroups[g].hostIds.filter(id => id !== hostId);
         });
+        
+        // Clean up any empty groups after host removal
+        cleanupEmptyGroups();
         
         selectedHostIds.clear();
         saveState();
@@ -958,6 +968,39 @@ function generateRandomHost() {
 function formatMoney(amount) {
     if (typeof amount !== 'number') return '$0';
     return '$' + amount.toLocaleString('en-US');
+}
+
+// ====================================================================
+// EMPTY GROUP CLEANUP FUNCTIONALITY
+// ====================================================================
+
+function cleanupEmptyGroups() {
+    if (!state.botnetGroups) return;
+    
+    const groupsToRemove = [];
+    
+    // Find groups with no hosts
+    Object.keys(state.botnetGroups).forEach(groupName => {
+        const group = state.botnetGroups[groupName];
+        if (group && (!group.hostIds || group.hostIds.length === 0)) {
+            groupsToRemove.push(groupName);
+        }
+    });
+    
+    // Remove empty groups
+    groupsToRemove.forEach(groupName => {
+        delete state.botnetGroups[groupName];
+        console.log(`Empty botnet group "${groupName}" automatically cleaned up`);
+    });
+    
+    // If any groups were removed, save state and update UI
+    if (groupsToRemove.length > 0) {
+        saveState();
+        showNotification(`${groupsToRemove.length} gruppo${groupsToRemove.length > 1 ? 'i' : ''} vuot${groupsToRemove.length > 1 ? 'i' : 'o'} rimoss${groupsToRemove.length > 1 ? 'i' : 'o'} automaticamente.`, "info");
+        return groupsToRemove.length;
+    }
+    
+    return 0;
 }
 
 // ====================================================================
