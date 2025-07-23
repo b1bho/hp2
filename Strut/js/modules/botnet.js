@@ -4,7 +4,7 @@
 let selectedHostIds = new Set();
 let currentActiveTab = 'management'; // Track current active tab
 let selectedBotGroups = new Set(); // Track selected bot groups for DDoS attacks
-let activeDDoSAttack = null; // Track active DDoS attack
+let activeDDoSAttacks = []; // Track multiple active DDoS attacks
 let selectedMiningGroups = new Set(); // Track selected bot groups for Mining
 let activeMiningOperation = null; // Track active Mining operation
 
@@ -1035,19 +1035,38 @@ function renderBotGroupSelection() {
         const totalHosts = group.hostIds.length;
         const isSelected = selectedBotGroups.has(groupName);
         const currentActivity = group.currentActivity || 'Idle';
-        const activityIcon = currentActivity === 'Mining' ? 'fa-coins' : currentActivity === 'DDoSing' ? 'fa-crosshairs' : 'fa-circle';
-        const activityColor = currentActivity === 'Mining' ? 'text-yellow-400' : currentActivity === 'DDoSing' ? 'text-red-400' : 'text-gray-400';
+        
+        // Check if this group is involved in any active DDoS attack
+        const isInActiveDDoS = activeDDoSAttacks.some(attack => attack.botGroups.includes(groupName));
+        const currentDDoSTarget = isInActiveDDoS ? activeDDoSAttacks.find(attack => attack.botGroups.includes(groupName))?.target : null;
+        
+        let activityIcon = 'fa-circle';
+        let activityColor = 'text-gray-400';
+        let activityText = currentActivity;
+        
+        if (currentActivity === 'Mining') {
+            activityIcon = 'fa-coins';
+            activityColor = 'text-yellow-400';
+        } else if (currentActivity === 'DDoSing' || isInActiveDDoS) {
+            activityIcon = 'fa-crosshairs';
+            activityColor = 'text-red-400';
+            if (currentDDoSTarget) {
+                activityText = `DDoSing ${currentDDoSTarget}`;
+            }
+        }
+        
+        const isDisabled = currentActivity !== 'Idle' && !isSelected;
         
         html += `
-            <div class="bot-group-card ${isSelected ? 'selected' : ''}" data-group-name="${groupName}">
+            <div class="bot-group-card ${isSelected ? 'selected' : ''} ${isDisabled ? 'disabled' : ''}" data-group-name="${groupName}">
                 <div class="flex items-center space-x-3">
-                    <input type="checkbox" class="bot-group-checkbox" ${isSelected ? 'checked' : ''}>
+                    <input type="checkbox" class="bot-group-checkbox" ${isSelected ? 'checked' : ''} ${isDisabled ? 'disabled' : ''}>
                     <div class="flex-grow">
                         <div class="flex items-center space-x-2">
                             <h4 class="font-semibold text-white">${groupName}</h4>
                             <div class="flex items-center space-x-1">
                                 <i class="fas ${activityIcon} ${activityColor} text-xs"></i>
-                                <span class="text-xs ${activityColor}">${currentActivity}</span>
+                                <span class="text-xs ${activityColor}" title="${activityText}">${activityText.length > 15 ? activityText.substring(0, 15) + '...' : activityText}</span>
                             </div>
                         </div>
                         <p class="text-sm text-gray-400">${activeHosts}/${totalHosts} hosts active</p>
@@ -1065,7 +1084,7 @@ function renderBotGroupSelection() {
     container.innerHTML = html;
 
     // Add event listeners
-    container.querySelectorAll('.bot-group-card').forEach(card => {
+    container.querySelectorAll('.bot-group-card:not(.disabled)').forEach(card => {
         card.addEventListener('click', (e) => {
             if (e.target.type === 'checkbox') return; // Let checkbox handle itself
             
@@ -1087,21 +1106,26 @@ function renderBotGroupSelection() {
         });
         
         const checkbox = card.querySelector('.bot-group-checkbox');
-        checkbox.addEventListener('change', (e) => {
-            const groupName = card.dataset.groupName;
-            
-            if (e.target.checked) {
-                selectedBotGroups.add(groupName);
-                card.classList.add('selected');
-            } else {
-                selectedBotGroups.delete(groupName);
-                card.classList.remove('selected');
-            }
-            
-            updateSelectedResources();
-            updateAttackPreview();
-        });
+        if (checkbox && !checkbox.disabled) {
+            checkbox.addEventListener('change', (e) => {
+                const groupName = card.dataset.groupName;
+                
+                if (e.target.checked) {
+                    selectedBotGroups.add(groupName);
+                    card.classList.add('selected');
+                } else {
+                    selectedBotGroups.delete(groupName);
+                    card.classList.remove('selected');
+                }
+                
+                updateSelectedResources();
+                updateAttackPreview();
+            });
+        }
     });
+    
+    // Update the multi-attack status display
+    updateMultiAttackStatus();
 }
 
 function calculateGroupPower(group) {
@@ -1466,6 +1490,20 @@ function launchDDoSAttack() {
         return;
     }
 
+    // Check if any selected groups are already in use
+    let busyGroups = [];
+    selectedBotGroups.forEach(groupName => {
+        const group = state.botnetGroups[groupName];
+        if (group && (group.currentActivity === 'Mining' || group.currentActivity === 'DDoSing')) {
+            busyGroups.push(groupName);
+        }
+    });
+
+    if (busyGroups.length > 0) {
+        showNotification(`Groups ${busyGroups.join(', ')} are currently busy with other operations. Please wait or select different groups.`, 'error');
+        return;
+    }
+
     // Check for conflicts and calculate effective resources
     let hasConflicts = false;
     let conflictGroups = [];
@@ -1506,8 +1544,12 @@ function launchDDoSAttack() {
         }
     });
 
+    // Create unique attack ID
+    const attackId = `ddos-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
     // Start the attack with realistic routing
-    activeDDoSAttack = {
+    const newAttack = {
+        id: attackId,
         target: targetIp,
         flow: flow,
         botGroups: Array.from(selectedBotGroups),
@@ -1519,24 +1561,28 @@ function launchDDoSAttack() {
         hasConflicts: hasConflicts
     };
 
-    showNotification(`DDoS attack launched against ${targetIp} using ${attackSourceIPs.length} bot sources`, 'info');
-    showAttackStatus();
+    activeDDoSAttacks.push(newAttack);
+
+    showNotification(`DDoS attack launched against ${targetIp} using ${attackSourceIPs.length} bot sources from ${selectedBotGroups.size} groups`, 'info');
+    updateMultiAttackStatus();
     
     // Apply attack effects immediately
-    applyDDoSAttackEffects();
+    applyDDoSAttackEffects(newAttack);
     
     // Set up attack countdown
     const attackInterval = setInterval(() => {
-        updateAttackProgress();
+        updateAttackProgress(attackId);
         
-        if (activeDDoSAttack.progress >= 100) {
+        const attack = activeDDoSAttacks.find(a => a.id === attackId);
+        if (attack && attack.progress >= 100) {
             clearInterval(attackInterval);
-            completeDDoSAttack();
+            completeDDoSAttack(attackId);
         }
     }, 1000);
 
     saveState();
     updateUI();
+    renderBotGroupSelection(); // Refresh to show updated CurrentActivity status
 }
 
 function isValidIP(ip) {
@@ -1544,66 +1590,73 @@ function isValidIP(ip) {
     return ipRegex.test(ip);
 }
 
-function showAttackStatus() {
-    const statusEl = document.getElementById('ddos-attack-status');
-    const targetEl = document.getElementById('active-target');
-    const launchBtn = document.getElementById('launch-ddos-btn');
+function updateMultiAttackStatus() {
+    const statusContainer = document.getElementById('multi-ddos-status');
+    if (!statusContainer) return;
+
+    if (activeDDoSAttacks.length === 0) {
+        statusContainer.classList.add('hidden');
+        // Enable launch button
+        const launchBtn = document.getElementById('launch-ddos-btn');
+        if (launchBtn) launchBtn.disabled = false;
+        return;
+    }
+
+    statusContainer.classList.remove('hidden');
     
-    if (statusEl) statusEl.classList.remove('hidden');
-    if (targetEl) targetEl.textContent = activeDDoSAttack.target;
-    if (launchBtn) launchBtn.disabled = true;
-}
+    let statusHTML = `
+        <h4 class="text-lg font-semibold text-orange-300 mb-3">
+            <i class="fas fa-crosshairs mr-2"></i>
+            Active DDoS Attacks (${activeDDoSAttacks.length})
+        </h4>
+        <div class="space-y-3 max-h-60 overflow-y-auto">
+    `;
 
-function updateAttackProgress() {
-    if (!activeDDoSAttack) return;
-
-    const elapsed = Date.now() - activeDDoSAttack.startTime;
-    const totalDuration = activeDDoSAttack.duration * 1000;
-    activeDDoSAttack.progress = Math.min(100, (elapsed / totalDuration) * 100);
-
-    const countdownEl = document.getElementById('attack-countdown');
-    const progressBarEl = document.getElementById('attack-progress-bar');
-    
-    if (countdownEl) {
-        const remaining = Math.max(0, activeDDoSAttack.duration - Math.floor(elapsed / 1000));
+    activeDDoSAttacks.forEach(attack => {
+        const elapsed = Date.now() - attack.startTime;
+        const remaining = Math.max(0, attack.duration - Math.floor(elapsed / 1000));
         const minutes = Math.floor(remaining / 60);
         const seconds = remaining % 60;
-        countdownEl.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
-    }
-    
-    if (progressBarEl) {
-        progressBarEl.style.width = `${activeDDoSAttack.progress}%`;
-    }
-}
-
-function applyDDoSAttackEffects() {
-    if (!activeDDoSAttack) return;
-
-    // Apply traceability increases to all participating hosts
-    activeDDoSAttack.botGroups.forEach(groupName => {
-        const group = state.botnetGroups[groupName];
-        if (group) {
-            group.hostIds.forEach(hostId => {
-                const host = state.infectedHostPool.find(h => h.id === hostId);
-                if (host && host.status === 'Active') {
-                    // Increase traceability based on attack duration
-                    const traceIncrease = 5 + (activeDDoSAttack.duration / 20);
-                    host.traceabilityScore = Math.min(100, host.traceabilityScore + traceIncrease);
-                    
-                    // Small stability decrease
-                    host.stabilityScore = Math.max(0, host.stabilityScore - (Math.random() * 3 + 1));
-                    
-                    addLogToHost(hostId, `Participating in DDoS attack against ${activeDDoSAttack.target}`);
-                }
-            });
-        }
+        const timeString = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        
+        const groupNames = attack.botGroups.join(', ');
+        const sourceCount = attack.sourceIPs.length;
+        
+        statusHTML += `
+            <div class="bg-gray-900/70 rounded-lg p-3 border border-orange-500">
+                <div class="flex justify-between items-center mb-2">
+                    <div>
+                        <div class="font-semibold text-white">Target: ${attack.target}</div>
+                        <div class="text-xs text-gray-400">Groups: ${groupNames}</div>
+                        <div class="text-xs text-gray-400">${sourceCount} bot sources</div>
+                    </div>
+                    <div class="text-right">
+                        <div class="font-bold text-orange-300">${timeString}</div>
+                        <button class="text-xs text-red-400 hover:text-red-300 mt-1" onclick="stopDDoSAttack('${attack.id}')">
+                            <i class="fas fa-stop mr-1"></i>Stop
+                        </button>
+                    </div>
+                </div>
+                <div class="w-full bg-gray-700 rounded-full h-2">
+                    <div class="bg-orange-500 h-2 rounded-full transition-all" style="width: ${attack.progress}%"></div>
+                </div>
+            </div>
+        `;
     });
+
+    statusHTML += '</div>';
+    statusContainer.innerHTML = statusHTML;
+    
+    // Disable launch button if any attacks are running
+    const launchBtn = document.getElementById('launch-ddos-btn');
+    if (launchBtn) launchBtn.disabled = false; // Allow new attacks to be launched
 }
 
-function completeDDoSAttack() {
-    if (!activeDDoSAttack) return;
-
-    const attack = activeDDoSAttack;
+function stopDDoSAttack(attackId) {
+    const attackIndex = activeDDoSAttacks.findIndex(a => a.id === attackId);
+    if (attackIndex === -1) return;
+    
+    const attack = activeDDoSAttacks[attackIndex];
     
     // Reset CurrentActivity to Idle for all participating groups
     attack.botGroups.forEach(groupName => {
@@ -1613,7 +1666,69 @@ function completeDDoSAttack() {
         }
     });
     
-    activeDDoSAttack = null;
+    // Remove attack from active list
+    activeDDoSAttacks.splice(attackIndex, 1);
+    
+    showNotification(`DDoS attack against ${attack.target} stopped manually.`, 'info');
+    
+    updateMultiAttackStatus();
+    saveState();
+    updateUI();
+    renderBotGroupSelection();
+}
+
+function updateAttackProgress(attackId) {
+    const attack = activeDDoSAttacks.find(a => a.id === attackId);
+    if (!attack) return;
+
+    const elapsed = Date.now() - attack.startTime;
+    const totalDuration = attack.duration * 1000;
+    attack.progress = Math.min(100, (elapsed / totalDuration) * 100);
+
+    // Update the UI for this specific attack
+    updateMultiAttackStatus();
+}
+
+function applyDDoSAttackEffects(attack) {
+    if (!attack) return;
+
+    // Apply traceability increases to all participating hosts
+    attack.botGroups.forEach(groupName => {
+        const group = state.botnetGroups[groupName];
+        if (group) {
+            group.hostIds.forEach(hostId => {
+                const host = state.infectedHostPool.find(h => h.id === hostId);
+                if (host && host.status === 'Active') {
+                    // Increase traceability based on attack duration
+                    const traceIncrease = 5 + (attack.duration / 20);
+                    host.traceabilityScore = Math.min(100, host.traceabilityScore + traceIncrease);
+                    
+                    // Small stability decrease
+                    host.stabilityScore = Math.max(0, host.stabilityScore - (Math.random() * 3 + 1));
+                    
+                    addLogToHost(hostId, `Participating in DDoS attack against ${attack.target}`);
+                }
+            });
+        }
+    });
+}
+
+function completeDDoSAttack(attackId) {
+    const attackIndex = activeDDoSAttacks.findIndex(a => a.id === attackId);
+    if (attackIndex === -1) return;
+
+    const attack = activeDDoSAttacks[attackIndex];
+    
+    // Reset CurrentActivity to Idle for all participating groups
+    attack.botGroups.forEach(groupName => {
+        const group = state.botnetGroups[groupName];
+        if (group) {
+            group.currentActivity = 'Idle';
+        }
+    });
+    
+    // Remove attack from active list
+    activeDDoSAttacks.splice(attackIndex, 1);
 
     // Calculate success and consequences based on effective power
     const attackPower = attack.effectivePower || calculateTotalAttackPower(attack.botGroups);
@@ -1629,15 +1744,15 @@ function completeDDoSAttack() {
         const btcReward = (attackPower / 1000) * 0.001; // Small BTC reward
         state.btc += btcReward;
         
-        showNotification(`DDoS attack successful! Gained ${xpGain} XP and ${btcReward.toFixed(6)} BTC`, 'success');
+        showNotification(`DDoS attack against ${attack.target} successful! Gained ${xpGain} XP and ${btcReward.toFixed(6)} BTC`, 'success');
         
         // Add log entry for successful attack with source IPs
         addLogToAttackingSources(attack.sourceIPs, `DDoS attack against ${attack.target} completed successfully`);
     } else {
         // Attack failed - increase consequences
         const failureMessage = attack.hasConflicts ? 
-            'DDoS attack failed! Resource conflicts reduced effectiveness.' : 
-            'DDoS attack failed! Target defenses held strong.';
+            `DDoS attack against ${attack.target} failed! Resource conflicts reduced effectiveness.` : 
+            `DDoS attack against ${attack.target} failed! Target defenses held strong.`;
         showNotification(failureMessage, 'error');
         
         // Additional traceability increase for failure
@@ -1664,7 +1779,7 @@ function completeDDoSAttack() {
         addLogToAttackingSources(attack.sourceIPs, `DDoS attack against ${attack.target} failed`);
     }
 
-    hideAttackStatus();
+    updateMultiAttackStatus();
     saveState();
     updateUI();
     renderInfectedHostsList();
@@ -1733,18 +1848,7 @@ function showDDoSFlowGuidance() {
     }
 }
 
-function hideAttackStatus() {
-    const statusEl = document.getElementById('ddos-attack-status');
-    const launchBtn = document.getElementById('launch-ddos-btn');
-    
-    if (statusEl) statusEl.classList.add('hidden');
-    if (launchBtn) launchBtn.disabled = false;
-    
-    // Clear selections
-    selectedBotGroups.clear();
-    renderBotGroupSelection();
-    updateSelectedResources();
-}
+
 
 // ============================================================================
 // MINING SYSTEM FUNCTIONS
@@ -1781,17 +1885,42 @@ function renderMiningGroups() {
         const isSelected = selectedMiningGroups.has(groupName);
         const isCurrentlyMining = activeMiningOperation && activeMiningOperation.groups.includes(groupName);
         
+        // Check if this group is involved in any active DDoS attack
+        const isInActiveDDoS = activeDDoSAttacks.some(attack => attack.botGroups.includes(groupName));
+        const currentDDoSTarget = isInActiveDDoS ? activeDDoSAttacks.find(attack => attack.botGroups.includes(groupName))?.target : null;
+        
+        let statusText = '';
+        let statusClass = '';
+        let isDisabled = false;
+        
+        if (isCurrentlyMining) {
+            statusText = 'Mining Active';
+            statusClass = 'text-yellow-400';
+        } else if (isInActiveDDoS) {
+            statusText = `DDoSing ${currentDDoSTarget}`;
+            statusClass = 'text-red-400';
+            isDisabled = true;
+        } else if (group.currentActivity === 'DDoSing') {
+            statusText = 'DDoSing';
+            statusClass = 'text-red-400';
+            isDisabled = true;
+        }
+        
         html += `
-            <div class="mining-group-card ${isSelected ? 'selected' : ''} ${isCurrentlyMining ? 'mining-active' : ''} 
+            <div class="mining-group-card ${isSelected ? 'selected' : ''} ${isCurrentlyMining ? 'mining-active' : ''} ${isDisabled ? 'disabled' : ''}
                       bg-gray-800/70 border border-gray-600 rounded-lg p-4 cursor-pointer transition-all hover:bg-gray-700/50" 
                  data-group-name="${groupName}">
                 <div class="flex items-center justify-between mb-2">
                     <div class="flex items-center">
                         <input type="checkbox" class="mining-group-checkbox mr-3" ${isSelected ? 'checked' : ''} 
-                               ${isCurrentlyMining ? 'disabled' : ''}>
+                               ${isCurrentlyMining || isDisabled ? 'disabled' : ''}>
                         <h4 class="font-semibold text-white">${groupName}</h4>
                     </div>
-                    ${isCurrentlyMining ? '<i class="fas fa-cog fa-spin text-yellow-400"></i>' : ''}
+                    <div class="flex items-center space-x-2">
+                        ${isCurrentlyMining ? '<i class="fas fa-cog fa-spin text-yellow-400"></i>' : ''}
+                        ${isInActiveDDoS ? '<i class="fas fa-crosshairs text-red-400"></i>' : ''}
+                        ${statusText ? `<span class="text-xs ${statusClass}">${statusText.length > 12 ? statusText.substring(0, 12) + '...' : statusText}</span>` : ''}
+                    </div>
                 </div>
                 
                 <div class="grid grid-cols-2 gap-2 text-xs">
@@ -1819,7 +1948,7 @@ function renderMiningGroups() {
     container.innerHTML = html;
 
     // Add event listeners
-    container.querySelectorAll('.mining-group-card').forEach(card => {
+    container.querySelectorAll('.mining-group-card:not(.disabled)').forEach(card => {
         const groupName = card.dataset.groupName;
         const isCurrentlyMining = activeMiningOperation && activeMiningOperation.groups.includes(groupName);
         
@@ -1844,18 +1973,20 @@ function renderMiningGroups() {
             });
             
             const checkbox = card.querySelector('.mining-group-checkbox');
-            checkbox.addEventListener('change', (e) => {
-                if (e.target.checked) {
-                    selectedMiningGroups.add(groupName);
-                    card.classList.add('selected');
-                } else {
-                    selectedMiningGroups.delete(groupName);
-                    card.classList.remove('selected');
-                }
-                
-                updateMiningSelectedResources();
-                updateMiningStats();
-            });
+            if (checkbox && !checkbox.disabled) {
+                checkbox.addEventListener('change', (e) => {
+                    if (e.target.checked) {
+                        selectedMiningGroups.add(groupName);
+                        card.classList.add('selected');
+                    } else {
+                        selectedMiningGroups.delete(groupName);
+                        card.classList.remove('selected');
+                    }
+                    
+                    updateMiningSelectedResources();
+                    updateMiningStats();
+                });
+            }
         }
     });
 }
@@ -2135,6 +2266,14 @@ function startMining() {
         if (group && group.currentActivity === 'DDoSing') {
             hasConflicts = true;
             conflictGroups.push(groupName);
+        }
+        
+        // Also check if any group is involved in an active DDoS attack
+        const isInActiveDDoS = activeDDoSAttacks.some(attack => attack.botGroups.includes(groupName));
+        if (isInActiveDDoS) {
+            hasConflicts = true;
+            const attack = activeDDoSAttacks.find(attack => attack.botGroups.includes(groupName));
+            conflictGroups.push(`${groupName} (attacking ${attack.target})`);
         }
     });
     

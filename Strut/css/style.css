@@ -783,3 +783,46 @@ body {
 .bot-group-checkbox {
     accent-color: #8b5cf6;
 }
+
+/* Multi-DDoS Attack Support Styles */
+.bot-group-card.disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    background-color: rgba(55, 65, 81, 0.3);
+    border-color: #374151;
+}
+
+.bot-group-card.disabled:hover {
+    border-color: #374151;
+    background-color: rgba(55, 65, 81, 0.3);
+}
+
+.bot-group-card.disabled .bot-group-checkbox {
+    cursor: not-allowed;
+}
+
+#multi-ddos-status {
+    animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Enhanced multi-attack status cards */
+#multi-ddos-status .bg-gray-900\/70 {
+    transition: all 0.3s ease;
+}
+
+#multi-ddos-status .bg-gray-900\/70:hover {
+    background-color: rgba(17, 24, 39, 0.8);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
