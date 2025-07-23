@@ -3674,8 +3674,8 @@ function completeRansomwareEncryption(operationId) {
         
         showNotification(`Crittografia completata! Richiesta di riscatto inviata per ${operation.ransomAmount} BTC.`, 'success');
         
-        // Set timer for ransom response
-        setTimeout(() => {
+        // Set timer for ransom response and store timeout ID
+        ransomRequest.timeoutId = setTimeout(() => {
             processRansomResponse(requestId);
         }, responseTime * 3600000);
         
@@ -3880,6 +3880,49 @@ function instantCompleteRansom(requestId) {
     updateUI();
 }
 
+function accelerateRansomResponse(requestId) {
+    const requestIndex = activeRansomRequests.findIndex(req => req.id === requestId);
+    if (requestIndex === -1) return;
+    
+    const request = activeRansomRequests[requestIndex];
+    
+    // Check if player has enough XMR
+    if (state.xmr < 25) {
+        showNotification('Servono 25 XMR per accelerare la risposta a 30 secondi!', 'error');
+        return;
+    }
+    
+    // Check if already accelerated (response time is 30 seconds or less)
+    const remaining = Math.max(0, request.responseTime - (Date.now() - request.sentTime));
+    if (remaining <= 30000) {
+        showNotification('La richiesta è già stata accelerata o è in scadenza!', 'error');
+        return;
+    }
+    
+    // Deduct 25 XMR from player balance
+    state.xmr -= 25;
+    
+    // Clear the existing timeout
+    clearTimeout(request.timeoutId);
+    
+    // Update the request to have a 30-second response time from now
+    request.responseTime = 30000; // 30 seconds in milliseconds
+    request.sentTime = Date.now(); // Reset sent time to now
+    request.accelerated = true; // Mark as accelerated
+    
+    // Set new timeout for 30 seconds
+    request.timeoutId = setTimeout(() => {
+        processRansomResponse(requestId);
+    }, 30000);
+    
+    showNotification(`⚡ Risposta accelerata a 30 secondi! (-25 XMR)`, 'success');
+    
+    // Update UI elements
+    renderRansomRequestsStatus();
+    saveState();
+    updateUI();
+}
+
 function applyRansomwareTraceability(operation) {
     // Apply ransomware traceability using the existing system if available
     if (typeof handleRansomwareTraceability === 'function') {
@@ -4047,6 +4090,7 @@ function renderRansomRequestsStatus() {
         const remainingMinutes = Math.floor((remaining % 3600000) / 60000);
         
         const canInstantComplete = state.xmr >= 10;
+        const canAccelerate = state.xmr >= 25 && remaining > 30000 && !request.accelerated;
         
         html += `
             <div class="bg-indigo-800/50 rounded-lg p-3 border border-indigo-400">
@@ -4054,6 +4098,7 @@ function renderRansomRequestsStatus() {
                     <div>
                         <div class="font-semibold text-white">${request.targetType} - ${request.amount} BTC</div>
                         <div class="text-xs text-gray-400">Probabilità: ${request.probability.toFixed(1)}%</div>
+                        ${request.accelerated ? '<div class="text-xs text-yellow-400">⚡ Accelerata</div>' : ''}
                     </div>
                     <div class="text-right">
                         <div class="text-sm font-bold text-indigo-300">
@@ -4066,14 +4111,24 @@ function renderRansomRequestsStatus() {
                     <div class="text-xs text-gray-400">
                         Saldo XMR: ${state.xmr.toFixed(1)}
                     </div>
-                    <button 
-                        class="text-xs px-2 py-1 rounded ${canInstantComplete ? 'bg-purple-600 hover:bg-purple-700 text-white' : 'bg-gray-600 text-gray-400 cursor-not-allowed'}" 
-                        onclick="instantCompleteRansom('${request.id}')"
-                        ${!canInstantComplete ? 'disabled' : ''}
-                        title="${canInstantComplete ? 'Completa istantaneamente per 10 XMR' : 'Servono 10 XMR per completare istantaneamente'}"
-                    >
-                        <i class="fas fa-bolt mr-1"></i>Completa Subito (10 XMR)
-                    </button>
+                    <div class="flex space-x-2">
+                        <button 
+                            class="text-xs px-2 py-1 rounded ${canAccelerate ? 'bg-yellow-600 hover:bg-yellow-700 text-white' : 'bg-gray-600 text-gray-400 cursor-not-allowed'}" 
+                            onclick="accelerateRansomResponse('${request.id}')"
+                            ${!canAccelerate ? 'disabled' : ''}
+                            title="${canAccelerate ? 'Accelera risposta a 30 secondi per 25 XMR' : request.accelerated ? 'Già accelerata' : remaining <= 30000 ? 'Già in scadenza' : 'Servono 25 XMR per accelerare'}"
+                        >
+                            <i class="fas fa-clock mr-1"></i>Accelera (25 XMR)
+                        </button>
+                        <button 
+                            class="text-xs px-2 py-1 rounded ${canInstantComplete ? 'bg-purple-600 hover:bg-purple-700 text-white' : 'bg-gray-600 text-gray-400 cursor-not-allowed'}" 
+                            onclick="instantCompleteRansom('${request.id}')"
+                            ${!canInstantComplete ? 'disabled' : ''}
+                            title="${canInstantComplete ? 'Completa istantaneamente per 10 XMR' : 'Servono 10 XMR per completare istantaneamente'}"
+                        >
+                            <i class="fas fa-bolt mr-1"></i>Completa Subito (10 XMR)
+                        </button>
+                    </div>
                 </div>
             </div>`;
     });
