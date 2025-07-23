@@ -520,6 +520,12 @@ function init() {
         if (typeof updatePersonalComputer === 'function') {
             updatePersonalComputer();
         }
+        if (typeof processMiningRewards === 'function') {
+            processMiningRewards();
+        }
+        if (typeof updateMiningUI === 'function') {
+            updateMiningUI();
+        }
     }, 1000);
     initQuestSystem();
     setInterval(() => {

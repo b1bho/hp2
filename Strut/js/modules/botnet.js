@@ -5,6 +5,8 @@ let selectedHostIds = new Set();
 let currentActiveTab = 'management'; // Track current active tab
 let selectedBotGroups = new Set(); // Track selected bot groups for DDoS attacks
 let activeDDoSAttack = null; // Track active DDoS attack
+let selectedMiningGroups = new Set(); // Track selected bot groups for Mining
+let activeMiningOperation = null; // Track active Mining operation
 
 // Funzione helper per garantire che i flussi salvati siano sempre un array,
 // gestendo anche formati legacy dove potevano essere un oggetto.
@@ -34,6 +36,11 @@ function initBotnetPage() {
     renderDDoSFlowOptions();
     updateSelectedResources();
     
+    // Initialize Mining panel
+    renderMiningGroups();
+    updateMiningSelectedResources();
+    setupMiningControls();
+    
     // Show management tab by default
     switchTab('management');
 }
@@ -41,12 +48,16 @@ function initBotnetPage() {
 function setupTabNavigation() {
     const managementTab = document.getElementById('tab-management');
     const ddosTab = document.getElementById('tab-ddos');
+    const miningTab = document.getElementById('tab-mining');
     
     if (managementTab) {
         managementTab.addEventListener('click', () => switchTab('management'));
     }
     if (ddosTab) {
         ddosTab.addEventListener('click', () => switchTab('ddos'));
+    }
+    if (miningTab) {
+        miningTab.addEventListener('click', () => switchTab('mining'));
     }
 }
 
@@ -78,6 +89,13 @@ function switchTab(tabName) {
     } else if (tabName === 'ddos') {
         renderBotGroupSelection();
         updateSelectedResources();
+    } else if (tabName === 'mining') {
+        renderMiningGroups();
+        updateMiningSelectedResources();
+        updateMiningStats();
+        if (typeof updateMiningLogsDisplay === 'function') {
+            updateMiningLogsDisplay();
+        }
     }
 }
 
@@ -1573,4 +1591,667 @@ function hideAttackStatus() {
     selectedBotGroups.clear();
     renderBotGroupSelection();
     updateSelectedResources();
+}
+
+// ============================================================================
+// MINING SYSTEM FUNCTIONS
+// ============================================================================
+
+function renderMiningGroups() {
+    const container = document.getElementById('mining-groups-grid');
+    if (!container) return;
+
+    const groups = Object.keys(state.botnetGroups);
+    
+    if (groups.length === 0) {
+        container.innerHTML = `
+            <div class="col-span-full text-center p-6 bg-gray-900/30 rounded-lg border border-gray-600">
+                <i class="fas fa-layer-group text-3xl text-gray-500 mb-2"></i>
+                <p class="text-gray-400">Nessun gruppo botnet disponibile</p>
+                <p class="text-xs text-gray-500 mt-1">Crea gruppi dalla sezione Gestione Botnet</p>
+            </div>
+        `;
+        return;
+    }
+
+    let html = '';
+    groups.forEach(groupName => {
+        const group = state.botnetGroups[groupName];
+        const activeHosts = group.hostIds.filter(hostId => {
+            const host = state.infectedHostPool.find(h => h.id === hostId);
+            return host && host.status === 'Active';
+        }).length;
+        
+        const totalPower = calculateGroupPower(group);
+        const miningPower = calculateMiningPower(group); // Different from regular power
+        const stability = calculateGroupStability(group);
+        const isSelected = selectedMiningGroups.has(groupName);
+        const isCurrentlyMining = activeMiningOperation && activeMiningOperation.groups.includes(groupName);
+        
+        html += `
+            <div class="mining-group-card ${isSelected ? 'selected' : ''} ${isCurrentlyMining ? 'mining-active' : ''} 
+                      bg-gray-800/70 border border-gray-600 rounded-lg p-4 cursor-pointer transition-all hover:bg-gray-700/50" 
+                 data-group-name="${groupName}">
+                <div class="flex items-center justify-between mb-2">
+                    <div class="flex items-center">
+                        <input type="checkbox" class="mining-group-checkbox mr-3" ${isSelected ? 'checked' : ''} 
+                               ${isCurrentlyMining ? 'disabled' : ''}>
+                        <h4 class="font-semibold text-white">${groupName}</h4>
+                    </div>
+                    ${isCurrentlyMining ? '<i class="fas fa-cog fa-spin text-yellow-400"></i>' : ''}
+                </div>
+                
+                <div class="grid grid-cols-2 gap-2 text-xs">
+                    <div>
+                        <span class="text-gray-400">Host Attivi:</span>
+                        <span class="font-bold text-green-400">${activeHosts}/${group.hostIds.length}</span>
+                    </div>
+                    <div>
+                        <span class="text-gray-400">Stabilità:</span>
+                        <span class="font-bold ${getStabilityColor(stability)}">${stability.toFixed(0)}%</span>
+                    </div>
+                    <div>
+                        <span class="text-gray-400">Hash Rate:</span>
+                        <span class="font-bold text-yellow-400">${miningPower.toFixed(1)} MH/s</span>
+                    </div>
+                    <div>
+                        <span class="text-gray-400">Tracciabilità:</span>
+                        <span class="font-bold ${getTraceabilityColor(calculateGroupTraceability(group))}">${calculateGroupTraceability(group).toFixed(0)}%</span>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+
+    container.innerHTML = html;
+
+    // Add event listeners
+    container.querySelectorAll('.mining-group-card').forEach(card => {
+        const groupName = card.dataset.groupName;
+        const isCurrentlyMining = activeMiningOperation && activeMiningOperation.groups.includes(groupName);
+        
+        if (!isCurrentlyMining) {
+            card.addEventListener('click', (e) => {
+                if (e.target.type === 'checkbox') return;
+                
+                const checkbox = card.querySelector('.mining-group-checkbox');
+                
+                if (selectedMiningGroups.has(groupName)) {
+                    selectedMiningGroups.delete(groupName);
+                    checkbox.checked = false;
+                    card.classList.remove('selected');
+                } else {
+                    selectedMiningGroups.add(groupName);
+                    checkbox.checked = true;
+                    card.classList.add('selected');
+                }
+                
+                updateMiningSelectedResources();
+                updateMiningStats();
+            });
+            
+            const checkbox = card.querySelector('.mining-group-checkbox');
+            checkbox.addEventListener('change', (e) => {
+                if (e.target.checked) {
+                    selectedMiningGroups.add(groupName);
+                    card.classList.add('selected');
+                } else {
+                    selectedMiningGroups.delete(groupName);
+                    card.classList.remove('selected');
+                }
+                
+                updateMiningSelectedResources();
+                updateMiningStats();
+            });
+        }
+    });
+}
+
+function calculateMiningPower(group) {
+    // Mining power is different from regular CPU power - based on specialized calculation
+    let miningPower = 0;
+    group.hostIds.forEach(hostId => {
+        const host = state.infectedHostPool.find(h => h.id === hostId);
+        if (host && host.status === 'Active' && host.resources) {
+            // Mining power is roughly 10% of CPU power converted to MH/s
+            miningPower += (host.resources.cpuPower * 0.1);
+        }
+    });
+    return miningPower;
+}
+
+function calculateGroupStability(group) {
+    if (group.hostIds.length === 0) return 0;
+    
+    let totalStability = 0;
+    let validHosts = 0;
+    
+    group.hostIds.forEach(hostId => {
+        const host = state.infectedHostPool.find(h => h.id === hostId);
+        if (host && host.status === 'Active') {
+            totalStability += (host.stabilityScore || 80); // Default stability if not set
+            validHosts++;
+        }
+    });
+    
+    return validHosts > 0 ? totalStability / validHosts : 0;
+}
+
+function calculateGroupTraceability(group) {
+    if (group.hostIds.length === 0) return 0;
+    
+    let totalTraceability = 0;
+    let validHosts = 0;
+    
+    group.hostIds.forEach(hostId => {
+        const host = state.infectedHostPool.find(h => h.id === hostId);
+        if (host) {
+            totalTraceability += (host.traceabilityScore || 0);
+            validHosts++;
+        }
+    });
+    
+    return validHosts > 0 ? totalTraceability / validHosts : 0;
+}
+
+function getStabilityColor(stability) {
+    if (stability >= 80) return 'text-green-400';
+    if (stability >= 60) return 'text-yellow-400';
+    if (stability >= 40) return 'text-orange-400';
+    return 'text-red-400';
+}
+
+function getTraceabilityColor(traceability) {
+    if (traceability <= 25) return 'text-green-400';
+    if (traceability <= 50) return 'text-yellow-400';
+    if (traceability <= 75) return 'text-orange-400';
+    return 'text-red-400';
+}
+
+function updateMiningSelectedResources() {
+    const hostCountEl = document.getElementById('mining-host-count');
+    const activeCountEl = document.getElementById('mining-active-count');
+    const powerTotalEl = document.getElementById('mining-power-total');
+    const stabilityEl = document.getElementById('mining-stability');
+
+    let totalHosts = 0;
+    let activeHosts = 0;
+    let totalMiningPower = 0;
+    let totalStability = 0;
+    let groupCount = 0;
+
+    selectedMiningGroups.forEach(groupName => {
+        const group = state.botnetGroups[groupName];
+        if (group) {
+            totalHosts += group.hostIds.length;
+            totalMiningPower += calculateMiningPower(group);
+            totalStability += calculateGroupStability(group);
+            groupCount++;
+            
+            group.hostIds.forEach(hostId => {
+                const host = state.infectedHostPool.find(h => h.id === hostId);
+                if (host && host.status === 'Active') {
+                    activeHosts++;
+                }
+            });
+        }
+    });
+
+    const avgStability = groupCount > 0 ? totalStability / groupCount : 0;
+
+    if (hostCountEl) hostCountEl.textContent = totalHosts;
+    if (activeCountEl) activeCountEl.textContent = activeHosts;
+    if (powerTotalEl) powerTotalEl.textContent = `${totalMiningPower.toFixed(1)} MH/s`;
+    if (stabilityEl) {
+        stabilityEl.textContent = `${avgStability.toFixed(0)}%`;
+        stabilityEl.className = `font-bold ${getStabilityColor(avgStability)}`;
+    }
+}
+
+function setupMiningControls() {
+    const currencySelect = document.getElementById('mining-currency');
+    const walletSelect = document.getElementById('mining-wallet');
+    const toggleBtn = document.getElementById('toggle-mining-btn');
+    
+    // Enable clan wallet option if player has a clan
+    const clanWalletOption = document.getElementById('clan-wallet-option');
+    if (clanWalletOption && state.clan) {
+        clanWalletOption.disabled = false;
+        clanWalletOption.textContent = `Tesoreria del Clan (${state.clan.name || 'Clan'})`;
+    }
+    
+    // Add event listeners
+    if (currencySelect) {
+        currencySelect.addEventListener('change', updateMiningStats);
+    }
+    
+    if (walletSelect) {
+        walletSelect.addEventListener('change', updateMiningStats);
+    }
+    
+    if (toggleBtn) {
+        toggleBtn.addEventListener('click', toggleMining);
+    }
+}
+
+function updateMiningStats() {
+    const hourlyRateEl = document.getElementById('mining-hourly-rate');
+    const dailyRateEl = document.getElementById('mining-daily-rate');
+    const traceRiskEl = document.getElementById('mining-trace-risk');
+    const lossRiskEl = document.getElementById('mining-loss-risk');
+    const toggleBtn = document.getElementById('toggle-mining-btn');
+    
+    const currency = document.getElementById('mining-currency')?.value || 'btc';
+    const selectedGroupsArray = Array.from(selectedMiningGroups);
+    
+    if (selectedGroupsArray.length === 0) {
+        if (hourlyRateEl) hourlyRateEl.textContent = currency === 'btc' ? '0.000000 BTC' : '0.000 XMR';
+        if (dailyRateEl) dailyRateEl.textContent = currency === 'btc' ? '0.000000 BTC' : '0.000 XMR';
+        if (traceRiskEl) traceRiskEl.textContent = 'Nessuno';
+        if (lossRiskEl) lossRiskEl.textContent = 'Nessuno';
+        if (toggleBtn) toggleBtn.disabled = true;
+        return;
+    }
+    
+    // Calculate total mining power and other metrics
+    let totalMiningPower = 0;
+    let totalActiveHosts = 0;
+    let avgStability = 0;
+    let avgTraceability = 0;
+    
+    selectedGroupsArray.forEach(groupName => {
+        const group = state.botnetGroups[groupName];
+        if (group) {
+            totalMiningPower += calculateMiningPower(group);
+            avgStability += calculateGroupStability(group);
+            avgTraceability += calculateGroupTraceability(group);
+            
+            group.hostIds.forEach(hostId => {
+                const host = state.infectedHostPool.find(h => h.id === hostId);
+                if (host && host.status === 'Active') {
+                    totalActiveHosts++;
+                }
+            });
+        }
+    });
+    
+    avgStability /= selectedGroupsArray.length;
+    avgTraceability /= selectedGroupsArray.length;
+    
+    // Calculate earnings based on mining power and market conditions
+    const hourlyRate = calculateMiningEarnings(totalMiningPower, avgStability, currency, 'hourly');
+    const dailyRate = calculateMiningEarnings(totalMiningPower, avgStability, currency, 'daily');
+    
+    // Calculate risks
+    const traceRisk = calculateMiningTraceRisk(totalActiveHosts, avgTraceability);
+    const lossRisk = calculateMiningLossRisk(totalActiveHosts, avgStability);
+    
+    // Update UI
+    if (hourlyRateEl) {
+        hourlyRateEl.textContent = currency === 'btc' ? 
+            `${hourlyRate.toFixed(6)} BTC` : 
+            `${hourlyRate.toFixed(3)} XMR`;
+    }
+    if (dailyRateEl) {
+        dailyRateEl.textContent = currency === 'btc' ? 
+            `${dailyRate.toFixed(6)} BTC` : 
+            `${dailyRate.toFixed(3)} XMR`;
+    }
+    if (traceRiskEl) {
+        traceRiskEl.textContent = traceRisk;
+        traceRiskEl.className = `font-bold ${getRiskColor(traceRisk)}`;
+    }
+    if (lossRiskEl) {
+        lossRiskEl.textContent = lossRisk;
+        lossRiskEl.className = `font-bold ${getRiskColor(lossRisk)}`;
+    }
+    
+    // Enable toggle button if we have active hosts and no current mining operation
+    if (toggleBtn) {
+        toggleBtn.disabled = totalActiveHosts === 0 || (activeMiningOperation && !activeMiningOperation.groups.some(g => selectedGroupsArray.includes(g)));
+    }
+}
+
+function calculateMiningEarnings(miningPower, stability, currency, timeframe) {
+    // Base earnings calculation
+    let baseRate = 0;
+    
+    if (currency === 'btc') {
+        // Bitcoin mining is harder, lower rates
+        baseRate = miningPower * 0.000001; // Very small rate per MH/s per hour
+    } else {
+        // Monero mining is easier with botnets
+        baseRate = miningPower * 0.001; // Higher rate for XMR
+    }
+    
+    // Apply stability modifier (50% to 150% based on stability)
+    const stabilityModifier = 0.5 + (stability / 100);
+    baseRate *= stabilityModifier;
+    
+    // Apply difficulty and market modifiers
+    const difficultyModifier = 0.8 + (Math.random() * 0.4); // Simulated difficulty variance
+    baseRate *= difficultyModifier;
+    
+    if (timeframe === 'daily') {
+        return baseRate * 24;
+    }
+    
+    return baseRate;
+}
+
+function calculateMiningTraceRisk(hostCount, avgTraceability) {
+    const riskScore = (hostCount * 0.5) + (avgTraceability * 0.3);
+    if (riskScore < 15) return 'Basso';
+    if (riskScore < 35) return 'Medio';
+    if (riskScore < 60) return 'Alto';
+    return 'Critico';
+}
+
+function calculateMiningLossRisk(hostCount, avgStability) {
+    const lossScore = (hostCount * 0.3) + ((100 - avgStability) * 0.4);
+    if (lossScore < 20) return 'Basso';
+    if (lossScore < 40) return 'Medio';
+    if (lossScore < 70) return 'Alto';
+    return 'Critico';
+}
+
+function toggleMining() {
+    if (activeMiningOperation) {
+        stopMining();
+    } else {
+        startMining();
+    }
+}
+
+function startMining() {
+    const currency = document.getElementById('mining-currency')?.value || 'btc';
+    const wallet = document.getElementById('mining-wallet')?.value || 'personal';
+    const selectedGroupsArray = Array.from(selectedMiningGroups);
+    
+    if (selectedGroupsArray.length === 0) {
+        showNotification('Seleziona almeno un gruppo per iniziare il mining.', 'error');
+        return;
+    }
+    
+    // Calculate total active hosts
+    let totalActiveHosts = 0;
+    selectedGroupsArray.forEach(groupName => {
+        const group = state.botnetGroups[groupName];
+        if (group) {
+            group.hostIds.forEach(hostId => {
+                const host = state.infectedHostPool.find(h => h.id === hostId);
+                if (host && host.status === 'Active') {
+                    totalActiveHosts++;
+                }
+            });
+        }
+    });
+    
+    if (totalActiveHosts === 0) {
+        showNotification('Nessun host attivo nei gruppi selezionati.', 'error');
+        return;
+    }
+    
+    // Start mining operation
+    activeMiningOperation = {
+        currency: currency,
+        wallet: wallet,
+        groups: selectedGroupsArray,
+        startTime: Date.now(),
+        totalEarned: 0,
+        lastRewardTime: Date.now()
+    };
+    
+    // Initialize mining state if not exists
+    if (!state.miningOperations) {
+        state.miningOperations = [];
+    }
+    if (!state.miningLogs) {
+        state.miningLogs = [];
+    }
+    
+    // Add to state
+    state.miningOperations.push(activeMiningOperation);
+    
+    // Add log entry
+    addMiningLog(`[START] Mining ${currency.toUpperCase()} avviato con ${selectedGroupsArray.length} gruppi (${totalActiveHosts} host attivi)`);
+    
+    showNotification(`Mining ${currency.toUpperCase()} avviato con successo!`, 'success');
+    
+    updateMiningUI();
+    saveState();
+}
+
+function stopMining() {
+    if (!activeMiningOperation) return;
+    
+    const operation = activeMiningOperation;
+    const duration = Date.now() - operation.startTime;
+    const durationHours = duration / (1000 * 60 * 60);
+    
+    // Final reward calculation
+    processMiningRewards(true); // Force final reward
+    
+    // Add to completed operations log
+    addMiningLog(`[STOP] Mining ${operation.currency.toUpperCase()} terminato dopo ${Math.floor(durationHours)}h. Totale guadagnato: ${operation.totalEarned.toFixed(6)}`);
+    
+    // Remove from state
+    state.miningOperations = state.miningOperations.filter(op => op !== operation);
+    activeMiningOperation = null;
+    
+    showNotification(`Mining terminato. Guadagno totale: ${operation.totalEarned.toFixed(6)} ${operation.currency.toUpperCase()}`, 'info');
+    
+    // Clear selections
+    selectedMiningGroups.clear();
+    
+    updateMiningUI();
+    renderMiningGroups();
+    updateMiningSelectedResources();
+    saveState();
+    updateUI();
+}
+
+function updateMiningUI() {
+    const statusEl = document.getElementById('mining-status');
+    const toggleBtn = document.getElementById('toggle-mining-btn');
+    const currencyEl = document.getElementById('active-mining-currency');
+    const uptimeEl = document.getElementById('mining-uptime');
+    const totalEarnedEl = document.getElementById('mining-total-earned');
+    const progressBarEl = document.getElementById('mining-progress-bar');
+    
+    if (activeMiningOperation) {
+        // Show mining status
+        if (statusEl) statusEl.classList.remove('hidden');
+        if (toggleBtn) {
+            toggleBtn.innerHTML = '<i class="fas fa-stop mr-2"></i>Ferma Mining';
+            toggleBtn.classList.remove('bg-yellow-600', 'hover:bg-yellow-700');
+            toggleBtn.classList.add('bg-red-600', 'hover:bg-red-700');
+        }
+        
+        // Update status info
+        if (currencyEl) currencyEl.textContent = activeMiningOperation.currency.toUpperCase();
+        
+        const uptime = Date.now() - activeMiningOperation.startTime;
+        if (uptimeEl) {
+            const hours = Math.floor(uptime / (1000 * 60 * 60));
+            const minutes = Math.floor((uptime % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((uptime % (1000 * 60)) / 1000);
+            uptimeEl.textContent = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }
+        
+        if (totalEarnedEl) {
+            const suffix = activeMiningOperation.currency === 'btc' ? 'BTC' : 'XMR';
+            totalEarnedEl.textContent = `${activeMiningOperation.totalEarned.toFixed(6)} ${suffix}`;
+        }
+        
+        // Animate progress bar
+        if (progressBarEl) {
+            const progress = (uptime % 10000) / 10000 * 100; // 10 second cycle
+            progressBarEl.style.width = `${progress}%`;
+        }
+        
+        // Disable group selection
+        const groupCards = document.querySelectorAll('.mining-group-card');
+        groupCards.forEach(card => {
+            const groupName = card.dataset.groupName;
+            if (activeMiningOperation.groups.includes(groupName)) {
+                card.classList.add('mining-active');
+                const checkbox = card.querySelector('.mining-group-checkbox');
+                if (checkbox) checkbox.disabled = true;
+            }
+        });
+        
+    } else {
+        // Hide mining status
+        if (statusEl) statusEl.classList.add('hidden');
+        if (toggleBtn) {
+            toggleBtn.innerHTML = '<i class="fas fa-play mr-2"></i>Avvia Mining';
+            toggleBtn.classList.remove('bg-red-600', 'hover:bg-red-700');
+            toggleBtn.classList.add('bg-yellow-600', 'hover:bg-yellow-700');
+        }
+    }
+}
+
+function addMiningLog(message) {
+    if (!state.miningLogs) state.miningLogs = [];
+    
+    const timestamp = new Date().toLocaleTimeString();
+    const logEntry = {
+        timestamp: timestamp,
+        message: message,
+        time: Date.now()
+    };
+    
+    state.miningLogs.unshift(logEntry); // Add to beginning
+    
+    // Keep only last 50 log entries
+    if (state.miningLogs.length > 50) {
+        state.miningLogs = state.miningLogs.slice(0, 50);
+    }
+    
+    updateMiningLogsDisplay();
+}
+
+function updateMiningLogsDisplay() {
+    const logsContainer = document.getElementById('mining-logs');
+    if (!logsContainer) return;
+    
+    if (!state.miningLogs || state.miningLogs.length === 0) {
+        logsContainer.innerHTML = '<div class="text-gray-500">[SYSTEM] Nessuna operazione di mining in corso.</div>';
+        return;
+    }
+    
+    const html = state.miningLogs.slice(0, 10).map(log => 
+        `<div class="text-gray-300">[${log.timestamp}] ${log.message}</div>`
+    ).join('');
+    
+    logsContainer.innerHTML = html;
+}
+
+// Process mining rewards periodically
+function processMiningRewards(forceFinal = false) {
+    if (!activeMiningOperation) return;
+    
+    const now = Date.now();
+    const timeSinceLastReward = now - activeMiningOperation.lastRewardTime;
+    
+    // Process rewards every 30 seconds (or force for final calculation)
+    if (timeSinceLastReward >= 30000 || forceFinal) {
+        const hoursElapsed = timeSinceLastReward / (1000 * 60 * 60);
+        
+        // Calculate mining power for current operation
+        let totalMiningPower = 0;
+        let avgStability = 0;
+        let totalActiveHosts = 0;
+        
+        activeMiningOperation.groups.forEach(groupName => {
+            const group = state.botnetGroups[groupName];
+            if (group) {
+                totalMiningPower += calculateMiningPower(group);
+                avgStability += calculateGroupStability(group);
+                
+                group.hostIds.forEach(hostId => {
+                    const host = state.infectedHostPool.find(h => h.id === hostId);
+                    if (host && host.status === 'Active') {
+                        totalActiveHosts++;
+                    }
+                });
+            }
+        });
+        
+        if (activeMiningOperation.groups.length > 0) {
+            avgStability /= activeMiningOperation.groups.length;
+        }
+        
+        if (totalActiveHosts > 0) {
+            // Calculate reward for this period
+            const reward = calculateMiningEarnings(totalMiningPower, avgStability, activeMiningOperation.currency, 'hourly') * hoursElapsed;
+            
+            if (reward > 0) {
+                // Add to appropriate wallet
+                if (activeMiningOperation.wallet === 'clan' && state.clan) {
+                    if (activeMiningOperation.currency === 'btc') {
+                        state.clan.btc = (state.clan.btc || 0) + reward;
+                    } else {
+                        state.clan.xmr = (state.clan.xmr || 0) + reward;
+                    }
+                } else {
+                    if (activeMiningOperation.currency === 'btc') {
+                        state.btc += reward;
+                    } else {
+                        state.xmr += reward;
+                    }
+                }
+                
+                activeMiningOperation.totalEarned += reward;
+                activeMiningOperation.lastRewardTime = now;
+                
+                // Add reward log
+                if (!forceFinal) {
+                    addMiningLog(`[REWARD] +${reward.toFixed(6)} ${activeMiningOperation.currency.toUpperCase()} (${totalActiveHosts} host attivi)`);
+                }
+                
+                // Apply mining risks
+                applyMiningRisks();
+                
+                updateUI();
+                saveState();
+            }
+        } else {
+            // No active hosts - add warning log
+            if (!forceFinal) {
+                addMiningLog(`[WARNING] Nessun host attivo nei gruppi selezionati`);
+            }
+        }
+    }
+}
+
+function applyMiningRisks() {
+    if (!activeMiningOperation) return;
+    
+    // Apply risks to participating hosts
+    activeMiningOperation.groups.forEach(groupName => {
+        const group = state.botnetGroups[groupName];
+        if (group) {
+            group.hostIds.forEach(hostId => {
+                const host = state.infectedHostPool.find(h => h.id === hostId);
+                if (host && host.status === 'Active') {
+                    // Gradual traceability increase (very small per reward cycle)
+                    const traceIncrease = 0.5 + (Math.random() * 0.5);
+                    host.traceabilityScore = Math.min(100, host.traceabilityScore + traceIncrease);
+                    
+                    // Small stability decrease
+                    const stabilityDecrease = Math.random() * 0.3;
+                    host.stabilityScore = Math.max(0, host.stabilityScore - stabilityDecrease);
+                    
+                    // Very small chance of host disconnection if traceability is high
+                    if (host.traceabilityScore > 90 && Math.random() < 0.001) {
+                        addMiningLog(`[RISK] Host ${host.ipAddress} disconnesso per alta tracciabilità`);
+                        host.status = 'Offline';
+                        addLogToHost(hostId, 'Host disconnesso durante mining per alta tracciabilità');
+                    }
+                }
+            });
+        }
+    });
 }
