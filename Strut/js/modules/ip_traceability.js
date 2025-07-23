@@ -425,8 +425,14 @@ function applyTraceabilityIncrease(ipAddress, increase, traceData) {
     
     ipData.traces.push(trace);
     
-    // Update player traces
-    state.playerTraces.totalTraces += increase;
+    // Update player traces - ONLY for personal IP (as only personal IP can lead to hacker's identity)
+    if (ipData.type === IP_TYPES.PERSONAL) {
+        state.playerTraces.totalTraces += increase;
+        // Show specific notification for personal IP usage
+        showPersonalIpTraceabilityNotification(ipAddress, increase, ipData.score);
+    }
+    
+    // Always add to trace history for tracking purposes
     state.playerTraces.traceHistory.push({
         ...trace,
         ip: ipAddress,
@@ -439,8 +445,10 @@ function applyTraceabilityIncrease(ipAddress, increase, traceData) {
     // Update investigation level
     updateInvestigationLevel();
     
-    // Show notification
-    showTraceabilityNotification(ipAddress, increase, ipData.score);
+    // Show notification for non-personal IPs (personal IP notifications are shown above)
+    if (ipData.type !== IP_TYPES.PERSONAL) {
+        showTraceabilityNotification(ipAddress, increase, ipData.score);
+    }
     
     saveState();
 }
@@ -634,6 +642,20 @@ function removeInfectedHost(hostId) {
         updateBotnetGroupsUI();
     }
     
+    // Refresh botnet hosts list and related UI components
+    if (typeof renderInfectedHostsList === 'function') {
+        renderInfectedHostsList();
+    }
+    if (typeof renderHostDetailsPanel === 'function') {
+        renderHostDetailsPanel();
+    }
+    if (typeof renderBotGroupSelection === 'function') {
+        renderBotGroupSelection();
+    }
+    if (typeof renderMiningGroups === 'function') {
+        renderMiningGroups();
+    }
+    
     // Save state
     saveState();
     
@@ -734,7 +756,8 @@ function triggerTargetCountermeasures() {
 }
 
 /**
- * Update player investigation level based on total traces
+ * Update player investigation level based on personal IP traces only
+ * Only the personal IP can lead back to the hacker's identity
  */
 function updateInvestigationLevel() {
     const totalTraces = state.playerTraces.totalTraces;
@@ -752,7 +775,7 @@ function updateInvestigationLevel() {
         const agencies = ['FBI', 'NSA', 'Interpol', 'CIA', 'Europol'];
         state.playerTraces.investigatedBy = agencies[Math.min(newLevel - 1, agencies.length - 1)];
         
-        showNotification(`Livello di indagine aumentato a ${newLevel}. Ora sei investigato da: ${state.playerTraces.investigatedBy}`, 'warning');
+        showNotification(`🚨 LIVELLO DI INDAGINE AUMENTATO A ${newLevel}! Ora sei investigato da: ${state.playerTraces.investigatedBy}. Solo le tracce del tuo IP personale contribuiscono a questo livello.`, 'error');
     }
 }
 
@@ -775,6 +798,34 @@ function showTraceabilityNotification(ipAddress, increase, totalScore) {
     } else if (totalScore >= TRACEABILITY_THRESHOLDS.MEDIUM) {
         level = 'warning';
         message += ' - Attenzione';
+    }
+    
+    if (typeof showNotification === 'function') {
+        showNotification(message, level);
+    }
+}
+
+/**
+ * Show specific notification for personal IP traceability increases
+ * @param {string} ipAddress - Personal IP address
+ * @param {number} increase - Score increase
+ * @param {number} totalScore - Total score after increase
+ */
+function showPersonalIpTraceabilityNotification(ipAddress, increase, totalScore) {
+    let level = 'warning';
+    let message = `⚠️ IP PERSONALE ${ipAddress}: +${increase} tracce di indagine (Total: ${totalScore})`;
+    
+    if (totalScore >= TRACEABILITY_THRESHOLDS.CRITICAL) {
+        level = 'error';
+        message = `🚨 IP PERSONALE ${ipAddress}: +${increase} tracce - RISCHIO CRITICO! (Total: ${totalScore}) - Le autorità potrebbero identificarti!`;
+    } else if (totalScore >= TRACEABILITY_THRESHOLDS.HIGH) {
+        level = 'error';
+        message = `🔴 IP PERSONALE ${ipAddress}: +${increase} tracce - ALTO RISCHIO! (Total: ${totalScore}) - Sei sotto sorveglianza!`;
+    } else if (totalScore >= TRACEABILITY_THRESHOLDS.MEDIUM) {
+        level = 'warning';
+        message = `🟡 IP PERSONALE ${ipAddress}: +${increase} tracce - ATTENZIONE! (Total: ${totalScore}) - Le autorità ti stanno notando.`;
+    } else {
+        message = `🔵 IP PERSONALE ${ipAddress}: +${increase} tracce (Total: ${totalScore}) - Solo il tuo IP personale può portare alla tua identità.`;
     }
     
     if (typeof showNotification === 'function') {
