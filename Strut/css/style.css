@@ -48,6 +48,16 @@ body {
 .menu-toggle:hover {
     background: linear-gradient(135deg, #6366f1, #8b5cf6);
     transform: scale(1.05);
+    box-shadow: 3px 0 15px rgba(99, 102, 241, 0.4);
+}
+
+.menu-toggle i {
+    font-size: 1.1rem;
+    transition: transform 0.3s ease;
+}
+
+.lateral-menu.expanded .menu-toggle i {
+    transform: rotate(180deg);
 }
 
 .menu-content {
@@ -93,6 +103,7 @@ body {
 .menu-collapsed-info {
     display: block;
     margin-bottom: 20px;
+    padding: 8px;
 }
 
 .lateral-menu.expanded .menu-collapsed-info {
@@ -102,35 +113,104 @@ body {
 .player-info {
     text-align: center;
     margin-bottom: 15px;
+    padding: 8px 4px;
+    background-color: rgba(31, 41, 55, 0.6);
+    border-radius: 6px;
+    border: 1px solid rgba(99, 102, 241, 0.3);
 }
 
 .player-level {
     margin-bottom: 5px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 4px;
+}
+
+.player-name {
+    font-size: 0.75rem;
+    opacity: 0.9;
 }
 
 .currencies-compact {
     display: flex;
-    justify-content: space-around;
-    gap: 10px;
+    flex-direction: column;
+    gap: 8px;
 }
 
 .currency-item {
     display: flex;
-    flex-direction: column;
     align-items: center;
-    gap: 4px;
-    padding: 8px;
-    background-color: rgba(31, 41, 55, 0.5);
+    justify-content: space-between;
+    gap: 6px;
+    padding: 6px 8px;
+    background-color: rgba(31, 41, 55, 0.7);
     border-radius: 6px;
     border: 1px solid rgba(75, 85, 99, 0.3);
+    transition: all 0.3s ease;
+}
+
+.currency-item:hover {
+    background-color: rgba(79, 70, 229, 0.2);
+    border-color: rgba(99, 102, 241, 0.5);
+    transform: scale(1.02);
 }
 
 .currency-item i {
-    font-size: 1.1rem;
+    font-size: 1rem;
+    min-width: 16px;
+    text-align: center;
 }
 
 .currency-item span {
-    font-size: 0.8rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    min-width: 0;
+    text-align: right;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Collapsed Activity Indicators */
+.collapsed-activity-indicators {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 12px;
+    padding: 8px;
+    background-color: rgba(17, 24, 39, 0.6);
+    border-radius: 6px;
+    border: 1px solid rgba(75, 85, 99, 0.3);
+    min-height: 32px;
+    align-items: center;
+}
+
+.collapsed-activity-indicator {
+    padding: 4px 6px;
+    background-color: rgba(31, 41, 55, 0.8);
+    border-radius: 4px;
+    border: 1px solid rgba(75, 85, 99, 0.4);
+    transition: all 0.3s ease;
+}
+
+.collapsed-activity-indicator:not(.hidden) {
+    animation: pulse 2s infinite;
+}
+
+.collapsed-activity-indicator i {
+    font-size: 0.9rem;
+}
+
+@keyframes pulse {
+    0%, 100% { 
+        opacity: 1; 
+        transform: scale(1);
+    }
+    50% { 
+        opacity: 0.7; 
+        transform: scale(1.1);
+    }
 }
 
 /* Expanded Info Section */
