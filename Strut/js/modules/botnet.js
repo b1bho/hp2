@@ -1055,8 +1055,9 @@ function renderBotGroupSelection() {
         const isSelected = selectedBotGroups.has(groupName);
         const currentActivity = group.currentActivity || 'Idle';
         
-        // Check if this group is involved in any active DDoS attack
+        // Check if this group is involved in any active operations
         const isInActiveDDoS = activeDDoSAttacks.some(attack => attack.botGroups.includes(groupName));
+        const isInActiveRansomware = activeRansomwareOperations.some(op => op.botGroups.includes(groupName));
         const currentDDoSTarget = isInActiveDDoS ? activeDDoSAttacks.find(attack => attack.botGroups.includes(groupName))?.target : null;
         
         let activityIcon = 'fa-circle';
@@ -1071,6 +1072,15 @@ function renderBotGroupSelection() {
             activityColor = 'text-red-400';
             if (currentDDoSTarget) {
                 activityText = `DDoSing ${currentDDoSTarget}`;
+            }
+        } else if (currentActivity === 'Ransomware' || isInActiveRansomware) {
+            activityIcon = 'fa-lock';
+            activityColor = 'text-red-400';
+            if (isInActiveRansomware) {
+                const operation = activeRansomwareOperations.find(op => op.botGroups.includes(groupName));
+                if (operation) {
+                    activityText = `Ransomware ${operation.targetType}`;
+                }
             }
         }
         
@@ -3797,6 +3807,79 @@ function processRansomResponse(requestId) {
     updateUI();
 }
 
+function instantCompleteRansom(requestId) {
+    const requestIndex = activeRansomRequests.findIndex(req => req.id === requestId);
+    if (requestIndex === -1) return;
+    
+    const request = activeRansomRequests[requestIndex];
+    
+    // Check if player has enough Monero
+    if (state.xmr < 10) {
+        showNotification('Servono 10 XMR per completare istantaneamente il riscatto!', 'error');
+        return;
+    }
+    
+    // Deduct 10 XMR from player balance
+    state.xmr -= 10;
+    
+    // Clear the existing timeout
+    clearTimeout(request.timeoutId);
+    
+    // Remove the request from active requests
+    activeRansomRequests.splice(requestIndex, 1);
+    
+    // Determine if ransom is accepted based on calculated probability (same logic as processRansomResponse)
+    const isAccepted = Math.random() * 100 < request.probability;
+    
+    if (isAccepted) {
+        // Ransom accepted - add Bitcoin to player wallet
+        state.btc += request.amount;
+        
+        showNotification(`🎉 Completamento istantaneo riuscito! Ricevuti ${request.amount} BTC nel portafoglio. (-10 XMR)`, 'success');
+        
+        request.status = 'accepted';
+        
+        // Add XP based on target difficulty
+        const xpRewards = {
+            'individual': 20,
+            'small_business': 35,
+            'corporation': 60,
+            'government': 100,
+            'hospital': 50,
+            'education': 30
+        };
+        
+        if (state.xp !== undefined && xpRewards[request.targetType]) {
+            state.xp += xpRewards[request.targetType];
+        }
+        
+    } else {
+        // Ransom rejected
+        showNotification(`❌ Completamento istantaneo fallito: il riscatto è stato rifiutato. (-10 XMR)`, 'error');
+        request.status = 'rejected';
+    }
+    
+    // Apply traceability effects based on target type
+    const traceabilityIncrease = {
+        'individual': 2,
+        'small_business': 3,
+        'corporation': 5,
+        'government': 8,
+        'hospital': 4,
+        'education': 3
+    };
+    
+    const increase = traceabilityIncrease[request.targetType] || 3;
+    if (state.traceabilityScore !== undefined) {
+        state.traceabilityScore = Math.min(100, state.traceabilityScore + increase);
+    }
+    
+    // Update UI
+    renderRansomRequestsStatus();
+    saveState();
+    updateUI();
+}
+
 function applyRansomwareTraceability(operation) {
     // Apply ransomware traceability using the existing system if available
     if (typeof handleRansomwareTraceability === 'function') {
@@ -3963,9 +4046,11 @@ function renderRansomRequestsStatus() {
         const remainingHours = Math.floor(remaining / 3600000);
         const remainingMinutes = Math.floor((remaining % 3600000) / 60000);
         
+        const canInstantComplete = state.xmr >= 10;
+        
         html += `
             <div class="bg-indigo-800/50 rounded-lg p-3 border border-indigo-400">
-                <div class="flex justify-between items-center">
+                <div class="flex justify-between items-center mb-2">
                     <div>
                         <div class="font-semibold text-white">${request.targetType} - ${request.amount} BTC</div>
                         <div class="text-xs text-gray-400">Probabilità: ${request.probability.toFixed(1)}%</div>
@@ -3977,8 +4062,20 @@ function renderRansomRequestsStatus() {
                         <div class="text-xs text-gray-400">rimanenti</div>
                     </div>
                 </div>
-            </div>
-        `;
+                <div class="flex justify-between items-center">
+                    <div class="text-xs text-gray-400">
+                        Saldo XMR: ${state.xmr.toFixed(1)}
+                    </div>
+                    <button 
+                        class="text-xs px-2 py-1 rounded ${canInstantComplete ? 'bg-purple-600 hover:bg-purple-700 text-white' : 'bg-gray-600 text-gray-400 cursor-not-allowed'}" 
+                        onclick="instantCompleteRansom('${request.id}')"
+                        ${!canInstantComplete ? 'disabled' : ''}
+                        title="${canInstantComplete ? 'Completa istantaneamente per 10 XMR' : 'Servono 10 XMR per completare istantaneamente'}"
+                    >
+                        <i class="fas fa-bolt mr-1"></i>Completa Subito (10 XMR)
+                    </button>
+                </div>
+            </div>`;
     });
     
     listContainer.innerHTML = html;
