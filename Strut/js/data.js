@@ -435,6 +435,13 @@ const initialGameState = {
     activePage: 'botnet',
     isWorldUnlocked: false,
     discoveredTargets: [],
+    // Faction Reputation System
+    factionReputation: {
+        governmental: { xp: 0, level: 0, totalXpEarned: 0 },
+        terrorist: { xp: 0, level: 0, totalXpEarned: 0 },
+        eco_terrorist: { xp: 0, level: 0, totalXpEarned: 0 },
+        population: { xp: 0, level: 0, totalXpEarned: 0 }
+    },
     hardware: {
         cpu: { level: 1, cores: 4, clock: 2.5 },
         ram: { level: 1, size: 8 },
