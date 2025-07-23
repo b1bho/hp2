@@ -607,11 +607,27 @@ function updateSidebarInfo() {
     const sidebarPlayerName = document.getElementById('sidebar-player-name');
     const sidebarBtcBalance = document.getElementById('sidebar-btc-balance');
     const sidebarXmrBalance = document.getElementById('sidebar-xmr-balance');
+    const sidebarInvestigationCompact = document.getElementById('sidebar-investigation-level-compact');
     
     if (sidebarLevel) sidebarLevel.textContent = state.level || 1;
     if (sidebarPlayerName) sidebarPlayerName.textContent = state.playerName || 'Hacker';
     if (sidebarBtcBalance) sidebarBtcBalance.textContent = Math.floor(state.btc || 0);
     if (sidebarXmrBalance) sidebarXmrBalance.textContent = Math.floor(state.xmr || 0);
+    
+    // Update investigation level in collapsed view
+    if (sidebarInvestigationCompact) {
+        const investigationLevel = (state.identity && state.identity.investigationLevel) || 0;
+        sidebarInvestigationCompact.textContent = `${Math.round(investigationLevel)}%`;
+        
+        // Color code based on level
+        if (investigationLevel >= 80) {
+            sidebarInvestigationCompact.className = 'font-bold text-red-400';
+        } else if (investigationLevel >= 50) {
+            sidebarInvestigationCompact.className = 'font-bold text-yellow-400';
+        } else {
+            sidebarInvestigationCompact.className = 'font-bold text-green-400';
+        }
+    }
     
     // Update expanded info
     const sidebarExpandedLevel = document.getElementById('sidebar-expanded-player-level');
@@ -622,6 +638,7 @@ function updateSidebarInfo() {
     const sidebarExpandedBtcBalance = document.getElementById('sidebar-expanded-btc-balance');
     const sidebarExpandedXmrBalance = document.getElementById('sidebar-expanded-xmr-balance');
     const sidebarTalentPoints = document.getElementById('sidebar-talent-points');
+    const sidebarInvestigationLevel = document.getElementById('sidebar-investigation-level');
     
     if (sidebarExpandedLevel) sidebarExpandedLevel.textContent = state.level || 1;
     if (sidebarPlayerXp) sidebarPlayerXp.textContent = state.xp || 0;
@@ -630,6 +647,21 @@ function updateSidebarInfo() {
     if (sidebarExpandedBtcBalance) sidebarExpandedBtcBalance.textContent = Math.floor(state.btc || 0);
     if (sidebarExpandedXmrBalance) sidebarExpandedXmrBalance.textContent = Math.floor(state.xmr || 0);
     if (sidebarTalentPoints) sidebarTalentPoints.textContent = state.talentPoints || 0;
+    
+    // Update investigation level in expanded view
+    if (sidebarInvestigationLevel) {
+        const investigationLevel = (state.identity && state.identity.investigationLevel) || 0;
+        sidebarInvestigationLevel.textContent = `${Math.round(investigationLevel)}%`;
+        
+        // Color code based on level
+        if (investigationLevel >= 80) {
+            sidebarInvestigationLevel.className = 'font-bold text-red-400';
+        } else if (investigationLevel >= 50) {
+            sidebarInvestigationLevel.className = 'font-bold text-yellow-400';
+        } else {
+            sidebarInvestigationLevel.className = 'font-bold text-green-400';
+        }
+    }
     
     // Update XP bar
     if (sidebarPlayerXpBarFill) {

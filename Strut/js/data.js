@@ -428,7 +428,11 @@ const initialGameState = {
         traces: 5,
         realIp: null, // Will be set by initializeDynamicState
         investigatedBy: 'Nessuna',
-        suspicion: 0
+        suspicion: 0,
+        investigationLevel: 0, // 0-100% - Investigation progress
+        investigationHistory: [], // Log of investigation events
+        lastWipeDate: null, // Last identity wipe timestamp
+        arrestCount: 0 // Number of times arrested
     },
     morality: 0,
     traceLogs: [],
