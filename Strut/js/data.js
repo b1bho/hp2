@@ -453,10 +453,113 @@ const initialGameState = {
             { flowName: null, status: 'idle', startTime: 0, duration: 0 }
         ]
     },
-    savedFlows: {},
+    savedFlows: {
+        // Sample DDoS flows for testing - users can create their own
+        "Basic DDoS Attack": {
+            id: "sample-ddos-1",
+            name: "Basic DDoS Attack",
+            objective: "denialOfService",
+            fc: 85,
+            stats: {
+                lso: 15,
+                rc: 2.5,
+                lcs: 5,
+                an: 8,
+                eo: 12,
+                rl: 20,
+                attack: 150000
+            },
+            blocks: [
+                { type: "Scansione rete locale", id: "block-1" },
+                { type: "Lancia attacco SYN Flood", id: "block-2" }
+            ],
+            host: { type: 'personal', name: 'Computer Personale' }
+        },
+        "Advanced DDoS Attack": {
+            id: "sample-ddos-2",
+            name: "Advanced DDoS Attack",
+            objective: "denialOfService",
+            fc: 95,
+            stats: {
+                lso: 20,
+                rc: 3.2,
+                lcs: 8,
+                an: 12,
+                eo: 18,
+                rl: 25,
+                attack: 250000
+            },
+            blocks: [
+                { type: "Scansione rete locale", id: "block-1" },
+                { type: "Lancia attacco SYN Flood", id: "block-2" },
+                { type: "Genera traffico UDP Flood", id: "block-3" },
+                { type: "Coordina botnet per DDoS", id: "block-4" }
+            ],
+            host: { type: 'personal', name: 'Computer Personale' }
+        }
+    },
     permanentFlows: {},
-    infectedHostPool: [],
-    botnetGroups: {},
+    infectedHostPool: [
+        // Sample infected hosts for testing DDoS functionality
+        {
+            id: "host_sample_1",
+            ipAddress: "192.168.1.100",
+            location: "Milano, IT",
+            status: "Active",
+            infectionType: "Trojan",
+            stabilityScore: 85,
+            traceabilityScore: 15,
+            resources: {
+                cpuPower: 2.4,
+                bandwidth: 100,
+                flowSlots: 2
+            },
+            hookedFlows: [null, null],
+            activityLog: ["[12:00:00] Infezione iniziale completata", "[12:01:30] Bot attivato con successo"]
+        },
+        {
+            id: "host_sample_2", 
+            ipAddress: "10.0.0.50",
+            location: "Roma, IT",
+            status: "Active",
+            infectionType: "Worm",
+            stabilityScore: 90,
+            traceabilityScore: 10,
+            resources: {
+                cpuPower: 3.2,
+                bandwidth: 150,
+                flowSlots: 3
+            },
+            hookedFlows: [null, null, null],
+            activityLog: ["[11:45:12] Propagazione worm riuscita", "[11:46:00] Sistema compromesso"]
+        },
+        {
+            id: "host_sample_3",
+            ipAddress: "172.16.0.25", 
+            location: "Napoli, IT",
+            status: "Active",
+            infectionType: "Backdoor",
+            stabilityScore: 75,
+            traceabilityScore: 25,
+            resources: {
+                cpuPower: 1.8,
+                bandwidth: 80,
+                flowSlots: 1
+            },
+            hookedFlows: [null],
+            activityLog: ["[10:30:45] Backdoor installato", "[10:31:20] Connessione C2 stabilita"]
+        }
+    ],
+    botnetGroups: {
+        "Test Group": {
+            hostIds: ["host_sample_1", "host_sample_2"],
+            attachedFlows: []
+        },
+        "Italy Bots": {
+            hostIds: ["host_sample_3"],
+            attachedFlows: []
+        }
+    },
     ownedHardware: {},
     purchasedServices: {},
     ipTraceability: {},

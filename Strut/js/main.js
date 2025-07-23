@@ -37,6 +37,11 @@ function saveState() {
 }
 
 function loadState() {
+    // Initialize state with the default game state if not already initialized
+    if (!state || Object.keys(state).length === 0) {
+        state = JSON.parse(JSON.stringify(initialGameState));
+    }
+    
     const savedState = localStorage.getItem('hackerAppState');
     const savedPermanentFlows = localStorage.getItem('hackerAppPermanentFlows');
     if (savedState) {
