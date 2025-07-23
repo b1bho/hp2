@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fixed Burned Host Removal Test</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background: #111827; color: #f3f4f6; font-family: 'Inter', sans-serif; }
+        .test-section { border: 1px solid #374151; border-radius: 8px; padding: 1rem; margin: 1rem 0; }
+        .test-pass { color: #10b981; }
+        .test-fail { color: #ef4444; }
+        .test-warning { color: #f59e0b; }
+    </style>
+</head>
+<body class="p-8">
+    <div class="max-w-6xl mx-auto">
+        <h1 class="text-3xl font-bold text-indigo-400 mb-6">Fixed Burned Host Removal Test</h1>
+        
+        <div class="test-section">
+            <h2 class="text-xl font-bold text-green-300 mb-4">Test Results</h2>
+            <div id="test-results" class="space-y-2">
+                <div class="text-gray-400">Running tests...</div>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h2 class="text-xl font-bold text-orange-300 mb-4">UI Function Call Log</h2>
+            <div id="ui-calls" class="max-h-60 overflow-y-auto text-sm font-mono space-y-1"></div>
+        </div>
+    </div>
+
+    <!-- Load game modules -->
+    <script src="Strut/js/data.js"></script>
+    <script src="Strut/js/modules/ip_traceability.js"></script>
+    <script src="Strut/js/modules/botnet.js"></script>
+    
+    <script>
+        let uiCallLog = [];
+        
+        // Mock UI functions to track calls
+        function updateBotnetAggregateStats() {
+            uiCallLog.push('updateBotnetAggregateStats() called');
+            updateLogDisplay();
+        }
+        
+        function updateBotnetGroupsUI() {
+            uiCallLog.push('updateBotnetGroupsUI() called');
+            updateLogDisplay();
+        }
+        
+        function renderInfectedHostsList() {
+            uiCallLog.push('renderInfectedHostsList() called');
+            updateLogDisplay();
+        }
+        
+        function renderHostDetailsPanel() {
+            uiCallLog.push('renderHostDetailsPanel() called');
+            updateLogDisplay();
+        }
+        
+        function renderBotGroupSelection() {
+            uiCallLog.push('renderBotGroupSelection() called');
+            updateLogDisplay();
+        }
+        
+        function renderMiningGroups() {
+            uiCallLog.push('renderMiningGroups() called');
+            updateLogDisplay();
+        }
+        
+        function cleanupEmptyGroups() {
+            uiCallLog.push('cleanupEmptyGroups() called');
+            updateLogDisplay();
+            return 0; // No groups cleaned
+        }
+        
+        function showNotification(message, type = 'info') {
+            uiCallLog.push(`NOTIFICATION [${type}]: ${message}`);
+            updateLogDisplay();
+        }
+        
+        function saveState() {
+            uiCallLog.push('saveState() called');
+            updateLogDisplay();
+        }
+        
+        function updateUI() {
+            uiCallLog.push('updateUI() called');
+            updateLogDisplay();
+        }
+        
+        function updateLogDisplay() {
+            const logElement = document.getElementById('ui-calls');
+            logElement.innerHTML = uiCallLog.map(call => 
+                `<div class="text-gray-300">[${new Date().toLocaleTimeString()}] ${call}</div>`
+            ).join('');
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+        
+        // Initialize test state
+        window.state = {
+            ipTraceability: {},
+            playerTraces: {
+                totalTraces: 0,
+                investigationLevel: 0,
+                traceHistory: [],
+                investigatedBy: 'Nessuna'
+            },
+            infectedHostPool: [
+                {
+                    id: 'test_host_1',
+                    ipAddress: '10.0.0.1',
+                    location: 'Test Location 1',
+                    status: 'Active',
+                    infectionType: 'Trojan',
+                    stabilityScore: 80,
+                    traceabilityScore: 10,
+                    resources: { cpuPower: 1.5, bandwidth: 100, flowSlots: 2 }
+                },
+                {
+                    id: 'test_host_2',
+                    ipAddress: '10.0.0.2',
+                    location: 'Test Location 2',
+                    status: 'Active',
+                    infectionType: 'Worm',
+                    stabilityScore: 90,
+                    traceabilityScore: 5,
+                    resources: { cpuPower: 2.0, bandwidth: 200, flowSlots: 3 }
+                }
+            ],
+            botnetGroups: {
+                'TestGroup1': {
+                    hostIds: ['test_host_1', 'test_host_2'],
+                    attachedFlows: [],
+                    currentActivity: 'Idle'
+                }
+            },
+            xmr: 1000
+        };
+        
+        // Initialize IP traceability
+        initializeIpTraceability();
+        
+        // Manually add infected host IPs to traceability system
+        state.infectedHostPool.forEach(host => {
+            state.ipTraceability[host.ipAddress] = {
+                ip: host.ipAddress,
+                type: 'infected_host',
+                score: 0,
+                usageCount: 0,
+                lastUsed: null,
+                status: 'active',
+                traces: [],
+                hostId: host.id
+            };
+        });
+        
+        function runTest() {
+            uiCallLog = []; // Clear log
+            
+            const resultsElement = document.getElementById('test-results');
+            resultsElement.innerHTML = '<div class="text-yellow-400">Running burn test...</div>';
+            
+            // Record initial state
+            const initialHostCount = state.infectedHostPool.length;
+            const initialGroupHostCount = state.botnetGroups.TestGroup1.hostIds.length;
+            
+            // Apply traceability increase that should trigger burning (500+ threshold)
+            applyTraceabilityIncrease('10.0.0.1', 520, {
+                event: 'test_burn',
+                target: 'test_target',
+                flow: 'test_flow'
+            });
+            
+            // Check results
+            const finalHostCount = state.infectedHostPool.length;
+            const finalGroupHostCount = state.botnetGroups.TestGroup1.hostIds.length;
+            
+            const hostRemovalWorked = finalHostCount === (initialHostCount - 1);
+            const groupUpdateWorked = finalGroupHostCount === (initialGroupHostCount - 1);
+            const uiRefreshCalled = uiCallLog.some(call => call.includes('renderInfectedHostsList'));
+            const groupUIRefreshCalled = uiCallLog.some(call => call.includes('renderBotGroupSelection'));
+            
+            let results = `
+                <div class="${hostRemovalWorked ? 'test-pass' : 'test-fail'}">
+                    ${hostRemovalWorked ? '✅' : '❌'} Host removal: ${initialHostCount} → ${finalHostCount}
+                </div>
+                <div class="${groupUpdateWorked ? 'test-pass' : 'test-fail'}">
+                    ${groupUpdateWorked ? '✅' : '❌'} Group update: ${initialGroupHostCount} → ${finalGroupHostCount} hosts in TestGroup1
+                </div>
+                <div class="${uiRefreshCalled ? 'test-pass' : 'test-fail'}">
+                    ${uiRefreshCalled ? '✅' : '❌'} UI refresh called: renderInfectedHostsList()
+                </div>
+                <div class="${groupUIRefreshCalled ? 'test-pass' : 'test-fail'}">
+                    ${groupUIRefreshCalled ? '✅' : '❌'} Group UI refresh called: renderBotGroupSelection()
+                </div>
+                <div class="mt-4 p-3 rounded ${hostRemovalWorked && groupUpdateWorked && uiRefreshCalled && groupUIRefreshCalled ? 'bg-green-900' : 'bg-red-900'}">
+                    <strong>Result:</strong> ${hostRemovalWorked && groupUpdateWorked && uiRefreshCalled && groupUIRefreshCalled ? 
+                        'All tests passed! The fix works correctly.' : 
+                        'Some tests failed. Check the UI call log for details.'}
+                </div>
+            `;
+            
+            resultsElement.innerHTML = results;
+        }
+        
+        // Run test after initialization
+        setTimeout(runTest, 500);
+    </script>
+</body>
+</html>

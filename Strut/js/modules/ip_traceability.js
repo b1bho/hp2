@@ -642,6 +642,20 @@ function removeInfectedHost(hostId) {
         updateBotnetGroupsUI();
     }
     
+    // Refresh botnet hosts list and related UI components
+    if (typeof renderInfectedHostsList === 'function') {
+        renderInfectedHostsList();
+    }
+    if (typeof renderHostDetailsPanel === 'function') {
+        renderHostDetailsPanel();
+    }
+    if (typeof renderBotGroupSelection === 'function') {
+        renderBotGroupSelection();
+    }
+    if (typeof renderMiningGroups === 'function') {
+        renderMiningGroups();
+    }
+    
     // Save state
     saveState();
     
