@@ -787,7 +787,7 @@ function showStorageChoiceModal(dataPacket) {
 function updateTargetStatesInWorldView() {
     // Re-render the nation panel if it's currently visible
     if (selectedNation) {
-        renderNationPanel(selectedNation);
+        showNationPanel(selectedNation);
     }
 }
 

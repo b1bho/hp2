@@ -92,14 +92,7 @@ function handleAttackConsequences(attack, successRatio, effectiveStats) {
     const failureSeverity = 1 - successRatio;
     if (failureSeverity <= 0) return;
 
-    let traceIncrease = 0;
-    traceIncrease += failureSeverity * 20;
-    traceIncrease += (effectiveStats.rl / 10);
-    traceIncrease -= (effectiveStats.an / 2);
-    traceIncrease += (100 - (attack.flowFc || 100)) / 10;
-    traceIncrease += (attack.target.tier || 1) * 5;
-    traceIncrease = Math.max(5, Math.ceil(traceIncrease));
-
+    // Helper function to get node information
     const getNodeInfo = (nodeId) => {
         if (networkNodeData[nodeId]) return networkNodeData[nodeId];
         const personalService = marketData.networkServices.find(s => s.id === nodeId);
@@ -111,12 +104,126 @@ function handleAttackConsequences(attack, successRatio, effectiveStats) {
         return null;
     };
 
+    // Determine attack result status
+    let attackResult = {
+        status: successRatio > 0.8 ? 'success' : 
+               successRatio > 0.4 ? 'partial' : 'failure',
+        successRatio: successRatio,
+        impact: Math.round((successRatio * 100)),
+        duration: attack.finalTime
+    };
+
+    // Get flow data for traceability calculation
+    const flowData = attack.flow || {
+        stats: {
+            rl: effectiveStats.rl || 50,
+            an: effectiveStats.an || 50,
+            fc: attack.flowFc || 80
+        }
+    };
+
+    // Process traceability for each node in routing chain
     attack.routingChain.forEach(nodeId => {
         const node = getNodeInfo(nodeId);
         const ip = node?.currentIp || node?.ipAddress;
-        if (ip) {
-            if (!state.ipTraceability[ip]) state.ipTraceability[ip] = 0;
-            state.ipTraceability[ip] = Math.min(100, state.ipTraceability[ip] + traceIncrease);
+        if (ip && typeof applyTraceabilityIncrease === 'function') {
+            const increase = calculateTraceabilityIncrease(ip, attackResult, flowData, attack.target);
+            applyTraceabilityIncrease(ip, increase, {
+                event: 'attack',
+                target: attack.target.name,
+                flow: attack.flow?.name || 'unknown',
+                details: {
+                    successRatio: successRatio,
+                    attackType: attack.target.type || 'unknown'
+                }
+            });
+        }
+    });
+
+    // Handle source IP traceability based on host type
+    let sourceIp = state.identity.realIp;
+    let traceDetails = `La catena di routing non ha retto. L'IP di origine è stato tracciato.`;
+
+    if (attack.host && attack.host.type === 'clan') {
+        const server = state.clan.infrastructure.servers.find(s => s.id === attack.host.serverId);
+        if (server) {
+            sourceIp = server.ip;
+            traceDetails = `L'attacco è stato tracciato fino al server del clan: ${server.ip}.`;
+            
+            // Apply traceability to clan server
+            if (typeof applyTraceabilityIncrease === 'function') {
+                const increase = calculateTraceabilityIncrease(sourceIp, attackResult, flowData, attack.target);
+                applyTraceabilityIncrease(sourceIp, increase, {
+                    event: 'attack',
+                    target: attack.target.name,
+                    flow: attack.flow?.name || 'unknown',
+                    details: { hostType: 'clan_server' }
+                });
+            }
+        }
+    } 
+    else if (attack.host && attack.host.type === 'botnet_group') {
+        const groupName = attack.host.name;
+        const group = state.botnetGroups[groupName];
+        sourceIp = `Gruppo Botnet: ${groupName}`;
+
+        if (group && group.hostIds.length > 0) {
+            const hostIPs = group.hostIds.map(hostId => {
+                const host = state.infectedHostPool.find(h => h.id === hostId);
+                if (host && typeof applyTraceabilityIncrease === 'function') {
+                    const increase = calculateTraceabilityIncrease(host.ipAddress, attackResult, flowData, attack.target);
+                    applyTraceabilityIncrease(host.ipAddress, increase, {
+                        event: 'attack',
+                        target: attack.target.name,
+                        flow: attack.flow?.name || 'unknown',
+                        details: { 
+                            hostType: 'infected_host',
+                            hostId: hostId,
+                            groupName: groupName
+                        }
+                    });
+                    return host.ipAddress;
+                }
+                return null;
+            }).filter(ip => ip);
+
+            if (hostIPs.length > 0) {
+                traceDetails = `L'attacco è stato tracciato fino al gruppo botnet '${groupName}'. IP esposti: ${hostIPs.join(', ')}.`;
+            } else {
+                traceDetails = `L'attacco è stato tracciato fino al gruppo botnet '${groupName}', ma non sono stati trovati IP specifici.`;
+            }
+        } else {
+            traceDetails = `L'attacco è stato tracciato fino al gruppo botnet '${groupName}', ma il gruppo è vuoto o non è stato trovato.`;
+        }
+    } else {
+        // Personal computer attack
+        if (typeof applyTraceabilityIncrease === 'function') {
+            const increase = calculateTraceabilityIncrease(sourceIp, attackResult, flowData, attack.target);
+            applyTraceabilityIncrease(sourceIp, increase, {
+                event: 'attack',
+                target: attack.target.name,
+                flow: attack.flow?.name || 'unknown',
+                details: { hostType: 'personal' }
+            });
+        }
+    }
+
+    // Legacy trace handling for backward compatibility
+    let traceIncrease = 0;
+    traceIncrease += failureSeverity * 20;
+    traceIncrease += (effectiveStats.rl / 10);
+    traceIncrease -= (effectiveStats.an / 2);
+    traceIncrease += (100 - (attack.flowFc || 100)) / 10;
+    traceIncrease += (attack.target.tier || 1) * 5;
+    traceIncrease = Math.max(5, Math.ceil(traceIncrease));
+    traceIncrease = Math.max(5, Math.ceil(traceIncrease));
+
+    attack.routingChain.forEach(nodeId => {
+        const node = getNodeInfo(nodeId);
+        const ip = node?.currentIp || node?.ipAddress;
+        if (ip && typeof ensureIpData === 'function') {
+            const ipData = ensureIpData(ip);
+            ipData.score = Math.min(100, ipData.score + traceIncrease);
         }
     });
 
@@ -171,8 +278,10 @@ function handleAttackConsequences(attack, successRatio, effectiveStats) {
             }
         }
 
-        if (!state.ipTraceability[sourceIp]) state.ipTraceability[sourceIp] = 0;
-        state.ipTraceability[sourceIp] = Math.min(100, state.ipTraceability[sourceIp] + traceIncrease);
+        if (typeof ensureIpData === 'function') {
+            const ipData = ensureIpData(sourceIp);
+            ipData.score = Math.min(100, ipData.score + traceIncrease);
+        }
 
         state.identity.traces += Math.ceil(traceIncrease / 5);
         state.traceLogs.unshift({

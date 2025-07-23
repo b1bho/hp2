@@ -46,6 +46,10 @@ function renderHqPage() {
     hardwareHTML += `</ul></div>`;
     statsContainer.innerHTML += hardwareHTML;
 
+    // Add IP Traceability Summary Card
+    const traceabilityHTML = renderTraceabilitySummaryCard();
+    statsContainer.innerHTML += traceabilityHTML;
+
     // --- SEZIONE RETE PERSONALE MODIFICATA ---
     const realIpTraceScore = state.ipTraceability[state.identity.realIp] || 0;
     let realIpTraceColor = 'trace-low';
@@ -106,6 +110,72 @@ function renderHqPage() {
             refreshVpnIp(e.target.closest('button').dataset.serviceId);
         });
     });
+}
+
+/**
+ * Render IP Traceability Summary Card for HQ
+ */
+function renderTraceabilitySummaryCard() {
+    // Get player traces data
+    const playerTraces = state.playerTraces || {
+        totalTraces: 0,
+        investigationLevel: 0,
+        investigatedBy: 'Nessuna'
+    };
+    
+    // Get high-risk IPs
+    const ipData = typeof getAllIpTraceabilityData === 'function' ? 
+                   getAllIpTraceabilityData() : [];
+    const highRiskIPs = ipData.filter(ip => ip.level === 'high' || ip.level === 'critical' || ip.level === 'burned');
+    
+    const levelLabels = ['Nessuna', 'Locale', 'Nazionale', 'Internazionale', 'Globale', 'Massima'];
+    const levelColors = ['text-green-400', 'text-yellow-400', 'text-orange-400', 'text-red-400', 'text-red-600', 'text-red-800'];
+    
+    const currentLevel = Math.min(playerTraces.investigationLevel, levelLabels.length - 1);
+    
+    return `
+        <div class="hq-stat-card p-4 rounded-lg border-l-4 border-purple-500">
+            <h4 class="text-lg font-bold text-purple-300 mb-2">
+                <i class="fas fa-search mr-2"></i>
+                Stato Tracciabilità
+            </h4>
+            <div class="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                    <div class="text-gray-400">Tracce Totali</div>
+                    <div class="text-lg font-bold ${playerTraces.totalTraces > 500 ? 'text-red-400' : playerTraces.totalTraces > 200 ? 'text-orange-400' : 'text-green-400'}">
+                        ${playerTraces.totalTraces}
+                    </div>
+                </div>
+                <div>
+                    <div class="text-gray-400">Livello Indagine</div>
+                    <div class="text-lg font-bold ${levelColors[currentLevel]}">
+                        ${levelLabels[currentLevel]}
+                    </div>
+                </div>
+                <div>
+                    <div class="text-gray-400">Investigato da</div>
+                    <div class="text-sm font-bold text-white">
+                        ${playerTraces.investigatedBy}
+                    </div>
+                </div>
+                <div>
+                    <div class="text-gray-400">IP a Rischio</div>
+                    <div class="text-lg font-bold ${highRiskIPs.length > 0 ? 'text-red-400' : 'text-green-400'}">
+                        ${highRiskIPs.length}
+                    </div>
+                </div>
+            </div>
+            ${highRiskIPs.length > 0 ? `
+                <div class="mt-3 p-2 bg-red-900/30 rounded border border-red-600">
+                    <div class="text-xs text-red-300 font-bold mb-1">⚠️ IP ad Alto Rischio:</div>
+                    <div class="text-xs text-red-200">
+                        ${highRiskIPs.slice(0, 3).map(ip => `${ip.ip} (${ip.status})`).join(', ')}
+                        ${highRiskIPs.length > 3 ? ` +${highRiskIPs.length - 3} altri` : ''}
+                    </div>
+                </div>
+            ` : ''}
+        </div>
+    `;
 }
 
 // (Il resto del file hq.js rimane invariato)

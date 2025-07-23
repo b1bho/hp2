@@ -430,6 +430,13 @@ const initialGameState = {
         investigatedBy: 'Nessuna',
         suspicion: 0
     },
+    // New IP traceability system
+    playerTraces: {
+        totalTraces: 0,
+        investigationLevel: 0,
+        traceHistory: [],
+        investigatedBy: 'Nessuna'
+    },
     morality: 0,
     traceLogs: [],
     activePage: 'botnet',
