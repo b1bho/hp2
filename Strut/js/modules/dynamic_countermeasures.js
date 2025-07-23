@@ -64,8 +64,37 @@ function initializeDynamicTargetStates() {
                 lastAttackTime: null,
                 countermeasureHistory: []
             };
+        } else {
+            // Ensure existing states have proper Set objects after deserialization
+            ensureDetectedNodesIsSet(state.dynamicTargetStates[targetId]);
         }
     });
+}
+
+/**
+ * Ensure detectedNodes is a proper Set object (fixes serialization issues)
+ * @param {Object} targetState - Target state object
+ */
+function ensureDetectedNodesIsSet(targetState) {
+    if (!targetState) return;
+    
+    if (!targetState.detectedNodes) {
+        targetState.detectedNodes = new Set();
+    } else if (!(targetState.detectedNodes instanceof Set)) {
+        // After JSON deserialization, Set objects become empty objects
+        // Convert back to Set
+        if (typeof targetState.detectedNodes === 'object' && 
+            targetState.detectedNodes.constructor === Object) {
+            // Empty object case (most common after JSON.parse)
+            targetState.detectedNodes = new Set();
+        } else if (Array.isArray(targetState.detectedNodes)) {
+            // Array case (shouldn't happen but just in case)
+            targetState.detectedNodes = new Set(targetState.detectedNodes);
+        } else {
+            // Fallback for any other case
+            targetState.detectedNodes = new Set();
+        }
+    }
 }
 
 /**
@@ -207,6 +236,9 @@ function executeLastNodeDetection(targetId, attack) {
     
     if (!attack.routingChain || attack.routingChain.length === 0) return false;
     
+    // Ensure detectedNodes is a Set (fix for serialization issue)
+    ensureDetectedNodesIsSet(targetState);
+    
     // Get the last node in the routing chain
     const lastNodeId = attack.routingChain[attack.routingChain.length - 1];
     const lastNode = getNodeInfo(lastNodeId);
@@ -249,7 +281,10 @@ function executeLastNodeDetection(targetId, attack) {
 function checkLastNodeBlocking(targetId, routingChain) {
     const targetState = state.dynamicTargetStates[targetId];
     
-    if (!routingChain || routingChain.length === 0) return false;
+    if (!targetState || !routingChain || routingChain.length === 0) return false;
+    
+    // Ensure detectedNodes is a Set (fix for serialization issue)
+    ensureDetectedNodesIsSet(targetState);
     
     const lastNodeId = routingChain[routingChain.length - 1];
     const lastNode = getNodeInfo(lastNodeId);
@@ -417,6 +452,9 @@ function getTargetStatus(targetId) {
     if (!targetState || !target) {
         return { status: 'normal', indicators: [] };
     }
+    
+    // Ensure detectedNodes is a Set (fix for serialization issue)
+    ensureDetectedNodesIsSet(targetState);
     
     const indicators = [];
     

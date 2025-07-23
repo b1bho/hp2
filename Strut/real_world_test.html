@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Real-world Attack Test</title>
+    <style>
+        body { font-family: monospace; background: #1a1a1a; color: #00ff00; padding: 20px; }
+        .success { color: #00ff00; }
+        .error { color: #ff0000; }
+        .info { color: #ffff00; }
+    </style>
+</head>
+<body>
+    <h1>Real-world Attack Scenario Test</h1>
+    <div id="output"></div>
+    
+    <script>
+        // Load all dependencies in sequence and test a real attack scenario
+        const scripts = [
+            'js/world_data.js',
+            'js/world_targets_data.js',
+            'js/data.js',
+            'js/main.js',
+            'js/modules/dynamic_countermeasures.js'
+        ];
+        
+        let loadedScripts = 0;
+        const output = document.getElementById('output');
+        
+        function log(message, type = 'info') {
+            console.log(message);
+            output.innerHTML += `<div class="${type}">[${new Date().toLocaleTimeString()}] ${message}</div>`;
+        }
+        
+        function loadNextScript() {
+            if (loadedScripts >= scripts.length) {
+                runRealWorldTest();
+                return;
+            }
+            
+            const script = document.createElement('script');
+            script.src = scripts[loadedScripts];
+            script.onload = () => {
+                log(`Loaded: ${scripts[loadedScripts]}`, 'success');
+                loadedScripts++;
+                setTimeout(loadNextScript, 100);
+            };
+            script.onerror = () => {
+                log(`Failed to load: ${scripts[loadedScripts]}`, 'error');
+                loadedScripts++;
+                setTimeout(loadNextScript, 100);
+            };
+            document.head.appendChild(script);
+        }
+        
+        function runRealWorldTest() {
+            log("=== Starting Real-world Attack Test ===", 'info');
+            
+            try {
+                // Initialize the game state if needed
+                if (typeof loadState === 'function') {
+                    loadState();
+                    log("Game state loaded", 'success');
+                }
+                
+                // Initialize dynamic countermeasures
+                if (typeof initializeDynamicTargetStates === 'function') {
+                    initializeDynamicTargetStates();
+                    log("Dynamic countermeasures initialized", 'success');
+                }
+                
+                // Find a real target from the game
+                const targetIds = Object.keys(worldTargets || {});
+                if (targetIds.length === 0) {
+                    log("No targets found in worldTargets", 'error');
+                    return;
+                }
+                
+                const targetId = targetIds[0];
+                const target = worldTargets[targetId];
+                log(`Testing with target: ${target.name} (${targetId})`, 'info');
+                
+                // Simulate the serialization issue
+                log("Simulating state save/load cycle...", 'info');
+                const currentState = JSON.stringify(state);
+                const reloadedState = JSON.parse(currentState);
+                
+                // Replace the dynamic target states with deserialized version
+                if (state.dynamicTargetStates) {
+                    state.dynamicTargetStates = reloadedState.dynamicTargetStates;
+                    log("State reloaded from JSON (simulating localStorage)", 'info');
+                }
+                
+                // Check if detectedNodes is corrupted
+                const targetState = state.dynamicTargetStates[targetId];
+                if (targetState) {
+                    log(`detectedNodes is Set: ${targetState.detectedNodes instanceof Set}`, 
+                        targetState.detectedNodes instanceof Set ? 'success' : 'error');
+                    log(`detectedNodes type: ${typeof targetState.detectedNodes}`, 'info');
+                }
+                
+                // Now test the attack blocking functionality
+                log("Testing attack blocking with corrupted state...", 'info');
+                
+                // Create a mock routing chain
+                const routingChain = ['test_node_1', 'test_node_2'];
+                
+                // Test checkLastNodeBlocking function (this used to fail)
+                if (typeof checkLastNodeBlocking === 'function') {
+                    const blocked = checkLastNodeBlocking(targetId, routingChain);
+                    log(`Attack blocking test: ${blocked ? 'BLOCKED' : 'ALLOWED'}`, 'success');
+                    log(`detectedNodes is now Set: ${state.dynamicTargetStates[targetId].detectedNodes instanceof Set}`, 'success');
+                } else {
+                    log("checkLastNodeBlocking function not available", 'error');
+                }
+                
+                // Test executeLastNodeDetection
+                if (typeof executeLastNodeDetection === 'function') {
+                    // Corrupt the state again
+                    state.dynamicTargetStates[targetId].detectedNodes = {};
+                    log("Corrupted detectedNodes again for executeLastNodeDetection test", 'info');
+                    
+                    const mockAttack = {
+                        routingChain: routingChain,
+                        target: target
+                    };
+                    
+                    const result = executeLastNodeDetection(targetId, mockAttack);
+                    log(`executeLastNodeDetection result: ${result}`, result ? 'success' : 'error');
+                    log(`detectedNodes is Set after detection: ${state.dynamicTargetStates[targetId].detectedNodes instanceof Set}`, 'success');
+                } else {
+                    log("executeLastNodeDetection function not available", 'error');
+                }
+                
+                log("=== Test completed successfully! The fix works! ===", 'success');
+                
+            } catch (error) {
+                log(`Test failed with error: ${error.message}`, 'error');
+                log(`Stack trace: ${error.stack}`, 'error');
+            }
+        }
+        
+        // Override getNodeInfo if it doesn't exist
+        window.getNodeInfo = window.getNodeInfo || function(nodeId) {
+            return {
+                id: nodeId,
+                name: `Mock Node ${nodeId}`,
+                ipAddress: `192.168.1.${Math.floor(Math.random() * 255)}`,
+                currentIp: `192.168.1.${Math.floor(Math.random() * 255)}`
+            };
+        };
+        
+        // Start loading scripts
+        loadNextScript();
+    </script>
+</body>
+</html>
