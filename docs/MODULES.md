@@ -8,6 +8,7 @@ Questa documentazione fornisce una panoramica dettagliata di tutti i moduli del 
 - [Moduli Interfaccia](#moduli-interfaccia)
 - [Moduli Logica Business](#moduli-logica-business)
 - [Moduli Dati](#moduli-dati)
+- [Moduli Avanzati](#moduli-avanzati)
 - [Interazioni tra Moduli](#interazioni-tra-moduli)
 
 ## 🔧 Moduli Core
@@ -181,46 +182,115 @@ function renderTargetDetails(nationId, targetId) {
 - Attack routing visualization
 - Live global statistics
 
-### botnet.js - Gestione Botnet
+### botnet.js - Gestione Botnet Avanzata
 
 **Responsabilità:**
-- Management host infetti
-- Orchestrazione attacchi distribuiti
-- Statistiche aggregate botnet
-- Grouping e controllo host
+- Management host infetti con interfaccia tabbed
+- Sistema DDoS coordinato multi-target
+- Operazioni mining cryptocurrency parallele
+- Organizzazione bot in gruppi operativi
+- Monitoring real-time attacchi e stato
 
-**Architettura:**
+**Architettura Tabbed:**
 
 ```javascript
+// Sistema tab navigation
+function switchTab(tabName) {
+    currentActiveTab = tabName; // 'management', 'ddos', 'mining'
+    updateTabDisplay();
+    refreshTabContent();
+}
+
+// Tab Management - Gestione host e gruppi
 function renderInfectedHostsList() {
     const hosts = state.infectedHostPool;
-    hosts.forEach(host => {
-        renderSingleHost(host);
-    });
+    const groups = state.botnetGroups;
+    return groupedHostsHTML;
 }
 
-function renderSingleHost(host) {
-    // Visualizza: IP, location, status, capabilities
-    return `
-        <div class="host-card" data-host-id="${host.id}">
-            <div class="host-info">
-                <span class="host-ip">${host.ip}</span>
-                <span class="host-location">${host.location}</span>
-            </div>
-            <div class="host-stats">
-                CPU: ${host.resources.cpuPower}
-                RAM: ${host.resources.ram}MB
-            </div>
-        </div>
-    `;
+// Tab DDoS - Attacchi coordinati  
+function renderBotGroupSelection() {
+    // Selezione gruppi per attacchi DDoS
+    // Calcolo potenza aggregata e bandwidth
+    // Preview impatto e rischio
 }
 
-function updateBotnetAggregateStats() {
-    const totalHosts = state.infectedHostPool.length;
-    const activeHosts = hosts.filter(h => h.status === 'Active').length;
-    const aggregatePower = calculateTotalPower();
+// Tab Mining - Operazioni cryptocurrency
+function renderMiningGroups() {
+    // Selezione gruppi per mining
+    // Calcolo hashrate e profittabilità  
+    // Monitoring operazioni attive
 }
 ```
+
+**Sistema DDoS Avanzato:**
+
+```javascript
+// Configurazione attacco DDoS
+function configureDDoSAttack() {
+    return {
+        targetIP: selectedTarget,
+        botGroups: selectedBotGroups,
+        flow: selectedDDoSFlow,
+        duration: attackDuration,
+        estimatedImpact: calculateImpact(),
+        traceabilityRisk: calculateRisk(),
+        botLossRisk: calculateLossRisk()
+    };
+}
+
+// Calcolo impatto real-time
+function calculateAttackImpact(totalPower, duration) {
+    const baseImpact = Math.log10(totalPower) * 2;
+    const durationMultiplier = Math.sqrt(duration / 60);
+    return Math.round(baseImpact * durationMultiplier * 10) / 10;
+}
+
+// Gestione attacchi multipli simultanei
+let activeDDoSAttacks = []; // Array di attacchi attivi
+function launchDDoSAttack(config) {
+    const attack = {
+        id: generateAttackId(),
+        startTime: Date.now(),
+        ...config
+    };
+    activeDDoSAttacks.push(attack);
+    updateBotGroupStatus(config.botGroups, 'DDoSing');
+}
+```
+
+**Mining Operations:**
+
+```javascript
+// Sistema mining integrato
+function startMiningOperation(selectedGroups) {
+    const operation = {
+        groups: selectedGroups,
+        startTime: Date.now(),
+        hashrate: calculateTotalHashrate(selectedGroups),
+        estimatedReward: calculateMiningReward()
+    };
+    
+    activeMiningOperation = operation;
+    updateGroupsActivity(selectedGroups, 'Mining');
+    startMiningTimer();
+}
+
+// Calcolo rewards mining
+function calculateMiningReward(hashrate, duration) {
+    const baseReward = 0.001; // XMR per ora per GFLOP
+    const efficiency = 0.7; // Efficienza mining botnet
+    return hashrate * duration * baseReward * efficiency;
+}
+```
+
+**Features Avanzate:**
+- Conflict resolution tra DDoS e Mining
+- Resource allocation dinamica
+- Power calculation con modificatori
+- Status tracking per gruppi e host
+- Integration con sistema tracciabilità
+- Preview impatto con risk assessment
 
 ### editor.js - Editor Flussi Drag-and-Drop
 
@@ -487,6 +557,210 @@ function validateFlow(flowData) {
 }
 ```
 
+## 🔄 Moduli Avanzati
+
+### factions.js - Sistema Fazioni Multi-Level
+
+**Responsabilità:**
+- Definizione 4 fazioni principali (Governmental, Terrorist, Eco-Terrorist, Population)
+- Gestione relazioni inter-fazioni dinamiche
+- Classificazione quest per fazione
+- Sistema colorazione e tematizzazione
+
+**Struttura Fazioni:**
+
+```javascript
+const FACTIONS = {
+    GOVERNMENTAL: {
+        id: 'governmental',
+        name: 'Governativa',
+        color: '#1e40af',
+        colorLight: '#3b82f6',
+        description: 'Organizzazioni governative e agenzie di sicurezza...',
+        moralOrientation: 'lawful',
+        motivations: [
+            'Sicurezza nazionale',
+            'Controspionaggio', 
+            'Applicazione della legge',
+            'Protezione dei cittadini'
+        ],
+        questTypes: [
+            'Terrorismo digitale',
+            'Spionaggio industriale',
+            'Sicurezza nazionale'
+        ]
+    },
+    // ... altre fazioni
+};
+```
+
+**Relazioni Dinamiche:**
+- Opposition matrix tra fazioni
+- Reputation spillover effects
+- Quest completion impact su multiple fazioni
+- Bonus/malus basati su standing fazioni
+
+### reputation_system.js - Gestione Reputazione Avanzata
+
+**Responsabilità:**
+- Tracking reputazione per tutte le fazioni
+- Calcolo relazioni e spillover effects
+- Gestione eventi reputazione
+- Integration con sistema quest
+
+**Sistema Calcolo:**
+
+```javascript
+class ReputationSystem {
+    calculateFactionRelationships(questFactionId, completedSuccessfully = true) {
+        const relationships = {
+            governmental: {
+                terrorist: -0.2,       // Fazioni opposte
+                eco_terrorist: -0.1,   // Parzialmente opposte
+                population: 0.05       // Lieve positivo
+            },
+            // ... matrix completa relazioni
+        };
+        
+        return this.applyRelationshipEffects(relationships, questFactionId);
+    }
+    
+    updateFactionReputation(factionId, change, reason = '') {
+        const oldValue = state.factionReputation[factionId];
+        state.factionReputation[factionId] = Math.max(-100, Math.min(100, oldValue + change));
+        
+        this.triggerReputationEvents(factionId, change, reason);
+        this.calculateSpilloverEffects(factionId, change);
+    }
+}
+```
+
+### intelligence.js - Console Intelligence
+
+**Responsabilità:**
+- Gestione archivi dati da attacchi
+- Interface laboratorio analisi
+- Elaborazione intelligence raccolte
+- Storage e categorizzazione dati
+
+**Architettura Dati:**
+
+```javascript
+function renderIntelligencePage() {
+    const dataArchives = state.dataArchives || [];
+    
+    return `
+        <div class="intelligence-layout">
+            <h2>Console di Intelligence</h2>
+            <div class="data-archives">
+                <h3>Archivi Dati Disponibili</h3>
+                ${renderDataArchivesList(dataArchives)}
+            </div>
+            <div class="analysis-panel">
+                ${renderAnalysisTools()}
+            </div>
+        </div>
+    `;
+}
+
+// Gestione archivi dati
+function processDataArchive(archiveId) {
+    const archive = findArchiveById(archiveId);
+    const analysisResults = performDataAnalysis(archive);
+    
+    // Update intelligence database
+    state.analysisResults[archiveId] = analysisResults;
+    
+    // Generate actionable intelligence
+    generateIntelligenceReports(analysisResults);
+}
+```
+
+### active_attacks.js - Monitoring Real-Time
+
+**Responsabilità:**
+- Tracking operazioni attive in tempo reale
+- Progress monitoring per attacchi lunghi
+- Integration con host infection dalla risoluzione
+- Display stato attacchi nel world panel
+
+**Sistema Monitoring:**
+
+```javascript
+function updateActiveAttacks() {
+    if (state.activePage !== 'world') {
+        clearActiveAttacksDisplay();
+        return;
+    }
+    renderActiveAttacksPanel();
+}
+
+function renderActiveAttacksPanel() {
+    const attacks = state.activeAttacks || [];
+    
+    attacks.forEach(attack => {
+        const elapsedTime = (Date.now() - attack.startTime) / 1000;
+        const remainingTime = Math.max(0, attack.finalTime - elapsedTime);
+        const progressPercentage = Math.min(100, (elapsedTime / attack.finalTime) * 100);
+        
+        renderAttackProgress(attack, progressPercentage, remainingTime);
+    });
+}
+
+// Integration con host infection
+function resolveAttackSuccess(attack) {
+    if (attack.type === 'botnet_infection') {
+        const newHost = generateInfectedHost(attack.target);
+        state.infectedHostPool.push(newHost);
+        showNotification(`Nuovo host infetto: ${newHost.ip}`, 'success');
+    }
+}
+```
+
+### admin.js - Pannello Amministrativo
+
+**Responsabilità:**
+- Controlli debug completi per sviluppo
+- Manipolazione stato di gioco
+- Testing funzionalità
+- Reset selettivi sistema
+
+**Controlli Debug:**
+
+```javascript
+// Controlli economia
+function setGameValues() {
+    const btcAmount = parseFloat(document.getElementById('admin-btc').value);
+    const xmrAmount = parseFloat(document.getElementById('admin-xmr').value);
+    const talentPoints = parseInt(document.getElementById('admin-talent-points').value);
+    
+    state.btcBalance = btcAmount;
+    state.xmrBalance = xmrAmount;
+    state.talentPoints = talentPoints;
+    
+    updateUI();
+    saveState();
+}
+
+// Controlli fazioni
+function boostAllFactions() {
+    Object.keys(state.factionReputation).forEach(factionId => {
+        state.factionReputation[factionId] += 150;
+    });
+    showNotification('Boost +150 XP applicato a tutte le fazioni', 'success');
+}
+
+// Reset selettivi
+function resetBotnet() {
+    state.infectedHostPool = [];
+    state.botnetGroups = {};
+    state.activeDDoSAttacks = [];
+    state.activeMiningOperation = null;
+    
+    showNotification('Botnet reset completato', 'info');
+}
+```
+
 ## 🔗 Interazioni tra Moduli
 
 ### Pattern di Comunicazione
@@ -524,7 +798,7 @@ function validateFlow(flowData) {
    };
    ```
 
-### Dependency Graph
+### Dependency Graph Aggiornato
 
 ```
 main.js
@@ -532,56 +806,87 @@ main.js
 ├── flow_logic.js (validation)
 └── modules/
     ├── hq.js → market.js (hardware info)
-    ├── world.js → botnet.js (attack routing)
-    ├── editor.js → flow_logic.js (validation)
+    ├── world.js → active_attacks.js (attack monitoring)
+    ├── botnet.js → intelligence.js (data from attacks)
+    ├── editor.js → flow_logic.js (validation DDoS flows)
     ├── profile.js → data.js (talent tree)
-    └── quests.js → ALL (progress tracking)
+    ├── quests.js → factions.js (faction-based quests)
+    ├── factions.js → reputation_system.js (reputation effects)
+    ├── reputation_system.js → ALL (faction interactions)
+    └── admin.js → ALL (debug controls)
 ```
 
-### Data Flow Patterns
+### Data Flow Patterns Avanzati
 
-1. **User Action → State Update → UI Refresh**
-2. **Timer Event → Data Calculation → Notification**
-3. **Module Init → Data Load → Event Binding**
+1. **DDoS Attack Flow**
+   ```
+   User selects bot groups → botnet.js validates selection → 
+   editor.js provides DDoS flow → botnet.js calculates impact →
+   active_attacks.js monitors progress → intelligence.js processes results
+   ```
 
-## 🧪 Extensibility Points
+2. **Faction Reputation Flow**
+   ```
+   Quest completed → quests.js determines faction → 
+   reputation_system.js calculates spillover → factions.js updates standing →
+   ALL modules check faction requirements
+   ```
 
-### Adding New Modules
+3. **Intelligence Data Flow**
+   ```
+   Attack succeeds → active_attacks.js generates data →
+   intelligence.js archives results → User analyzes in lab →
+   Insights affect future strategy
+   ```
 
-1. Create module file in `/modules/`
-2. Implement standard functions:
-   - `render[ModuleName]Page()`
-   - `init[ModuleName]Listeners()`
-3. Register in navigation system
-4. Add to main.js initialization
-
-### Module Template
+### Module Template Esteso
 
 ```javascript
-// modules/new_module.js
+// modules/new_advanced_module.js
 
-function renderNewModulePage() {
+// State management
+let moduleState = {
+    // Module-specific state
+};
+
+// Main render function
+function renderNewAdvancedModulePage() {
     const container = document.getElementById('app-container');
     container.innerHTML = generateModuleHTML();
-    initNewModuleListeners();
+    initModuleListeners();
+    
+    // Integration points
+    subscribeToGlobalEvents();
+    updateModuleFromGlobalState();
 }
 
-function initNewModuleListeners() {
-    // Event bindings specific to this module
+// Event integration
+function subscribeToGlobalEvents() {
+    document.addEventListener('stateChanged', handleStateChange);
+    document.addEventListener('factionUpdate', handleFactionChange);
 }
 
-function generateModuleHTML() {
-    return `<div class="new-module-layout">
-        <!-- Module content -->
-    </div>`;
-}
-
-// Export functions if needed
-window.newModuleFunctions = {
-    // Public API
+// Public API
+window.newAdvancedModuleFunctions = {
+    // Public functions for inter-module communication
+    getModuleData: () => moduleState,
+    processExternalData: (data) => processData(data),
+    resetModule: () => resetModuleState()
 };
+
+// Cross-module integration
+function integrateWithOtherModules() {
+    // Check for dependencies
+    if (typeof factionFunctions !== 'undefined') {
+        // Use faction system
+    }
+    
+    if (typeof reputationSystem !== 'undefined') {
+        // Integrate with reputation
+    }
+}
 ```
 
 ---
 
-*Documentazione completa dei moduli del sistema Hacker Tycoon*
+*Documentazione completa dei moduli del sistema Hacker Tycoon con focus sulle nuove funzionalità avanzate*

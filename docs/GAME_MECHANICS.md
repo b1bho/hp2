@@ -208,9 +208,14 @@ const validFlowSequences = {
 - **Validazione:** Real-time feedback su validità flusso
 - **Export:** Salvataggio flussi per riutilizzo
 
-## 🕸️ Sistema Botnet
+## 🕸️ Sistema Botnet Avanzato
 
-### Gestione Host Infetti
+### Gestione Host Infetti Multi-Tab
+
+**Interface Tabbed:**
+- **Management Tab**: Gestione host e gruppi, selezione host, comandi individuali
+- **DDoS Tab**: Configurazione attacchi distribuiti coordinati
+- **Mining Tab**: Operazioni cryptocurrency mining parallele
 
 **Struttura Host:**
 ```javascript
@@ -227,35 +232,110 @@ const infectedHost = {
     },
     capabilities: ["dos_traffic", "mining", "proxy"],
     riskLevel: "Low|Medium|High",
-    lastContact: timestamp
+    lastContact: timestamp,
+    groupId: "Test Group" // Nuovo: assegnazione gruppo
 };
 ```
 
-### Meccaniche di Infezione
+### Sistema Bot Groups
 
-**Processo:**
-1. Target identificato tramite flussi di scansione
-2. Deploy di malware tramite exploit
-3. Callback automatico dopo infezione
-4. Aggiunta automatica al pool botnet
+**Organizzazione:**
+- Host raggruppati per operazioni coordinate
+- Gestione conflitti tra DDoS e Mining
+- Status tracking per gruppo (Idle/DDoSing/Mining)
+- Calcolo potenza aggregata per gruppo
 
-**Fattori di Successo:**
-- Livello talenti dell'attaccante
-- Sicurezza del target
-- Qualità dell'exploit utilizzato
-- Fattore casuale (20% del calcolo)
+**Funzionalità:**
+```javascript
+const botGroup = {
+    name: "Italy Bots",
+    hostIds: ["host1", "host2", "host3"],
+    currentActivity: "Idle|DDoSing|Mining",
+    createdDate: timestamp,
+    totalPower: 7.2, // GFLOPS aggregati
+    totalBandwidth: 330 // Mbps aggregata
+};
+```
 
-### Utilizzo Botnet
+### Sistema DDoS Impact
 
-**DDoS Attacks:**
-- Power richiesto: 100-10000 CPU units
-- Durata: 30 secondi - 10 minuti
-- Success rate basato su potenza totale
+**Configurazione Attacco:**
+1. **Selezione Bot Groups**: Checkbox selection con preview potenza
+2. **Target IP**: Input validation per IP address
+3. **DDoS Flow**: Selezione da flussi salvati con objective "denialOfService"
+4. **Duration**: 30 secondi - 5 minuti con impact scaling
+5. **Preview**: Calcolo real-time impatto, rischio tracciabilità, rischio perdita bot
+
+**Calcolo Impatto:**
+```javascript
+function calculateAttackImpact(totalPower, duration) {
+    const baseImpact = Math.log10(totalPower) * 2;
+    const durationMultiplier = Math.sqrt(duration / 60);
+    const flowMultiplier = getFlowComplexityMultiplier(selectedFlow);
+    
+    return Math.round(baseImpact * durationMultiplier * flowMultiplier * 10) / 10;
+}
+
+// Fattori di calcolo:
+// - Potenza aggregata botnet (GFLOPS)
+// - Durata attacco (minuti)
+// - Complessità flow DDoS selezionato
+// - Banda disponibile (Mbps)
+// - Fattore random 0.8-1.2
+```
+
+**Gestione Multi-Attack:**
+- Attacchi simultanei su target diversi
+- Resource allocation intelligente
+- Conflict detection con mining operations
+- Progress monitoring real-time
+
+### Meccaniche Mining
 
 **Mining Operations:**
-- Rendimento: 0.001 XMR per CPU-hour
-- Risk detection: aumenta con durata
-- Automatic rotation per evitare detection
+- Selezione bot groups per mining XMR
+- Calcolo hashrate basato su CPU power
+- Riduzione efficienza 50% se gruppo fa DDoS
+- Rewards automatici in XMR
+
+**Calcolo Mining:**
+```javascript
+function calculateMiningReward(hashrate, duration) {
+    const baseReward = 0.001; // XMR per ora per GFLOP
+    const efficiency = 0.7; // Efficienza mining botnet
+    const difficultyFactor = getCurrentDifficulty();
+    
+    return hashrate * duration * baseReward * efficiency / difficultyFactor;
+}
+```
+
+### Meccaniche di Infezione Avanzate
+
+**Processo Automatico:**
+1. Attacco riuscito tramite flow nell'editor
+2. Host generato automaticamente se attack type supporta infezione
+3. Callback automatico dopo tempo configurabile
+4. Aggiunta automatica al pool botnet
+5. Assegnazione gruppo basata su geolocalizzazione
+
+**Fattori di Successo:**
+- Livello talenti dell'attaccante (peso 40%)
+- Sicurezza del target (peso 30%)
+- Qualità dell'exploit utilizzato (peso 20%)
+- Fattore casuale (peso 10%)
+
+**Host Generation:**
+```javascript
+function generateInfectedHost(targetNation, attackComplexity) {
+    return {
+        ip: generateRealisticIP(targetNation),
+        location: selectRandomCity(targetNation),
+        resources: generateResourcesBasedOnComplexity(attackComplexity),
+        capabilities: determineCapabilities(attackComplexity),
+        riskLevel: calculateRiskLevel(targetNation.securityLevel)
+    };
+}
+```
 
 ## 🌍 Mappa Mondiale
 
@@ -381,61 +461,156 @@ const questObjectives = {
 
 ## ⚡ Meccaniche Avanzate
 
-### Sistema di Tracciabilità
+### Sistema Fazioni Multi-Level
 
-**Concetto:** Ogni attacco aumenta la tracciabilità dell'IP utilizzato
+**4 Fazioni Principali:**
+
+#### 1. Governmental (Governativa)
+- **Orientamento**: Lawful, protezione ordine pubblico
+- **Motivazioni**: Sicurezza nazionale, controspionaggio, applicazione legge
+- **Quest Types**: Anti-terrorismo digitale, sicurezza nazionale, controspionaggio
+- **Colore**: Blu (#1e40af)
+
+#### 2. Terrorist (Terroristica)
+- **Orientamento**: Chaotic evil, destabilizzazione
+- **Motivazioni**: Anarchia digitale, destabilizzazione governi
+- **Quest Types**: Attacchi infrastrutture, leak dati governativi
+- **Colore**: Rosso (#dc2626)
+
+#### 3. Eco-Terrorist (Eco-Terroristica)
+- **Orientamento**: Chaotic good, protezione ambiente
+- **Motivazioni**: Protezione ambiente, anti-corporazioni inquinanti
+- **Quest Types**: Leak dati ambientali, sabotaggio digitale corporations
+- **Colore**: Verde (#059669)
+
+#### 4. Population (Popolazione)
+- **Orientamento**: Neutral good, protezione cittadini
+- **Motivazioni**: Privacy digitale, diritti cittadini, trasparenza
+- **Quest Types**: Leak corruzione, protezione whistleblowers
+- **Colore**: Viola (#7c3aed)
+
+### Sistema Reputazione Dinamica
+
+**Meccaniche Inter-Fazioni:**
+```javascript
+const factionRelationships = {
+    governmental: {
+        terrorist: -0.2,       // Forte opposizione
+        eco_terrorist: -0.1,   // Opposizione moderata  
+        population: 0.05       // Lieve allineamento
+    },
+    terrorist: {
+        governmental: -0.3,    // Forte opposizione
+        eco_terrorist: 0.1,    // Lieve alleanza
+        population: -0.15      // Opposizione cittadini
+    }
+    // ... matrix completa
+};
+```
+
+**Spillover Effects:**
+- Completamento quest positive → Boost fazioni alleate
+- Completamento quest negative → Malus fazioni opposte
+- Reputation decay nel tempo se inattivi
+- Bonus/malus accesso contenuti basati su standing
+
+**Range Reputazione:**
+- **-100 a -51**: Nemici pubblici (quest impossibili, prezzi +100%)
+- **-50 a -21**: Ostili (quest limitate, prezzi +50%)
+- **-20 a +20**: Neutrale (accesso base)
+- **+21 a +50**: Rispettati (quest bonus, sconti 10%)
+- **+51 a +100**: Venerati (quest esclusive, sconti 25%)
+
+### Sistema di Tracciabilità Avanzato
+
+**Meccaniche Multi-Layer:**
+
+1. **IP Traceability**: Tracking per IP utilizzato
+2. **Attack Pattern Recognition**: Riconoscimento pattern attacchi
+3. **Faction Heat**: Attenzione specifica fazioni governative
+4. **Global Threat Level**: Level di allerta mondiale
 
 **Fattori che Aumentano Tracciabilità:**
-- Attacchi diretti senza routing: +20-50 punti
-- Fallimento attacchi: +10-25 punti
-- Target ad alta sicurezza: +15-40 punti
+- Attacchi DDoS ad alta potenza: +15-40 punti
+- Attacchi diretti senza VPN: +20-50 punti
+- Fallimento attacchi con rilevamento: +10-25 punti
+- Target governativi ad alta sicurezza: +25-60 punti
+- Pattern ripetitivi riconoscibili: +10-30 punti
 
 **Fattori che Diminuiscono Tracciabilità:**
 - Tempo senza attività: -5 punti/ora
-- Utilizzo VPN personali: -30% per attacco
-- Cleanup tools: -10-30 punti (costo XMR)
+- Utilizzo VPN chains: -30-60% per attacco
+- Uso proxy botnet: -20-40% per attacco
+- Cleanup tools premium: -20-50 punti (costo XMR)
+- Cambiamento identità digitale: -70% reset (costo alto)
 
-### Sistema Reputazione
+### Console Intelligence Avanzata
 
-**Underground Reputation:**
-- Aumenta con attacchi riusciti
-- Diminuisce con fallimenti
-- Influenza prezzi mercato nero
-- Sblocca servizi esclusivi
+**Sistema Data Archives:**
+```javascript
+const dataArchive = {
+    id: "archive_001",
+    name: "Government Database Leak",
+    source: "DDoS Attack on target_gov_it",
+    dateAcquired: timestamp,
+    dataType: "classified_documents|financial_records|personal_data",
+    size: "2.3 GB",
+    purity: 85, // % dati utilizzabili
+    analysisStatus: "pending|in_progress|completed",
+    insights: [], // Array insights generati
+    marketValue: 150 // XMR value
+};
+```
 
-**Law Enforcement Heat:**
-- Tracking da parte delle autorità
-- Aumenta con attacchi a target sensibili
-- Porta a eventi casuali negativi
-- Richiede periodo di "lay low"
+**Analysis Tools:**
+- **Pattern Recognition**: Identificazione pattern nei dati
+- **Cross-Reference Analysis**: Correlazione tra archivi diversi
+- **Market Valuation**: Stima valore dati per mercato nero
+- **Intelligence Reports**: Generazione report actionable
+- **Leak Planning**: Identificazione target per leak strategici
 
-### Eventi Casuali
+### Economia Avanzata
 
-**Tipi di Eventi:**
-- **Security Breach:** Perdita dati/accessi
-- **Law Enforcement:** Raid, confische
-- **Market Crash:** Crollo prezzi crypto
-- **Zero-day Discovery:** Nuovi exploit disponibili
-- **Botnet Takedown:** Perdita host infetti
+**Dynamic Pricing:**
+```javascript
+function calculateDynamicPrice(item, playerReputation, marketConditions) {
+    let basePrice = item.basePrice;
+    
+    // Reputation modifiers
+    const reputationBonus = calculateReputationDiscount(playerReputation);
+    
+    // Market volatility
+    const marketVolatility = getCurrentMarketVolatility();
+    
+    // Supply/demand
+    const supplyDemandFactor = calculateSupplyDemand(item.category);
+    
+    return basePrice * (1 - reputationBonus) * marketVolatility * supplyDemandFactor;
+}
+```
 
-### Clan e Cooperative
+**New Economic Mechanics:**
+- **Reputation-based pricing**: Sconti per standing alto
+- **Market manipulation**: Influence prezzi tramite attacchi
+- **Intelligence marketplace**: Vendita dati raccolti
+- **Service economy**: Botnet-as-a-Service per altri players
+- **Insurance system**: Protezione asset da law enforcement
 
-**Funzionalità Multiplayer:**
-- Formazione clan con altri giocatori
-- Bonus cooperativi per studio
-- Attacchi coordinati su larga scala
-- Condivisione risorse e intelligence
-- Competizioni inter-clan
+### Eventi Casuali Avanzati
 
-### Seasonal Content
+**Faction-Based Events:**
+- **Government Crackdown**: Raid coordinati, perdita asset
+- **Terrorist Recruitment**: Inviti alleanze, nuove opportunità
+- **Eco-Activist Campaigns**: Target corporations, boost eco reputation
+- **Civil Unrest**: Opportunità hack durante disordini
 
-**Aggiornamenti Periodici:**
-- Nuovi target mondiali
-- Eventi tematici speciali
-- Limited-time tools e malware
-- Seasonal challenges
-- Meta shifts nel gameplay
+**Technical Events:**
+- **Zero-day Discovery**: Nuovi exploit disponibili mercato
+- **Botnet Takedown**: Perdita percentuale host infetti
+- **Cryptocurrency Crash/Boom**: Fluttuazioni severe prezzi
+- **Security Patch Tuesday**: Alcuni exploit diventano inefficaci
+- **Dark Market Raids**: Temporanea chiusura servizi illeciti
 
 ---
 
-*Guida completa alle meccaniche di gioco di Hacker Tycoon*
+*Guida completa alle meccaniche avanzate di gioco di Hacker Tycoon*
