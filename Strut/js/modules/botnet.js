@@ -3782,6 +3782,29 @@ function processRansomResponse(requestId) {
         });
     }
     
+    // Remove infected hosts involved in the ransomware operation
+    const hostsToRemove = [];
+    request.botGroups.forEach(groupName => {
+        const group = state.botnetGroups[groupName];
+        if (group && group.hostIds) {
+            hostsToRemove.push(...group.hostIds);
+        }
+    });
+    
+    // Remove each host using the existing removeInfectedHost function
+    if (typeof removeInfectedHost === 'function') {
+        hostsToRemove.forEach(hostId => {
+            const host = state.infectedHostPool.find(h => h.id === hostId);
+            if (host) {
+                removeInfectedHost(hostId);
+            }
+        });
+        
+        if (hostsToRemove.length > 0) {
+            showNotification(`${hostsToRemove.length} host rimossi dalla botnet dopo l'operazione ransomware.`, 'info');
+        }
+    }
+    
     // Remove from active requests
     activeRansomRequests.splice(requestIndex, 1);
     
@@ -3873,6 +3896,29 @@ function instantCompleteRansom(requestId) {
     const increase = traceabilityIncrease[request.targetType] || 3;
     if (state.traceabilityScore !== undefined) {
         state.traceabilityScore = Math.min(100, state.traceabilityScore + increase);
+    }
+    
+    // Remove infected hosts involved in the ransomware operation
+    const hostsToRemove = [];
+    request.botGroups.forEach(groupName => {
+        const group = state.botnetGroups[groupName];
+        if (group && group.hostIds) {
+            hostsToRemove.push(...group.hostIds);
+        }
+    });
+    
+    // Remove each host using the existing removeInfectedHost function
+    if (typeof removeInfectedHost === 'function') {
+        hostsToRemove.forEach(hostId => {
+            const host = state.infectedHostPool.find(h => h.id === hostId);
+            if (host) {
+                removeInfectedHost(hostId);
+            }
+        });
+        
+        if (hostsToRemove.length > 0) {
+            showNotification(`${hostsToRemove.length} host rimossi dalla botnet dopo il completamento istantaneo.`, 'info');
+        }
     }
     
     // Update UI
