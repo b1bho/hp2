@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Development Environment - Hacker Tycoon Rework</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/leader-line-new@1.1.9/leader-line.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/interactjs/dist/interact.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="../Strut/css/style.css">
+    <link rel="stylesheet" href="css/dev-style.css">
+</head>
+<body class="bg-gray-900 text-gray-200">
+
+    <!-- Header -->
+    <div class="bg-gray-800 border-b border-gray-700 p-4">
+        <div class="flex justify-between items-center">
+            <h1 class="text-2xl font-bold text-indigo-400">
+                <i class="fas fa-flask mr-2"></i>
+                Development Environment - Game Logic Rework
+            </h1>
+            <div class="flex space-x-4">
+                <button id="reset-btn" class="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-md text-sm font-medium">
+                    <i class="fas fa-refresh mr-2"></i>Reset Environment
+                </button>
+                <button id="export-btn" class="px-4 py-2 bg-green-600 hover:bg-green-700 rounded-md text-sm font-medium">
+                    <i class="fas fa-download mr-2"></i>Export Configuration
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <div class="bg-gray-800 border-b border-gray-700">
+        <div class="flex">
+            <button class="nav-tab active" data-section="editor">
+                <i class="fas fa-edit mr-2"></i>Editor Rework
+            </button>
+            <button class="nav-tab" data-section="talents">
+                <i class="fas fa-tree mr-2"></i>Talent Rework
+            </button>
+            <button class="nav-tab" data-section="compiler">
+                <i class="fas fa-cogs mr-2"></i>Time Programming
+            </button>
+            <button class="nav-tab" data-section="testing">
+                <i class="fas fa-vial mr-2"></i>Testing Suite
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="flex flex-1 h-screen">
+        
+        <!-- Editor Rework Section -->
+        <div id="editor-section" class="dev-section active">
+            <div class="dev-panel">
+                <h2 class="dev-panel-title">Template-Based Flow Editor</h2>
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
+                    
+                    <!-- Template Selection Panel -->
+                    <div class="bg-gray-800 rounded-lg p-4">
+                        <h3 class="text-lg font-semibold mb-4 text-indigo-300">Flow Templates</h3>
+                        <div id="template-list" class="space-y-2">
+                            <!-- Templates will be populated here -->
+                        </div>
+                    </div>
+                    
+                    <!-- Flow Canvas -->
+                    <div class="bg-gray-800 rounded-lg p-4 lg:col-span-2">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-lg font-semibold text-indigo-300">Flow Canvas</h3>
+                            <div class="flex space-x-2">
+                                <button id="compile-flow-btn" class="px-3 py-1 bg-blue-600 hover:bg-blue-700 rounded text-sm">
+                                    <i class="fas fa-play mr-1"></i>Compile
+                                </button>
+                                <button id="clear-flow-btn" class="px-3 py-1 bg-red-600 hover:bg-red-700 rounded text-sm">
+                                    <i class="fas fa-trash mr-1"></i>Clear
+                                </button>
+                            </div>
+                        </div>
+                        <div id="new-flow-canvas" class="bg-gray-900 rounded border-2 border-dashed border-gray-600 h-96 relative overflow-auto">
+                            <!-- Flow nodes will be rendered here -->
+                        </div>
+                        
+                        <!-- Node Enhancement Panel -->
+                        <div id="node-enhancement" class="mt-4 bg-gray-700 rounded-lg p-4 hidden">
+                            <h4 class="text-md font-semibold mb-2">Node Enhancement</h4>
+                            <div id="enhancement-options" class="space-y-2">
+                                <!-- Enhancement options will be populated here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Talent Rework Section -->
+        <div id="talents-section" class="dev-section">
+            <div class="dev-panel">
+                <h2 class="dev-panel-title">Four Core Talent Branches</h2>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div id="talent-tree-display" class="bg-gray-800 rounded-lg p-4">
+                        <h3 class="text-lg font-semibold mb-4 text-indigo-300">Talent Tree</h3>
+                        <div id="new-talent-tree" class="space-y-4">
+                            <!-- New talent tree will be rendered here -->
+                        </div>
+                    </div>
+                    <div class="bg-gray-800 rounded-lg p-4">
+                        <h3 class="text-lg font-semibold mb-4 text-indigo-300">Talent Details</h3>
+                        <div id="talent-details" class="space-y-4">
+                            <p class="text-gray-400">Select a talent to view details</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Time Programming Section -->
+        <div id="compiler-section" class="dev-section">
+            <div class="dev-panel">
+                <h2 class="dev-panel-title">Time-Based Programming Logic</h2>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="bg-gray-800 rounded-lg p-4">
+                        <h3 class="text-lg font-semibold mb-4 text-indigo-300">Compilation Queue</h3>
+                        <div id="compilation-queue" class="space-y-2">
+                            <!-- Compilation jobs will appear here -->
+                        </div>
+                        <button id="add-compilation-btn" class="mt-4 w-full px-4 py-2 bg-indigo-600 hover:bg-indigo-700 rounded-md">
+                            <i class="fas fa-plus mr-2"></i>Add Compilation Job
+                        </button>
+                    </div>
+                    <div class="bg-gray-800 rounded-lg p-4">
+                        <h3 class="text-lg font-semibold mb-4 text-indigo-300">Compilation Settings</h3>
+                        <div id="compilation-settings" class="space-y-4">
+                            <!-- Settings will be populated here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Testing Section -->
+        <div id="testing-section" class="dev-section">
+            <div class="dev-panel">
+                <h2 class="dev-panel-title">Testing Suite</h2>
+                <div class="space-y-6">
+                    <div class="bg-gray-800 rounded-lg p-4">
+                        <h3 class="text-lg font-semibold mb-4 text-indigo-300">System Integration Tests</h3>
+                        <div id="test-results" class="space-y-2">
+                            <!-- Test results will appear here -->
+                        </div>
+                        <button id="run-tests-btn" class="mt-4 px-4 py-2 bg-green-600 hover:bg-green-700 rounded-md">
+                            <i class="fas fa-play mr-2"></i>Run All Tests
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Compilation Progress Modal -->
+    <div id="compilation-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+        <div class="bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4">
+            <h3 class="text-lg font-semibold mb-4">Compilation in Progress</h3>
+            <div id="compilation-progress" class="space-y-4">
+                <!-- Progress bars will be rendered here -->
+            </div>
+            <div class="flex justify-end mt-4 space-x-2">
+                <button id="close-compilation-modal" class="px-4 py-2 bg-gray-600 hover:bg-gray-700 rounded-md">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/dev-state.js"></script>
+    <script src="js/new-editor.js"></script>
+    <script src="js/new-talents.js"></script>
+    <script src="js/time-programming.js"></script>
+    <script src="js/dev-testing.js"></script>
+    <script src="js/dev-main.js"></script>
+
+</body>
+</html>
