@@ -648,11 +648,13 @@ function updateActivityIndicators() {
     const miningIndicator = document.getElementById('mining-indicator');
     const ddosIndicator = document.getElementById('ddos-indicator');
     const attackIndicator = document.getElementById('attack-indicator');
+    const ransomwareIndicator = document.getElementById('ransomware-indicator');
     
     // Collapsed indicators
     const collapsedMiningIndicator = document.getElementById('collapsed-mining-indicator');
     const collapsedDdosIndicator = document.getElementById('collapsed-ddos-indicator');
     const collapsedAttackIndicator = document.getElementById('collapsed-attack-indicator');
+    const collapsedRansomwareIndicator = document.getElementById('collapsed-ransomware-indicator');
     
     // Check for active mining
     let isMiningActive = false;
@@ -670,6 +672,12 @@ function updateActivityIndicators() {
     let isAttackActive = false;
     if (state.activeAttacks && state.activeAttacks.length > 0) {
         isAttackActive = true;
+    }
+    
+    // Check for active ransomware operations
+    let isRansomwareActive = false;
+    if (typeof activeRansomwareOperations !== 'undefined' && activeRansomwareOperations && activeRansomwareOperations.length > 0) {
+        isRansomwareActive = true;
     }
     
     // Update expanded indicators
@@ -697,6 +705,14 @@ function updateActivityIndicators() {
         }
     }
     
+    if (ransomwareIndicator) {
+        if (isRansomwareActive) {
+            ransomwareIndicator.classList.remove('hidden');
+        } else {
+            ransomwareIndicator.classList.add('hidden');
+        }
+    }
+    
     // Update collapsed indicators
     if (collapsedMiningIndicator) {
         if (isMiningActive) {
@@ -719,6 +735,14 @@ function updateActivityIndicators() {
             collapsedAttackIndicator.classList.remove('hidden');
         } else {
             collapsedAttackIndicator.classList.add('hidden');
+        }
+    }
+    
+    if (collapsedRansomwareIndicator) {
+        if (isRansomwareActive) {
+            collapsedRansomwareIndicator.classList.remove('hidden');
+        } else {
+            collapsedRansomwareIndicator.classList.add('hidden');
         }
     }
 }
