@@ -5,6 +5,13 @@ let currentObjective = 'none';
 let currentFc = { score: 0, hints: [] };
 
 function validateFlow() {
+    // Use enhanced validation if available, otherwise fall back to original
+    if (typeof validateFlowEnhanced === 'function') {
+        validateFlowEnhanced();
+        return;
+    }
+    
+    // Original validation logic as fallback
     const objective = flowObjectives[currentObjective];
     const canvas = document.getElementById('canvas');
     const nodes = Array.from(canvas.querySelectorAll('.canvas-node'));
@@ -90,17 +97,75 @@ function updateFcUI() {
     if (!fcPanel) return;
     const scoreColor = currentFc.score < 50 ? 'text-red-400' : currentFc.score < 90 ? 'text-yellow-400' : 'text-green-400';
     let hintsHTML = currentFc.hints.map(hint => {
-        const hintColor = hint.type === 'error' ? 'text-red-400' : hint.type === 'warning' ? 'text-yellow-400' : hint.type === 'success' ? 'text-green-400' : 'text-gray-400';
-        const hintIcon = hint.type === 'error' ? 'fa-times-circle' : hint.type === 'warning' ? 'fa-exclamation-triangle' : hint.type === 'success' ? 'fa-check-circle' : 'fa-info-circle';
+        const hintColor = hint.type === 'error' ? 'text-red-400' : hint.type === 'warning' ? 'text-yellow-400' : hint.type === 'success' ? 'text-green-400' : hint.type === 'suggestion' ? 'text-blue-400' : 'text-gray-400';
+        const hintIcon = hint.type === 'error' ? 'fa-times-circle' : hint.type === 'warning' ? 'fa-exclamation-triangle' : hint.type === 'success' ? 'fa-check-circle' : hint.type === 'suggestion' ? 'fa-lightbulb' : 'fa-info-circle';
         return `<div class="text-xs ${hintColor}"><i class="fas ${hintIcon} mr-1"></i> ${hint.text}</div>`;
     }).join('');
+    
+    // Add interactive suggestions if enhanced validation is available
+    let suggestionsHTML = '';
+    if (typeof getFlowSuggestions === 'function') {
+        const suggestions = getFlowSuggestions();
+        if (suggestions.length > 0) {
+            suggestionsHTML = `
+                <div class="mt-3 pt-2 border-t border-gray-600">
+                    <div class="text-xs font-bold text-blue-300 mb-1">💡 Suggerimenti Interattivi:</div>
+                    ${suggestions.map(s => `<div class="text-xs text-blue-400 cursor-pointer hover:text-blue-300" onclick="applySuggestion('${s.action}', ${JSON.stringify(s.blocks || [])})">${s.text}</div>`).join('')}
+                </div>`;
+        }
+    }
+    
     fcPanel.innerHTML = `
         <div class="flex justify-between items-center mb-2">
             <span class="font-bold">Punteggio FC:</span>
             <span class="font-bold text-lg ${scoreColor}">${currentFc.score}%</span>
         </div>
         <div class="xp-bar-bg mb-2"><div class="xp-bar-fill" style="width:${currentFc.score}%"></div></div>
-        <div class="space-y-1">${hintsHTML}</div>`;
+        <div class="space-y-1">${hintsHTML}</div>
+        ${suggestionsHTML}`;
+}
+
+// Function to apply interactive suggestions
+function applySuggestion(action, blocks) {
+    switch(action) {
+        case 'selectObjective':
+            // Highlight objective selector or open it
+            const objectiveSelect = document.getElementById('objective-select');
+            if (objectiveSelect) {
+                objectiveSelect.focus();
+                objectiveSelect.style.animation = 'pulse 1s';
+                setTimeout(() => objectiveSelect.style.animation = '', 1000);
+            }
+            break;
+        case 'addBlocks':
+            // Highlight suggested blocks in toolbox
+            blocks.forEach(blockName => {
+                const toolboxItem = document.querySelector(`.toolbox-item[data-block-name="${blockName}"]`);
+                if (toolboxItem) {
+                    toolboxItem.style.backgroundColor = '#3b82f6';
+                    toolboxItem.style.animation = 'pulse 2s';
+                    setTimeout(() => {
+                        toolboxItem.style.backgroundColor = '';
+                        toolboxItem.style.animation = '';
+                    }, 3000);
+                }
+            });
+            break;
+        case 'removeRedundancy':
+            // Highlight redundant blocks on canvas
+            blocks.forEach(blockName => {
+                const canvasNode = document.querySelector(`.canvas-node[data-block-name="${blockName}"]`);
+                if (canvasNode) {
+                    canvasNode.style.border = '2px solid #f59e0b';
+                    canvasNode.style.animation = 'pulse 2s';
+                    setTimeout(() => {
+                        canvasNode.style.border = '';
+                        canvasNode.style.animation = '';
+                    }, 3000);
+                }
+            });
+            break;
+    }
 }
 
 function updateCurrentFlowStatsUI() {

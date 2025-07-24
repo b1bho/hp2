@@ -94,73 +94,95 @@ const flowObjectives = {
     },
     'dataExfiltration': {
         label: 'Esfiltrazione Dati',
-        description: 'Ruba informazioni specifiche da un target.',
+        description: 'Ruba informazioni specifiche da un target. Richiede almeno 4 blocchi per essere considerato efficace.',
+        minBlocks: 4,
         pfe: {
             access_path: {
                 required: true,
-                weight: 0.3,
+                weight: 0.25,
                 hint: "Manca un percorso di accesso valido (es. Scansione Rete oppure Analisi Vulnerabilità + Deploy).",
                 paths: [
                     ['access'],
                     ['recon', 'deploy']
                 ]
             },
-            acquisition: { required: true, weight: 0.4, hint: "Manca un blocco per l'acquisizione dei dati (es. SQL Injection, Keylogger)." },
-            exfiltration: { required: true, weight: 0.3, hint: "Manca un blocco per salvare o inviare i dati rubati (es. Salva IP, Invia Email)." },
-            cleanup: { required: false, weight: 0.1, hint: "Consigliato: aggiungi un blocco per la pulizia delle tracce." }
+            acquisition: { required: true, weight: 0.35, hint: "Manca un blocco per l'acquisizione dei dati (es. SQL Injection, Keylogger)." },
+            exfiltration: { required: true, weight: 0.25, hint: "Manca un blocco per salvare o inviare i dati rubati (es. Salva IP, Invia Email)." },
+            cleanup: { required: false, weight: 0.15, hint: "Consigliato: aggiungi un blocco per la pulizia delle tracce per ridurre il rischio." }
         }
     },
     'remoteControl': {
         label: 'Controllo Remoto',
-        description: 'Ottieni e mantieni un accesso non autorizzato a un sistema.',
+        description: 'Ottieni e mantieni un accesso non autorizzato a un sistema. Richiede almeno 5 blocchi per persistenza efficace.',
+        minBlocks: 5,
         pfe: {
+            access: { required: true, weight: 0.2, hint: "Manca un blocco per accedere inizialmente al target." },
             deploy: { required: true, weight: 0.3, hint: "Manca un blocco per installare il tool sul target (es. Esegui Comando Remoto)." },
-            c2: { required: true, weight: 0.4, hint: "Manca un componente di controllo remoto (es. Backdoor, Canale Covert)." },
-            persistence: { required: true, weight: 0.3, hint: "Manca un meccanismo di persistenza (es. Scrivi su Registro di Sistema)." }
+            c2: { required: true, weight: 0.3, hint: "Manca un componente di controllo remoto (es. Backdoor, Canale Covert)." },
+            persistence: { required: true, weight: 0.2, hint: "Manca un meccanismo di persistenza (es. Scrivi su Registro di Sistema)." }
         }
     },
     'denialOfService': {
         label: 'Denial of Service (DoS/DDoS)',
-        description: 'Rendi un servizio o un sito inaccessibile.',
+        description: 'Rendi un servizio o un sito inaccessibile. Per DDoS efficace servono almeno 4 blocchi.',
+        minBlocks: 3,
         pfe: {
             access: { required: true, weight: 0.2, hint: "Manca un blocco per identificare il target (es. Scansione Rete)." },
-            dos_traffic: { required: true, weight: 0.6, hint: "Manca un blocco per la generazione di traffico (es. SYN Flood)." },
-            dos_orchestration: { required: false, weight: 0.2, hint: "Per un DDoS efficace, aggiungi un blocco di orchestrazione (es. Coordina Botnet)." }
+            dos_traffic: { required: true, weight: 0.6, hint: "Manca un blocco per la generazione di traffico (es. SYN Flood). OBBLIGATORIO per DoS/DDoS." },
+            dos_orchestration: { required: false, weight: 0.2, hint: "Per un DDoS devastante, aggiungi coordinamento botnet (es. Coordina Botnet)." }
         }
     },
     'reconnaissance': {
         label: 'Ricognizione / Intelligence',
-        description: 'Raccogli informazioni dettagliate su un target e le sue vulnerabilità.',
+        description: 'Raccogli informazioni dettagliate su un target e le sue vulnerabilità. Almeno 3 blocchi per analisi completa.',
+        minBlocks: 3,
         pfe: {
-            recon: { required: true, weight: 0.7, hint: "Manca un blocco di analisi o scansione (es. Analizza Log, Trova Vulnerabilità)." },
-            exfiltration: { required: true, weight: 0.3, hint: "Manca un blocco per salvare o visualizzare i risultati (es. Salva IP, Mappa Rete)." }
+            recon: { required: true, weight: 0.6, hint: "Manca un blocco di analisi o scansione (es. Analizza Log, Trova Vulnerabilità)." },
+            access: { required: false, weight: 0.2, hint: "Consigliato: aggiungi scansione rete per mappatura completa." },
+            exfiltration: { required: true, weight: 0.2, hint: "Manca un blocco per salvare o visualizzare i risultati (es. Salva IP, Mappa Rete)." }
         }
     },
     'ransomware': {
         label: 'Cifratura Dati (Ransomware)',
-        description: 'Cripta i dati di un target per richiederne un riscatto.',
+        description: 'Cripta i dati di un target per richiederne un riscatto. Richiede almeno 4 blocchi per essere efficace.',
+        minBlocks: 4,
         pfe: {
-            deploy: { required: true, weight: 0.4, hint: "Manca un blocco per distribuire il payload sul target (es. Automatizza Deploy)." },
-            encryption: { required: true, weight: 0.6, hint: "Manca il componente fondamentale di cifratura (es. Sviluppa Ransomware)." },
+            access: { required: true, weight: 0.2, hint: "Serve un modo per accedere al target prima di distribuire il ransomware." },
+            deploy: { required: true, weight: 0.3, hint: "Manca un blocco per distribuire il payload sul target (es. Automatizza Deploy)." },
+            encryption: { required: true, weight: 0.4, hint: "Manca il componente fondamentale di cifratura (es. Sviluppa Ransomware). OBBLIGATORIO." },
+            c2: { required: false, weight: 0.1, hint: "Consigliato: canale di comunicazione per richiesta riscatto." }
         }
     },
     'worm': {
         label: 'Propagazione Malware (Worm)',
-        description: 'Diffondi un malware che si replica autonomamente su nuovi sistemi.',
+        description: 'Diffondi un malware che si replica autonomamente su nuovi sistemi. Richiede almeno 4 blocchi.',
+        minBlocks: 4,
         pfe: {
-            replication: { required: true, weight: 0.4, hint: "Manca il componente di replicazione (es. Genera Worm di Rete)." },
+            replication: { required: true, weight: 0.4, hint: "Manca il componente di replicazione (es. Genera Worm di Rete). OBBLIGATORIO." },
             access: { required: true, weight: 0.3, hint: "Manca un blocco per trovare nuovi target da infettare (es. Scansione Rete)." },
             deploy: { required: true, weight: 0.3, hint: "Manca un vettore di infezione per raggiungere i nuovi target (es. Esegui Comando Remoto)." }
         }
     },
     'botnet': {
         label: 'Creazione Botnet',
-        description: 'Infetta e recluta sistemi per formare una rete di "bot" controllabili.',
+        description: 'Infetta e recluta sistemi per formare una rete di "bot" controllabili. Richiede almeno 5 blocchi per essere efficace.',
+        minBlocks: 5,
         pfe: {
-            bot_component: { required: true, weight: 0.3, hint: "Manca il componente malware del bot (es. Sviluppa Backdoor)." },
-            deploy: { required: true, weight: 0.3, hint: "Manca un meccanismo per infettare i target (es. Esegui Comando Remoto)." },
+            bot_component: { required: true, weight: 0.3, hint: "Manca il componente malware del bot (es. Sviluppa Backdoor, Modulo Malware AI). OBBLIGATORIO." },
+            deploy: { required: true, weight: 0.25, hint: "Manca un meccanismo per infettare i target (es. Automatizza Deploy Tool)." },
             access: { required: true, weight: 0.2, hint: "Manca un blocco per trovare nuovi target da reclutare (es. Scansione Rete)." },
-            c2: { required: true, weight: 0.2, hint: "Manca un canale di Command & Control per gestire la botnet (es. Integra con Tor)." }
+            c2: { required: true, weight: 0.25, hint: "Manca un canale di Command & Control per gestire la botnet (es. Integra con Tor). OBBLIGATORIO." }
+        }
+    },
+    'socialEngineering': {
+        label: 'Ingegneria Sociale Avanzata',
+        description: 'Campagna completa di manipolazione psicologica per compromettere target umani. Almeno 4 blocchi per efficacia.',
+        minBlocks: 4,
+        pfe: {
+            social_engineering: { required: true, weight: 0.4, hint: "Manca un blocco di ingegneria sociale (es. Genera Testo Persuasivo, Spear Phishing). OBBLIGATORIO." },
+            acquisition: { required: true, weight: 0.3, hint: "Manca un metodo per acquisire informazioni/credenziali (es. Fake Login Page)." },
+            exfiltration: { required: false, weight: 0.2, hint: "Consigliato: salva i dati ottenuti per uso futuro." },
+            cleanup: { required: false, weight: 0.1, hint: "Consigliato: pulizia tracce per non insospettire la vittima." }
         }
     }
 };

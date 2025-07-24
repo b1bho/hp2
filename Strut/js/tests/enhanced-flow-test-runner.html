@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enhanced Flow Editor Tests</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            background-color: #1a1a1a;
+            color: #00ff00;
+            padding: 20px;
+            margin: 0;
+        }
+        .console {
+            background-color: #000;
+            border: 1px solid #333;
+            padding: 15px;
+            border-radius: 5px;
+            white-space: pre-line;
+            font-size: 14px;
+            line-height: 1.4;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        .header {
+            color: #00ccff;
+            font-size: 18px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .pass { color: #00ff00; }
+        .fail { color: #ff0000; }
+        .info { color: #ffff00; }
+        .run-button {
+            background-color: #333;
+            color: #00ff00;
+            border: 1px solid #00ff00;
+            padding: 10px 20px;
+            margin: 10px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        .run-button:hover {
+            background-color: #00ff00;
+            color: #000;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">🧪 Enhanced Flow Editor Validation - Test Runner</div>
+    
+    <button class="run-button" onclick="runAllTests()">▶️ Run All Tests</button>
+    <button class="run-button" onclick="runValidationTests()">🔧 Run Validation Tests</button>
+    <button class="run-button" onclick="runBlockManagementTests()">📦 Run Block Management Tests</button>
+    <button class="run-button" onclick="clearConsole()">🗑️ Clear Console</button>
+    
+    <div id="console" class="console">Ready to run tests...</div>
+    
+    <!-- Dependencies -->
+    <script src="../flow_validation.js"></script>
+    <script src="../flow_logic.js"></script>
+    <script src="../modules/flow_validation_enhanced.js"></script>
+    <script src="../modules/block_management.js"></script>
+    <script src="enhanced-flow-validation.test.js"></script>
+    
+    <script>
+        // Override console.log to display in our custom console
+        const originalLog = console.log;
+        const consoleDiv = document.getElementById('console');
+        
+        console.log = function(...args) {
+            const message = args.join(' ');
+            originalLog(...args);
+            
+            // Add styling based on message content
+            let className = '';
+            if (message.includes('✅') || message.includes('PASS')) {
+                className = 'pass';
+            } else if (message.includes('❌') || message.includes('FAIL')) {
+                className = 'fail';
+            } else if (message.includes('⚠️') || message.includes('WARNING')) {
+                className = 'info';
+            }
+            
+            const div = document.createElement('div');
+            div.className = className;
+            div.textContent = message;
+            consoleDiv.appendChild(div);
+            consoleDiv.scrollTop = consoleDiv.scrollHeight;
+        };
+
+        function clearConsole() {
+            consoleDiv.innerHTML = 'Console cleared...';
+        }
+
+        function runAllTests() {
+            clearConsole();
+            console.log('🚀 Running all Enhanced Flow Editor tests...\n');
+            
+            try {
+                // Run validation tests
+                console.log('=== VALIDATION TESTS ===');
+                const validationResults = runFlowValidationTests();
+                
+                // Run block management tests
+                console.log('\n=== BLOCK MANAGEMENT TESTS ===');
+                runBlockManagementTests();
+                
+                // Run integration tests
+                console.log('\n=== INTEGRATION TESTS ===');
+                runIntegrationTests();
+                
+                console.log('\n🎯 All test suites completed!');
+                
+            } catch (error) {
+                console.log(`❌ Error running tests: ${error.message}`);
+            }
+        }
+
+        function runValidationTests() {
+            clearConsole();
+            console.log('🔧 Running Enhanced Validation Tests...\n');
+            
+            try {
+                const results = runFlowValidationTests();
+                console.log(`\n📊 Validation Tests Summary: ${results.passed}/${results.total} passed`);
+            } catch (error) {
+                console.log(`❌ Error in validation tests: ${error.message}`);
+            }
+        }
+
+        function runBlockManagementTests() {
+            console.log('\n📦 Testing Block Management System...');
+            
+            try {
+                // Test block categorization
+                const testBlocks = [
+                    'Scansione rete locale',
+                    'Esegui SQL Injection (base)',
+                    'Genera Testo Persuasivo (AI)',
+                    'Integra con rete Tor'
+                ];
+                
+                testBlocks.forEach(block => {
+                    if (typeof getBlockCategory === 'function') {
+                        const category = getBlockCategory(block);
+                        console.log(`✅ Block "${block}" categorized as: ${category}`);
+                    } else {
+                        console.log(`⚠️  getBlockCategory function not available`);
+                    }
+                });
+                
+                // Test deprecated block detection
+                const deprecatedBlocks = ['Genera Testo (AI)', 'Baiting/Quid Pro Quo'];
+                deprecatedBlocks.forEach(block => {
+                    if (typeof isBlockDeprecated === 'function') {
+                        const isDeprecated = isBlockDeprecated(block);
+                        console.log(`${isDeprecated ? '✅' : '❌'} Block "${block}" deprecated status: ${isDeprecated}`);
+                    } else {
+                        console.log(`⚠️  isBlockDeprecated function not available`);
+                    }
+                });
+                
+                // Test consolidation suggestions
+                console.log('\n🔄 Testing consolidation suggestions:');
+                const consolidationTestBlocks = ['Imposta Oggetto Email', 'Genera Testo (AI)'];
+                consolidationTestBlocks.forEach(block => {
+                    if (typeof getConsolidationSuggestion === 'function') {
+                        const suggestion = getConsolidationSuggestion(block);
+                        if (suggestion) {
+                            console.log(`✅ Consolidation suggestion for "${block}": ${suggestion.suggestion}`);
+                        } else {
+                            console.log(`ℹ️  No consolidation needed for "${block}"`);
+                        }
+                    } else {
+                        console.log(`⚠️  getConsolidationSuggestion function not available`);
+                    }
+                });
+                
+            } catch (error) {
+                console.log(`❌ Error in block management tests: ${error.message}`);
+            }
+        }
+
+        function runIntegrationTests() {
+            console.log('🔗 Testing Integration with Game Systems...');
+            
+            try {
+                // Test flow objectives integration
+                if (typeof flowObjectives !== 'undefined') {
+                    const objectives = Object.keys(flowObjectives);
+                    console.log(`✅ Found ${objectives.length} flow objectives`);
+                    
+                    // Test enhanced objectives with minBlocks
+                    objectives.forEach(objId => {
+                        const obj = flowObjectives[objId];
+                        if (obj.minBlocks) {
+                            console.log(`✅ Objective "${obj.label}" has minimum blocks requirement: ${obj.minBlocks}`);
+                        }
+                    });
+                } else {
+                    console.log(`⚠️  flowObjectives not available for testing`);
+                }
+                
+                // Test strategic combinations
+                if (typeof STRATEGIC_COMBINATIONS !== 'undefined') {
+                    const combos = Object.keys(STRATEGIC_COMBINATIONS);
+                    console.log(`✅ Found ${combos.length} strategic combinations defined`);
+                    
+                    combos.forEach(comboId => {
+                        const combo = STRATEGIC_COMBINATIONS[comboId];
+                        console.log(`✅ Strategic combo "${combo.description}" with ${combo.blocks.length} blocks`);
+                    });
+                } else {
+                    console.log(`⚠️  STRATEGIC_COMBINATIONS not available`);
+                }
+                
+                // Test mandatory combinations
+                if (typeof MANDATORY_COMBINATIONS !== 'undefined') {
+                    const mandatories = Object.keys(MANDATORY_COMBINATIONS);
+                    console.log(`✅ Found ${mandatories.length} mandatory combination rules`);
+                } else {
+                    console.log(`⚠️  MANDATORY_COMBINATIONS not available`);
+                }
+                
+            } catch (error) {
+                console.log(`❌ Error in integration tests: ${error.message}`);
+            }
+        }
+
+        // Auto-run a basic connectivity test on load
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                console.log('🔌 Testing module connectivity...');
+                console.log(`📊 Flow Validation Enhanced: ${typeof validateFlowEnhanced !== 'undefined' ? '✅ Loaded' : '❌ Missing'}`);
+                console.log(`📦 Block Management: ${typeof getBlockCategory !== 'undefined' ? '✅ Loaded' : '❌ Missing'}`);
+                console.log(`🎯 Flow Objectives: ${typeof flowObjectives !== 'undefined' ? '✅ Loaded' : '❌ Missing'}`);
+                console.log(`🧩 Block Interfaces: ${typeof blockInterfaces !== 'undefined' ? '✅ Loaded' : '❌ Missing'}`);
+                console.log('Ready to run tests! Click a button above to start.');
+            }, 500);
+        });
+    </script>
+</body>
+</html>
