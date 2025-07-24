@@ -17,7 +17,7 @@ const toolTemplates = {
                 upgrades: {
                     1: { name: 'Target Singolo', description: 'Colpisce un singolo target' },
                     2: { name: 'Target Multipli', description: 'Colpisce più target simultaneamente', requires: ['Networking LV2'] },
-                    3: { name: 'Scan Automatico', description: 'Identifica automaticamente target vulnerabili', requires: ['Reconnaissance LV3'] }
+                    3: { name: 'Scan Automatico', description: 'Identifica automaticamente target vulnerabili', requires: ['Malware Attivi LV2'] }
                 }
             },
             {
@@ -29,9 +29,9 @@ const toolTemplates = {
                 maxLevel: 4,
                 upgrades: {
                     1: { name: 'AES-128', description: 'Crittografia base AES-128' },
-                    2: { name: 'AES-256', description: 'Crittografia avanzata AES-256', requires: ['Cryptography LV2'] },
-                    3: { name: 'Multi-Layer', description: 'Crittografia a più livelli', requires: ['Cryptography LV3'] },
-                    4: { name: 'Quantum-Resistant', description: 'Resistente agli attacchi quantistici', requires: ['Cryptography LV4', 'Research LV2'] }
+                    2: { name: 'AES-256', description: 'Crittografia avanzata AES-256', requires: ['Stealth LV2'] },
+                    3: { name: 'Multi-Layer', description: 'Crittografia a più livelli', requires: ['Stealth LV3'] },
+                    4: { name: 'Quantum-Resistant', description: 'Resistente agli attacchi quantistici', requires: ['Stealth LV3', 'Malware Attivi LV2'] }
                 }
             },
             {
@@ -43,8 +43,8 @@ const toolTemplates = {
                 maxLevel: 3,
                 upgrades: {
                     1: { name: 'Email Phishing', description: 'Distribuzione tramite email di phishing' },
-                    2: { name: 'Network Worm', description: 'Distribuzione automatica via rete', requires: ['Malware Development LV2'] },
-                    3: { name: 'Multi-Vector', description: 'Distribuzione su più vettori', requires: ['Social Engineering LV3', 'Network Security LV2'] }
+                    2: { name: 'Network Worm', description: 'Distribuzione automatica via rete', requires: ['Networking LV2'] },
+                    3: { name: 'Multi-Vector', description: 'Distribuzione su più vettori', requires: ['Ingegneria Sociale LV2', 'Networking LV2'] }
                 }
             },
             {
@@ -56,7 +56,7 @@ const toolTemplates = {
                 maxLevel: 3,
                 upgrades: {
                     1: { name: 'Registry Entry', description: 'Persistenza tramite registro di sistema' },
-                    2: { name: 'Service Creation', description: 'Crea servizio di sistema', requires: ['System Administration LV2'] },
+                    2: { name: 'Service Creation', description: 'Crea servizio di sistema', requires: ['Sviluppo LV2'] },
                     3: { name: 'Rootkit Integration', description: 'Integrazione con rootkit', requires: ['Stealth LV3'] }
                 }
             },
@@ -70,7 +70,7 @@ const toolTemplates = {
                 upgrades: {
                     1: { name: 'Basic Compilation', description: 'Compilazione base del ransomware' },
                     2: { name: 'Code Obfuscation', description: 'Offuscamento del codice', requires: ['Stealth LV2'] },
-                    3: { name: 'Anti-Analysis', description: 'Tecniche anti-analisi', requires: ['Anti-Forensics LV2'] }
+                    3: { name: 'Anti-Analysis', description: 'Tecniche anti-analisi', requires: ['Stealth LV3'] }
                 }
             }
         ],
@@ -81,7 +81,7 @@ const toolTemplates = {
             { from: 'distribution', to: 'compiler' },
             { from: 'persistence', to: 'compiler' }
         ],
-        requiredTalents: ['Malware Development LV1', 'Cryptography LV1']
+        requiredTalents: ['Malware Attivi LV1', 'Stealth LV1', 'Sviluppo LV1']
     },
     'keylogger': {
         name: 'Keylogger',
@@ -108,9 +108,9 @@ const toolTemplates = {
                 maxLevel: 4,
                 upgrades: {
                     1: { name: 'Basic Keylogging', description: 'Cattura tasti base' },
-                    2: { name: 'Form Detection', description: 'Rileva form e password', requires: ['Web Security LV1'] },
-                    3: { name: 'Screenshot Capture', description: 'Cattura screenshot periodici', requires: ['System Access LV2'] },
-                    4: { name: 'Audio Capture', description: 'Registrazione audio ambiente', requires: ['Hardware Access LV2'] }
+                    2: { name: 'Form Detection', description: 'Rileva form e password', requires: ['Sviluppo LV2'] },
+                    3: { name: 'Screenshot Capture', description: 'Cattura screenshot periodici', requires: ['Malware Passivi LV2'] },
+                    4: { name: 'Audio Capture', description: 'Registrazione audio ambiente', requires: ['Malware Passivi LV3'] }
                 }
             },
             {
@@ -123,7 +123,7 @@ const toolTemplates = {
                 upgrades: {
                     1: { name: 'Process Hiding', description: 'Nasconde il processo' },
                     2: { name: 'File Hiding', description: 'Nasconde i file di log', requires: ['Stealth LV2'] },
-                    3: { name: 'Memory Injection', description: 'Injection in memoria', requires: ['Advanced Malware LV1'] }
+                    3: { name: 'Memory Injection', description: 'Injection in memoria', requires: ['Stealth LV3'] }
                 }
             },
             {
@@ -135,7 +135,7 @@ const toolTemplates = {
                 maxLevel: 3,
                 upgrades: {
                     1: { name: 'HTTP POST', description: 'Trasmissione via HTTP POST' },
-                    2: { name: 'Encrypted Channel', description: 'Canale crittografato', requires: ['Cryptography LV1'] },
+                    2: { name: 'Encrypted Channel', description: 'Canale crittografato', requires: ['Stealth LV1'] },
                     3: { name: 'Covert Channel', description: 'Canale nascosto', requires: ['Stealth LV3', 'Networking LV3'] }
                 }
             },
@@ -148,7 +148,7 @@ const toolTemplates = {
                 maxLevel: 2,
                 upgrades: {
                     1: { name: 'Basic Compilation', description: 'Compilazione base del keylogger' },
-                    2: { name: 'Polymorphic Code', description: 'Codice polimorfico', requires: ['Anti-Detection LV2'] }
+                    2: { name: 'Polymorphic Code', description: 'Codice polimorfico', requires: ['Stealth LV2'] }
                 }
             }
         ],
@@ -159,7 +159,7 @@ const toolTemplates = {
             { from: 'stealth', to: 'compiler' },
             { from: 'transmission', to: 'compiler' }
         ],
-        requiredTalents: ['Malware Development LV1', 'System Access LV1']
+        requiredTalents: ['Malware Passivi LV1', 'Sviluppo LV1']
     },
     'botnet_agent': {
         name: 'Botnet Agent',
@@ -174,8 +174,8 @@ const toolTemplates = {
                 maxLevel: 3,
                 upgrades: {
                     1: { name: 'Email Attachment', description: 'Infezione tramite allegato email' },
-                    2: { name: 'Drive-by Download', description: 'Infezione tramite siti web', requires: ['Web Exploitation LV2'] },
-                    3: { name: 'Network Exploit', description: 'Sfrutta vulnerabilità di rete', requires: ['Network Security LV3'] }
+                    2: { name: 'Drive-by Download', description: 'Infezione tramite siti web', requires: ['Ingegneria Sociale LV2'] },
+                    3: { name: 'Network Exploit', description: 'Sfrutta vulnerabilità di rete', requires: ['Networking LV3'] }
                 }
             },
             {
@@ -187,9 +187,9 @@ const toolTemplates = {
                 maxLevel: 4,
                 upgrades: {
                     1: { name: 'Direct Connection', description: 'Connessione diretta al C2' },
-                    2: { name: 'Proxy Chain', description: 'Catena di proxy', requires: ['Anonymity LV2'] },
+                    2: { name: 'Proxy Chain', description: 'Catena di proxy', requires: ['Stealth LV2'] },
                     3: { name: 'P2P Network', description: 'Rete peer-to-peer', requires: ['Networking LV3'] },
-                    4: { name: 'Domain Flux', description: 'Algoritmo domain flux', requires: ['Cryptography LV2', 'Advanced C2 LV1'] }
+                    4: { name: 'Domain Flux', description: 'Algoritmo domain flux', requires: ['Stealth LV2', 'Malware di Rete LV1'] }
                 }
             },
             {
@@ -201,8 +201,8 @@ const toolTemplates = {
                 maxLevel: 3,
                 upgrades: {
                     1: { name: 'Local Network', description: 'Propagazione rete locale' },
-                    2: { name: 'USB Spreading', description: 'Propagazione via USB', requires: ['Hardware Access LV1'] },
-                    3: { name: 'Cross-Platform', description: 'Propagazione multi-piattaforma', requires: ['Multi-Platform Dev LV2'] }
+                    2: { name: 'USB Spreading', description: 'Propagazione via USB', requires: ['Malware di Rete LV2'] },
+                    3: { name: 'Cross-Platform', description: 'Propagazione multi-piattaforma', requires: ['Sviluppo LV3'] }
                 }
             },
             {
@@ -214,9 +214,9 @@ const toolTemplates = {
                 maxLevel: 4,
                 upgrades: {
                     1: { name: 'Basic Commands', description: 'Comandi base di sistema' },
-                    2: { name: 'File Operations', description: 'Operazioni su file', requires: ['System Administration LV1'] },
+                    2: { name: 'File Operations', description: 'Operazioni su file', requires: ['Sviluppo LV2'] },
                     3: { name: 'Network Operations', description: 'Operazioni di rete', requires: ['Networking LV2'] },
-                    4: { name: 'Advanced Modules', description: 'Moduli avanzati personalizzati', requires: ['Advanced Malware LV2'] }
+                    4: { name: 'Advanced Modules', description: 'Moduli avanzati personalizzati', requires: ['Malware di Rete LV2'] }
                 }
             },
             {
@@ -228,8 +228,8 @@ const toolTemplates = {
                 maxLevel: 3,
                 upgrades: {
                     1: { name: 'Basic Compilation', description: 'Compilazione base dell\'agente' },
-                    2: { name: 'Runtime Packing', description: 'Packing runtime', requires: ['Packing LV1'] },
-                    3: { name: 'VM Evasion', description: 'Evasione macchine virtuali', requires: ['Anti-Analysis LV3'] }
+                    2: { name: 'Runtime Packing', description: 'Packing runtime', requires: ['Stealth LV1'] },
+                    3: { name: 'VM Evasion', description: 'Evasione macchine virtuali', requires: ['Stealth LV3'] }
                 }
             }
         ],
@@ -240,7 +240,7 @@ const toolTemplates = {
             { from: 'propagation', to: 'payload' },
             { from: 'payload', to: 'compiler' }
         ],
-        requiredTalents: ['Malware Development LV2', 'Networking LV1', 'Command & Control LV1']
+        requiredTalents: ['Malware di Rete LV1', 'Networking LV1', 'Sviluppo LV1']
     }
 };
 
@@ -255,8 +255,8 @@ const modifierNodes = {
         compilationTimeMultiplier: 1.5,
         upgrades: {
             1: { name: 'String Obfuscation', description: 'Offuscamento stringhe' },
-            2: { name: 'Control Flow', description: 'Offuscamento flusso di controllo', requires: ['Advanced Stealth LV1'] },
-            3: { name: 'Anti-Disassembly', description: 'Tecniche anti-disassemblaggio', requires: ['Anti-Forensics LV2'] }
+            2: { name: 'Control Flow', description: 'Offuscamento flusso di controllo', requires: ['Stealth LV3'] },
+            3: { name: 'Anti-Disassembly', description: 'Tecniche anti-disassemblaggio', requires: ['Stealth LV3'] }
         }
     },
     'crypter': {
@@ -264,12 +264,12 @@ const modifierNodes = {
         description: 'Crittografa il payload finale',
         type: 'modifier',
         applicableTo: ['compiler'],
-        requiredTalents: ['Cryptography LV2'],
+        requiredTalents: ['Stealth LV2'],
         compilationTimeMultiplier: 2.0,
         upgrades: {
             1: { name: 'XOR Encryption', description: 'Crittografia XOR semplice' },
-            2: { name: 'AES Encryption', description: 'Crittografia AES avanzata', requires: ['Cryptography LV3'] },
-            3: { name: 'Custom Algorithm', description: 'Algoritmo crittografico personalizzato', requires: ['Cryptography LV4'] }
+            2: { name: 'AES Encryption', description: 'Crittografia AES avanzata', requires: ['Stealth LV3'] },
+            3: { name: 'Custom Algorithm', description: 'Algoritmo crittografico personalizzato', requires: ['Stealth LV3'] }
         }
     },
     'self_delete': {
@@ -277,12 +277,12 @@ const modifierNodes = {
         description: 'Auto-eliminazione dopo l\'esecuzione',
         type: 'modifier',
         applicableTo: ['any'],
-        requiredTalents: ['Anti-Forensics LV1'],
+        requiredTalents: ['Stealth LV1'],
         compilationTimeMultiplier: 1.2,
         upgrades: {
             1: { name: 'Simple Delete', description: 'Eliminazione semplice del file' },
-            2: { name: 'Secure Wipe', description: 'Sovrascrittura sicura', requires: ['Anti-Forensics LV2'] },
-            3: { name: 'Memory Cleanup', description: 'Pulizia memoria completa', requires: ['Advanced Anti-Forensics LV1'] }
+            2: { name: 'Secure Wipe', description: 'Sovrascrittura sicura', requires: ['Stealth LV2'] },
+            3: { name: 'Memory Cleanup', description: 'Pulizia memoria completa', requires: ['Stealth LV3'] }
         }
     }
 };
@@ -292,28 +292,28 @@ const compilerOptions = {
     'code_encryption': {
         name: 'Code Encryption',
         description: 'Crittografa sezioni del codice',
-        requiredTalents: ['Cryptography LV2', 'Compiler Technology LV1'],
+        requiredTalents: ['Stealth LV2', 'Sviluppo LV2'],
         compilationTimeMultiplier: 1.8,
         effectivenessBonus: 0.15
     },
     'code_injection': {
         name: 'Code Injection',
         description: 'Inietta codice in processi legittimi',
-        requiredTalents: ['Advanced Malware LV2', 'System Internals LV2'],
+        requiredTalents: ['Stealth LV3', 'Sviluppo LV2'],
         compilationTimeMultiplier: 2.5,
         stealthBonus: 0.25
     },
     'anti_debugging': {
         name: 'Anti-Debugging',
         description: 'Tecniche anti-debugging avanzate',
-        requiredTalents: ['Anti-Analysis LV3', 'Reverse Engineering LV2'],
+        requiredTalents: ['Stealth LV3', 'Sviluppo LV2'],
         compilationTimeMultiplier: 2.0,
         analysisResistance: 0.30
     },
     'polymorphic_engine': {
         name: 'Polymorphic Engine',
         description: 'Motore polimorfico per evitare signature detection',
-        requiredTalents: ['Advanced Malware LV3', 'Cryptography LV3'],
+        requiredTalents: ['Stealth LV3', 'Sviluppo LV3'],
         compilationTimeMultiplier: 3.0,
         signatureEvasion: 0.40
     }
@@ -650,11 +650,25 @@ function checkTemplateRequirements(template) {
 }
 
 function checkTalentRequirement(talentRequirement) {
-    // Parse requirement like "Malware Development LV2"
+    // Parse requirement like "Malware Attivi LV2" or "Sviluppo LV1"
     const parts = talentRequirement.split(' LV');
     const talentName = parts[0];
     const requiredLevel = parseInt(parts[1]) || 1;
     
+    // Check if it's a core talent
+    const fullTalentName = talentRequirement; // "Sviluppo LV1", "Malware Attivi LV1", etc.
+    
+    // First check if it's unlocked in the rework talents system
+    if (state.reworkTalents) {
+        const coreUnlocked = state.reworkTalents.unlockedCore[fullTalentName] || 0;
+        const specializationUnlocked = state.reworkTalents.unlockedSpecialization[fullTalentName] || 0;
+        
+        if (coreUnlocked > 0 || specializationUnlocked > 0) {
+            return true;
+        }
+    }
+    
+    // Fallback to old system for backward compatibility
     const unlockedLevel = state.unlocked[talentName] || 0;
     return unlockedLevel >= requiredLevel;
 }
