@@ -74,14 +74,14 @@ function loadAnalysisFlows() {
     const analysisFlowSelect = document.getElementById('analysis-flow');
     if (!analysisFlowSelect) return;
     
-    // Get saved flows that are suitable for data analysis
+    // Get saved flows that have reconnaissance objective
     const analysisFlows = (state.permanentFlows && Array.isArray(state.permanentFlows)) ? 
         state.permanentFlows.filter(flow => isAnalysisFlow(flow)) : [];
     
-    // Clear existing options (except the first one)
+    // Clear existing options
     analysisFlowSelect.innerHTML = '<option value="">Seleziona un flusso di analisi...</option>';
     
-    // Add analysis flows
+    // Add reconnaissance flows
     analysisFlows.forEach(flow => {
         const option = document.createElement('option');
         option.value = flow.id;
@@ -89,38 +89,19 @@ function loadAnalysisFlows() {
         analysisFlowSelect.appendChild(option);
     });
     
-    // Add default analysis flows if no saved flows exist
+    // Show message if no reconnaissance flows are available
     if (analysisFlows.length === 0) {
-        const defaultFlows = [
-            { id: 'basic-search', name: 'Ricerca Base', robustness: 30 },
-            { id: 'pattern-analysis', name: 'Analisi Pattern', robustness: 50 },
-            { id: 'deep-analysis', name: 'Analisi Approfondita', robustness: 80 }
-        ];
-        
-        defaultFlows.forEach(flow => {
-            const option = document.createElement('option');
-            option.value = flow.id;
-            option.textContent = `${flow.name} (Robustezza: ${flow.robustness}%)`;
-            analysisFlowSelect.appendChild(option);
-        });
+        const option = document.createElement('option');
+        option.value = '';
+        option.textContent = 'Nessun flusso di ricognizione disponibile - Crea un flusso con obiettivo "Ricognizione / Intelligence"';
+        option.disabled = true;
+        analysisFlowSelect.appendChild(option);
     }
 }
 
 function isAnalysisFlow(flow) {
-    // Check if flow contains analysis-related blocks
-    const analysisBlocks = [
-        'Cerca Stringa in Archivio', 'Filtra Dati per Attributo', 'Estrai Pattern (Regex)',
-        'Compara Archivi Dati', 'Analisi Comportamentale (AI)', 'Estrai email da database',
-        'Analisi Vulnerabilità (AI)', 'Python', 'Database'
-    ];
-    
-    if (!flow.blocks) return false;
-    
-    return flow.blocks.some(block => 
-        analysisBlocks.some(analysisBlock => 
-            block.type && block.type.includes(analysisBlock)
-        )
-    );
+    // Check if flow has reconnaissance/intelligence objective
+    return flow && flow.objective === 'reconnaissance';
 }
 
 function calculateFlowRobustness(flow) {
@@ -626,17 +607,6 @@ function stopDataAnalysis() {
 }
 
 function getFlowRobustness(flowId) {
-    // Check if it's a default flow
-    const defaultFlows = {
-        'basic-search': 30,
-        'pattern-analysis': 50,
-        'deep-analysis': 80
-    };
-    
-    if (defaultFlows[flowId]) {
-        return defaultFlows[flowId];
-    }
-    
     // Check saved flows
     if (state.permanentFlows && Array.isArray(state.permanentFlows)) {
         const savedFlow = state.permanentFlows.find(flow => flow.id === flowId);
@@ -645,7 +615,7 @@ function getFlowRobustness(flowId) {
         }
     }
     
-    return 30; // Default
+    return 30; // Default fallback
 }
 
 function simulateDataAnalysis(packet, flowRobustness, targetPriority) {
