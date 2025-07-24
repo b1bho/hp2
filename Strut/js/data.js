@@ -439,7 +439,7 @@ const initialGameState = {
     },
     morality: 0,
     traceLogs: [],
-    activePage: 'botnet',
+    activePage: 'hq',
     isWorldUnlocked: false,
     discoveredTargets: [],
     // Faction Reputation System
