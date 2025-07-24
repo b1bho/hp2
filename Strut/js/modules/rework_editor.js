@@ -676,6 +676,8 @@ function selectModifierSlot(slotIndex) {
     // Implementation for selecting a modifier slot
     console.log('Selected modifier slot:', slotIndex);
 }
+
+function renderNodeInspector() {
     const template = toolTemplates[currentTemplate];
     const node = template.nodes.find(n => n.id === selectedNodeId);
     if (!node) return '';
@@ -1035,10 +1037,6 @@ function getPhaseStatus(item, phase) {
     if (!item.isActive && item.progress >= 100) return 'completed';
     return 'pending';
 }
-            </div>
-        </div>
-    `).join('');
-}
 
 // Helper functions
 function getTemplateIcon(templateKey) {
@@ -1375,11 +1373,6 @@ function calculateComplexityRating(item) {
     if (complexityScore < 100) return 'Intermedio';
     if (complexityScore < 150) return 'Avanzato';
     return 'Esperto';
-}
-    updateUI();
-    renderReworkEditor();
-    
-    showNotification(`${item.templateName} compilato con successo! +${Math.round(xpGained)} XP`, 'success');
 }
 
 function resetTemplate() {
