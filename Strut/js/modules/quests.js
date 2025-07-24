@@ -1,5 +1,5 @@
 const QUEST_LIFETIME_MS = 1000 * 60 * 5; 
-const MAX_ACTIVE_QUESTS = 3; 
+const MAX_ACTIVE_QUESTS = 9; 
 
 function initQuestSystem() {
     if (state.activeQuests.length === 0) {
