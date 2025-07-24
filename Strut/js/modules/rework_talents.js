@@ -210,232 +210,305 @@ const coreTalents = {
 
 // Specialization Talents - Vertical branches that unlock more complex and specific flow templates
 const specializationTalents = {
-    "Malware Avanzato": {
-        icon: "fas fa-virus",
-        description: "Specializzazione nella creazione di malware sofisticato",
+    "Malware Attivi / Distruttivi": {
+        icon: "fas fa-bomb",
+        description: "Specializzazione in malware distruttivi e attivi",
         color: "#dc2626",
-        requiredCore: ["Sviluppo LV2"],
+        requiredCore: ["Sviluppo LV1"],
         talents: {
-            "Advanced Malware LV1": {
-                description: "Tecniche avanzate di sviluppo malware",
+            "Malware Attivi LV1": {
+                description: "Accesso ai template base per malware distruttivi",
+                cost: 1,
+                studyTime: 120,
+                unlocks: [
+                    "Ransomware Flow - Base",
+                    "Wiper Flow - Base", 
+                    "Logic Bomb Flow - Base"
+                ],
+                effects: {
+                    destructiveMalwareEfficiency: 0.15
+                }
+            },
+            "Malware Attivi LV2": {
+                description: "Template intermedi per operazioni distruttive avanzate",
                 cost: 2,
-                studyTime: 200,
+                studyTime: 240,
                 unlocks: [
-                    "Sblocca template trojan avanzati",
-                    "Abilita memory injection",
-                    "Implementa polymorphic code"
+                    "Ransomware Flow - Intermedio",
+                    "Wiper Flow - Intermedio",
+                    "Logic Bomb Flow - Intermedio"
                 ],
                 effects: {
-                    malwareComplexity: 0.30,
-                    evasionRate: 0.25
+                    destructiveMalwareEfficiency: 0.30,
+                    encryptionSpeed: 0.25
                 }
             },
-            "Advanced Malware LV2": {
-                description: "Malware di nuova generazione e AI-assisted",
+            "Malware Attivi LV3": {
+                description: "Template esperti per malware di livello APT",
                 cost: 3,
-                studyTime: 400,
+                studyTime: 480,
                 unlocks: [
-                    "Sblocca APT-style malware",
-                    "Abilita AI-powered evolution",
-                    "Implementa living-off-the-land techniques"
+                    "Ransomware Flow - Esperto",
+                    "Wiper Flow - Esperto", 
+                    "Logic Bomb Flow - Esperto"
                 ],
                 effects: {
-                    aptCapabilities: 0.50,
-                    aiEvolution: 0.40
-                }
-            },
-            "Advanced Malware LV3": {
-                description: "Malware master - creazione di threat actors",
-                cost: 4,
-                studyTime: 600,
-                unlocks: [
-                    "Sblocca nation-state level malware",
-                    "Abilita zero-day integration automatica",
-                    "Implementa self-evolving malware ecosystem"
-                ],
-                effects: {
-                    nationStateLevel: 0.70,
-                    selfEvolution: 0.60
+                    destructiveMalwareEfficiency: 0.50,
+                    aptLevelCapabilities: 0.40
                 }
             }
         }
     },
-    "Crittografia Avanzata": {
-        icon: "fas fa-key",
-        description: "Specializzazione in crittografia e sicurezza dei dati",
-        color: "#7c3aed",
-        requiredCore: ["Stealth LV2"],
-        talents: {
-            "Advanced Cryptography LV1": {
-                description: "Algoritmi crittografici avanzati e custom",
-                cost: 2,
-                studyTime: 180,
-                unlocks: [
-                    "Sblocca algoritmi custom",
-                    "Abilita quantum-resistant encryption",
-                    "Implementa steganografia avanzata"
-                ],
-                effects: {
-                    encryptionStrength: 0.40,
-                    quantumResistance: 0.30
-                }
-            },
-            "Advanced Cryptography LV2": {
-                description: "Crittografia post-quantistica e blockchain integration",
-                cost: 3,
-                studyTime: 360,
-                unlocks: [
-                    "Sblocca post-quantum algorithms",
-                    "Abilita blockchain steganography",
-                    "Implementa homomorphic encryption"
-                ],
-                effects: {
-                    postQuantumSecurity: 0.60,
-                    blockchainStealth: 0.45
-                }
-            }
-        }
-    },
-    "Command & Control": {
-        icon: "fas fa-satellite-dish",
-        description: "Specializzazione in sistemi C2 e botnet management",
+    "Malware Passivi / di Raccolta Dati": {
+        icon: "fas fa-eye",
+        description: "Specializzazione in malware di sorveglianza e raccolta dati",
         color: "#059669",
-        requiredCore: ["Networking LV2", "Sviluppo LV1"],
+        requiredCore: ["Sviluppo LV1"],
         talents: {
-            "Advanced C2 LV1": {
-                description: "Architetture C2 distribuite e resilienti",
-                cost: 2,
-                studyTime: 250,
+            "Malware Passivi LV1": {
+                description: "Accesso ai template base per raccolta dati",
+                cost: 1,
+                studyTime: 120,
                 unlocks: [
-                    "Sblocca P2P C2 networks",
-                    "Abilita domain flux algorithms",
-                    "Implementa decentralized command structure"
+                    "Keylogger Flow - Base",
+                    "Screenlogger Flow - Base",
+                    "Credential Stealer Flow - Base",
+                    "Clipboard Hijacker Flow - Base"
                 ],
                 effects: {
-                    c2Resilience: 0.40,
-                    decentralization: 0.35
+                    dataCollectionEfficiency: 0.20
                 }
             },
-            "Advanced C2 LV2": {
-                description: "C2 di nuova generazione con AI e blockchain",
-                cost: 3,
-                studyTime: 400,
+            "Malware Passivi LV2": {
+                description: "Template intermedi per sorveglianza avanzata",
+                cost: 2,
+                studyTime: 240,
                 unlocks: [
-                    "Sblocca blockchain-based C2",
-                    "Abilita AI-powered C2 management",
-                    "Implementa adaptive communication protocols"
+                    "Keylogger Flow - Intermedio",
+                    "Screenlogger Flow - Intermedio", 
+                    "Credential Stealer Flow - Intermedio",
+                    "Clipboard Hijacker Flow - Intermedio"
                 ],
                 effects: {
-                    blockchainC2: 0.55,
-                    aiManagement: 0.50
+                    dataCollectionEfficiency: 0.35,
+                    stealthCollection: 0.25
+                }
+            },
+            "Malware Passivi LV3": {
+                description: "Template esperti per sorveglianza totale",
+                cost: 3,
+                studyTime: 480,
+                unlocks: [
+                    "Keylogger Flow - Esperto",
+                    "Screenlogger Flow - Esperto",
+                    "Credential Stealer Flow - Esperto", 
+                    "Clipboard Hijacker Flow - Esperto"
+                ],
+                effects: {
+                    dataCollectionEfficiency: 0.55,
+                    totalSurveillance: 0.45
                 }
             }
         }
     },
-    "Reconnaissance Avanzata": {
-        icon: "fas fa-search",
-        description: "Specializzazione in intelligence gathering e OSINT",
+    "Malware di Controllo Remoto": {
+        icon: "fas fa-wifi",
+        description: "Specializzazione in controllo remoto e backdoor",
+        color: "#7c3aed",
+        requiredCore: ["Networking LV1"],
+        talents: {
+            "Controllo Remoto LV1": {
+                description: "Accesso ai template base per controllo remoto",
+                cost: 1,
+                studyTime: 120,
+                unlocks: [
+                    "RAT Flow - Base",
+                    "Backdoor Flow - Base",
+                    "Reverse Shell Flow - Base"
+                ],
+                effects: {
+                    remoteControlEfficiency: 0.20
+                }
+            },
+            "Controllo Remoto LV2": {
+                description: "Template intermedi per controllo avanzato",
+                cost: 2,
+                studyTime: 240,
+                unlocks: [
+                    "RAT Flow - Intermedio",
+                    "Backdoor Flow - Intermedio",
+                    "Reverse Shell Flow - Intermedio"
+                ],
+                effects: {
+                    remoteControlEfficiency: 0.35,
+                    connectionStability: 0.30
+                }
+            },
+            "Controllo Remoto LV3": {
+                description: "Template esperti per controllo totale",
+                cost: 3,
+                studyTime: 480,
+                unlocks: [
+                    "RAT Flow - Esperto",
+                    "Backdoor Flow - Esperto",
+                    "Reverse Shell Flow - Esperto"
+                ],
+                effects: {
+                    remoteControlEfficiency: 0.55,
+                    persistentAccess: 0.50
+                }
+            }
+        }
+    },
+    "Malware di Rete / Botnet": {
+        icon: "fas fa-network-wired",
+        description: "Specializzazione in malware di rete e botnet",
         color: "#0891b2",
-        requiredCore: ["Networking LV1", "Ingegneria Sociale LV1"],
+        requiredCore: ["Networking LV1"],
         talents: {
-            "Advanced OSINT LV1": {
-                description: "Tecniche avanzate di Open Source Intelligence",
-                cost: 2,
-                studyTime: 150,
+            "Malware di Rete LV1": {
+                description: "Accesso ai template base per operazioni di rete",
+                cost: 1,
+                studyTime: 120,
                 unlocks: [
-                    "Sblocca automated OSINT tools",
-                    "Abilita social media mining",
-                    "Implementa target profiling automatico"
+                    "Worm Flow - Base",
+                    "Botnet Client Flow - Base",
+                    "Packet Sniffer Flow - Base"
                 ],
                 effects: {
-                    osintEfficiency: 0.35,
-                    profilingAccuracy: 0.30
+                    networkMalwareEfficiency: 0.20
                 }
             },
-            "Advanced OSINT LV2": {
-                description: "Intelligence artificiale per reconnaissance",
-                cost: 3,
-                studyTime: 300,
+            "Malware di Rete LV2": {
+                description: "Template intermedi per botnet avanzate",
+                cost: 2,
+                studyTime: 240,
                 unlocks: [
-                    "Sblocca AI-powered target analysis",
-                    "Abilita predictive intelligence",
-                    "Implementa deep web/dark web crawling"
+                    "Worm Flow - Intermedio",
+                    "Botnet Client Flow - Intermedio",
+                    "Packet Sniffer Flow - Intermedio"
                 ],
                 effects: {
-                    aiAnalysis: 0.50,
-                    predictiveIntel: 0.45
+                    networkMalwareEfficiency: 0.35,
+                    propagationSpeed: 0.30
+                }
+            },
+            "Malware di Rete LV3": {
+                description: "Template esperti per reti distribuite",
+                cost: 3,
+                studyTime: 480,
+                unlocks: [
+                    "Worm Flow - Esperto",
+                    "Botnet Client Flow - Esperto",
+                    "Packet Sniffer Flow - Esperto"
+                ],
+                effects: {
+                    networkMalwareEfficiency: 0.55,
+                    distributedOperations: 0.45
                 }
             }
         }
     },
-    "Anti-Forensics": {
-        icon: "fas fa-eraser",
-        description: "Specializzazione in evasione e cancellazione tracce",
-        color: "#374151",
-        requiredCore: ["Stealth LV1"],
+    "Malware Sociali e di Ingegneria": {
+        icon: "fas fa-users-cog",
+        description: "Specializzazione in social engineering e phishing",
+        color: "#f59e0b",
+        requiredCore: ["Ingegneria Sociale LV1"],
         talents: {
-            "Advanced Anti-Forensics LV1": {
-                description: "Tecniche avanzate di cancellazione tracce",
-                cost: 2,
-                studyTime: 200,
+            "Social Engineering LV1": {
+                description: "Accesso ai template base per ingegneria sociale",
+                cost: 1,
+                studyTime: 120,
                 unlocks: [
-                    "Sblocca secure data wiping",
-                    "Abilita timeline manipulation",
-                    "Implementa anti-memory forensics"
+                    "Phishing Bot Flow - Base",
+                    "Fake Login Page Flow - Base",
+                    "SMS/WhatsApp Spoofer Flow - Base",
+                    "Voice Phishing Script Flow - Base"
                 ],
                 effects: {
-                    traceRemoval: 0.40,
-                    memoryForensicsEvasion: 0.35
+                    socialEngineeringEfficiency: 0.25
                 }
             },
-            "Advanced Anti-Forensics LV2": {
-                description: "Ghost mode - invisibilità totale alle investigazioni",
-                cost: 3,
-                studyTime: 400,
+            "Social Engineering LV2": {
+                description: "Template intermedi per manipolazione avanzata",
+                cost: 2,
+                studyTime: 240,
                 unlocks: [
-                    "Sblocca quantum-secure deletion",
-                    "Abilita reality distortion",
-                    "Implementa false flag generation"
+                    "Phishing Bot Flow - Intermedio",
+                    "Fake Login Page Flow - Intermedio",
+                    "SMS/WhatsApp Spoofer Flow - Intermedio",
+                    "Voice Phishing Script Flow - Intermedio"
                 ],
                 effects: {
-                    quantumSecureDeletion: 0.60,
-                    falseFlagGeneration: 0.50
+                    socialEngineeringEfficiency: 0.40,
+                    manipulationSuccess: 0.30
+                }
+            },
+            "Social Engineering LV3": {
+                description: "Template esperti per manipolazione psicologica",
+                cost: 3,
+                studyTime: 480,
+                unlocks: [
+                    "Phishing Bot Flow - Esperto",
+                    "Fake Login Page Flow - Esperto", 
+                    "SMS/WhatsApp Spoofer Flow - Esperto",
+                    "Voice Phishing Script Flow - Esperto"
+                ],
+                effects: {
+                    socialEngineeringEfficiency: 0.60,
+                    psychologicalManipulation: 0.50
                 }
             }
         }
     },
-    "Compilazione Avanzata": {
-        icon: "fas fa-cogs",
-        description: "Specializzazione in tecniche di compilazione e optimizazione",
-        color: "#9333ea",
-        requiredCore: ["Sviluppo LV2"],
+    "Tool Difensivi": {
+        icon: "fas fa-shield-alt",
+        description: "Specializzazione in strumenti difensivi e analisi",
+        color: "#10b981",
+        requiredCore: ["Networking LV1"],
         talents: {
-            "Compiler Technology LV1": {
-                description: "Tecniche avanzate di compilazione e ottimizzazione",
-                cost: 2,
-                studyTime: 180,
+            "Tool Difensivi LV1": {
+                description: "Accesso ai template base per difesa e analisi",
+                cost: 1,
+                studyTime: 120,
                 unlocks: [
-                    "Sblocca just-in-time compilation",
-                    "Abilita runtime code generation",
-                    "Implementa dynamic optimization"
+                    "Honeytrap / Honeypot Flow - Base",
+                    "Packet Analyzer Flow - Base",
+                    "Firewall Rules Manager Flow - Base", 
+                    "Signature Detector Flow - Base"
                 ],
                 effects: {
-                    compilationSpeed: 0.25,
-                    runtimeOptimization: 0.30
+                    defensiveToolsEfficiency: 0.20
                 }
             },
-            "Compiler Technology LV2": {
-                description: "Compilatori di nuova generazione con AI",
-                cost: 3,
-                studyTime: 360,
+            "Tool Difensivi LV2": {
+                description: "Template intermedi per difesa avanzata",
+                cost: 2,
+                studyTime: 240,
                 unlocks: [
-                    "Sblocca AI-assisted compilation",
-                    "Abilita predictive optimization",
-                    "Implementa self-modifying code generation"
+                    "Honeytrap / Honeypot Flow - Intermedio",
+                    "Packet Analyzer Flow - Intermedio",
+                    "Firewall Rules Manager Flow - Intermedio",
+                    "Signature Detector Flow - Intermedio"
                 ],
                 effects: {
-                    aiCompilation: 0.45,
-                    selfModifyingCode: 0.40
+                    defensiveToolsEfficiency: 0.35,
+                    intrusionDetection: 0.30
+                }
+            },
+            "Tool Difensivi LV3": {
+                description: "Template esperti per sicurezza enterprise",
+                cost: 3,
+                studyTime: 480,
+                unlocks: [
+                    "Honeytrap / Honeypot Flow - Esperto",
+                    "Packet Analyzer Flow - Esperto",
+                    "Firewall Rules Manager Flow - Esperto",
+                    "Signature Detector Flow - Esperto"
+                ],
+                effects: {
+                    defensiveToolsEfficiency: 0.55,
+                    enterpriseSecurity: 0.45
                 }
             }
         }
@@ -858,6 +931,7 @@ function canStudyReworkTalent(talentName, talent, isCore) {
 
 function formatEffectName(effectKey) {
     const effectNames = {
+        // Core talents effects
         compilationTimeReduction: 'Riduzione Tempo Compilazione',
         debuggingEfficiency: 'Efficienza Debugging',
         codeOptimization: 'Ottimizzazione Codice',
@@ -880,7 +954,26 @@ function formatEffectName(effectKey) {
         targetingAccuracy: 'Precisione Targeting',
         manipulationEffectiveness: 'Efficacia Manipolazione',
         multiVectorCampaigns: 'Campagne Multi-Vector',
-        aiSocialEngineering: 'Social Engineering AI'
+        aiSocialEngineering: 'Social Engineering AI',
+        
+        // Specialization talents effects
+        destructiveMalwareEfficiency: 'Efficienza Malware Distruttivi',
+        encryptionSpeed: 'Velocità Crittografia',
+        aptLevelCapabilities: 'Capacità Livello APT',
+        dataCollectionEfficiency: 'Efficienza Raccolta Dati',
+        stealthCollection: 'Raccolta Stealth',
+        totalSurveillance: 'Sorveglianza Totale',
+        remoteControlEfficiency: 'Efficienza Controllo Remoto',
+        connectionStability: 'Stabilità Connessione',
+        persistentAccess: 'Accesso Persistente',
+        networkMalwareEfficiency: 'Efficienza Malware di Rete',
+        distributedOperations: 'Operazioni Distribuite',
+        socialEngineeringEfficiency: 'Efficienza Social Engineering',
+        manipulationSuccess: 'Successo Manipolazione',
+        psychologicalManipulation: 'Manipolazione Psicologica',
+        defensiveToolsEfficiency: 'Efficienza Tool Difensivi',
+        intrusionDetection: 'Rilevazione Intrusioni',
+        enterpriseSecurity: 'Sicurezza Enterprise'
     };
     
     return effectNames[effectKey] || effectKey;
