@@ -1,16 +1,132 @@
 <div>
     <h2 class="text-3xl font-bold mb-6 branch-title">Console di Intelligence</h2>
+    
+    <!-- Data Organization and Filtering Section -->
+    <div class="mb-6 bg-gray-800 p-4 rounded-lg">
+        <h3 class="text-lg font-semibold mb-3 text-indigo-300">Filtri e Organizzazione Dati</h3>
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-300 mb-1">Categoria</label>
+                <select id="category-filter" class="w-full bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-white">
+                    <option value="">Tutte le Categorie</option>
+                    <option value="credentials">Credenziali</option>
+                    <option value="documents">Documenti</option>
+                    <option value="logs">Log & Metadati</option>
+                    <option value="network">Dati di Rete</option>
+                    <option value="financial">Dati Finanziari</option>
+                    <option value="personal">Dati Personali</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-300 mb-1">Fonte</label>
+                <select id="source-filter" class="w-full bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-white">
+                    <option value="">Tutte le Fonti</option>
+                    <option value="personal">PC Personale</option>
+                    <option value="clan">Server Clan</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-300 mb-1">Purezza Min.</label>
+                <input type="range" id="purity-filter" min="0" max="100" value="0" class="w-full">
+                <span id="purity-value" class="text-xs text-gray-400">0%</span>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-300 mb-1">Sensibilità</label>
+                <select id="sensitivity-filter" class="w-full bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-white">
+                    <option value="">Tutte</option>
+                    <option value="Low">Bassa</option>
+                    <option value="Medium">Media</option>
+                    <option value="High">Alta</option>
+                    <option value="Critical">Critica</option>
+                </select>
+            </div>
+        </div>
+        <div class="flex gap-2">
+            <button id="apply-filters" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md font-medium">
+                <i class="fas fa-filter mr-2"></i>Applica Filtri
+            </button>
+            <button id="clear-filters" class="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-md font-medium">
+                <i class="fas fa-times mr-2"></i>Rimuovi Filtri
+            </button>
+        </div>
+    </div>
+
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Data Archive Section -->
         <div class="lg:col-span-1">
-            <h3 class="text-xl font-semibold mb-4 text-gray-300">Archivi Dati Disponibili</h3>
-            <div id="data-packets-list" class="space-y-3 max-h-[60vh] overflow-y-auto p-2 bg-black/20 rounded-lg">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-semibold text-gray-300">Archivi Dati</h3>
+                <div class="flex gap-2">
+                    <button id="view-list" class="p-2 bg-gray-700 hover:bg-gray-600 rounded-md" title="Vista Lista">
+                        <i class="fas fa-list"></i>
+                    </button>
+                    <button id="view-folders" class="p-2 bg-indigo-600 text-white rounded-md" title="Vista Cartelle">
+                        <i class="fas fa-folder-tree"></i>
+                    </button>
                 </div>
+            </div>
+            
+            <!-- Folder View -->
+            <div id="folder-view" class="space-y-2 max-h-[60vh] overflow-y-auto p-2 bg-black/20 rounded-lg">
+                <!-- Folders will be populated by JavaScript -->
+            </div>
+            
+            <!-- List View (hidden by default) -->
+            <div id="data-packets-list" class="hidden space-y-3 max-h-[60vh] overflow-y-auto p-2 bg-black/20 rounded-lg">
+                <!-- List items will be populated by JavaScript -->
+            </div>
         </div>
 
+        <!-- Analysis Interface Section -->
         <div class="lg:col-span-2">
+            <!-- Analysis Flow Selection -->
+            <div class="mb-6 bg-gray-800 p-4 rounded-lg">
+                <h4 class="text-lg font-semibold mb-3 text-indigo-300">Configurazione Analisi</h4>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">Flusso di Analisi</label>
+                        <select id="analysis-flow" class="w-full bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-white">
+                            <option value="">Seleziona un flusso di analisi...</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">Priorità Target</label>
+                        <select id="target-priority" class="w-full bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-white">
+                            <option value="ips">Indirizzi IP</option>
+                            <option value="credentials">Credenziali</option>
+                            <option value="patterns">Pattern e Correlazioni</option>
+                            <option value="vulnerabilities">Vulnerabilità</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="mt-4 flex gap-3">
+                    <button id="start-analysis" class="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md font-medium disabled:bg-gray-600 disabled:cursor-not-allowed" disabled>
+                        <i class="fas fa-play mr-2"></i>Avvia Analisi
+                    </button>
+                    <button id="stop-analysis" class="px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md font-medium hidden">
+                        <i class="fas fa-stop mr-2"></i>Interrompi
+                    </button>
+                </div>
+                
+                <!-- Progress Bar -->
+                <div id="analysis-progress-container" class="mt-4 hidden">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-sm text-gray-300">Progresso Analisi</span>
+                        <span id="analysis-progress-text" class="text-sm text-gray-400">0%</span>
+                    </div>
+                    <div class="w-full bg-gray-700 rounded-full h-2">
+                        <div id="analysis-progress-bar" class="bg-green-600 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                    </div>
+                    <div id="analysis-status" class="mt-2 text-sm text-gray-400">
+                        Preparazione analisi...
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Analysis Results -->
             <div id="analysis-interface" class="bg-gray-800 p-6 rounded-lg">
                 <p class="text-center text-gray-500">Seleziona un archivio dati dalla lista per iniziare l'analisi.</p>
-                </div>
+            </div>
         </div>
     </div>
 </div>
