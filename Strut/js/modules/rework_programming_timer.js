@@ -477,36 +477,296 @@ function renderProgrammingTimerUI() {
     const container = document.getElementById('programming-timer-container');
     if (!container) return;
     
+    const selectedMalware = state.reworkProgramming?.selectedMalware;
+    const malware = selectedMalware ? 
+        (state.reworkEditor.compiledMalware || []).find(m => m.id === selectedMalware) : null;
+    
     container.innerHTML = `
         <div class="programming-timer-panel">
-            <div class="timer-header">
-                <h3 class="text-lg font-semibold text-white">
-                    <i class="fas fa-clock text-blue-400 mr-2"></i>
+            <div class="programming-header">
+                <h2 class="programming-title">
+                    <i class="fas fa-code"></i>
                     Programmazione a Tempo
-                </h3>
-                <div class="timer-stats">
-                    <div class="stat-item">
-                        <span class="text-gray-400">Efficienza:</span>
-                        <span class="text-white font-bold">${Math.round(state.programmingTimer.efficiencyRating * 100)}%</span>
+                </h2>
+                <div class="programming-stats">
+                    <div class="stat-card">
+                        <span class="stat-label">Efficienza</span>
+                        <span class="stat-value">${Math.round(state.programmingTimer.efficiencyRating * 100)}%</span>
                     </div>
-                    <div class="stat-item">
-                        <span class="text-gray-400">Tempo Totale:</span>
-                        <span class="text-white font-bold">${formatCompilationTime(state.programmingTimer.totalCompilationTime)}</span>
+                    <div class="stat-card">
+                        <span class="stat-label">Tempo Totale</span>
+                        <span class="stat-value">${formatCompilationTime(state.programmingTimer.totalCompilationTime)}</span>
                     </div>
                 </div>
             </div>
             
-            <div class="active-compilations">
-                <h4 class="text-md font-semibold text-gray-300 mb-3">Compilazioni Attive</h4>
-                ${renderActiveCompilations()}
-            </div>
+            ${malware ? `
+                <div class="selected-malware-section">
+                    <div class="malware-card">
+                        <div class="malware-header">
+                            <div class="malware-title">
+                                <i class="fas ${getTemplateIcon(malware.template)}"></i>
+                                <span>${malware.templateName}</span>
+                                <span class="malware-version">v${malware.version}</span>
+                            </div>
+                            <div class="malware-status-badge ${malware.programmingStatus}">
+                                ${getMalwareStatusText(malware.programmingStatus)}
+                            </div>
+                        </div>
+                        <div class="malware-specs-grid">
+                            <div class="spec-card">
+                                <span class="spec-label">Efficacia</span>
+                                <span class="spec-value">${malware.effectiveness}%</span>
+                            </div>
+                            <div class="spec-card">
+                                <span class="spec-label">Stealth</span>
+                                <span class="spec-value">${malware.stealthRating}%</span>
+                            </div>
+                            <div class="spec-card">
+                                <span class="spec-label">Complessità</span>
+                                <span class="spec-value">${malware.complexity}</span>
+                            </div>
+                        </div>
+                        <div class="programming-actions">
+                            ${malware.programmingStatus === 'ready' ? `
+                                <button class="btn-primary-large" onclick="startTimedProgramming('${malware.id}')">
+                                    <i class="fas fa-play"></i>
+                                    Inizia Programmazione
+                                </button>
+                            ` : malware.programmingStatus === 'programming' ? `
+                                <div class="programming-in-progress">
+                                    <div class="progress-section">
+                                        <div class="progress-info">
+                                            <span class="phase-text">Fase: Implementazione</span>
+                                            <span class="progress-text">65%</span>
+                                        </div>
+                                        <div class="progress-bar-large">
+                                            <div class="progress-fill-large" style="width: 65%"></div>
+                                        </div>
+                                        <div class="time-info">
+                                            <span class="time-elapsed">Tempo trascorso: 2m 30s</span>
+                                            <span class="time-remaining">Rimanente: 1m 45s</span>
+                                        </div>
+                                    </div>
+                                    <button class="btn-warning" onclick="cancelTimedProgramming('${malware.id}')">
+                                        <i class="fas fa-stop"></i>
+                                        Interrompi
+                                    </button>
+                                </div>
+                            ` : `
+                                <div class="programming-completed">
+                                    <i class="fas fa-check-circle text-green-400"></i>
+                                    <span>Programmazione completata</span>
+                                    <button class="btn-success" onclick="deployMalware('${malware.id}')">
+                                        <i class="fas fa-rocket"></i>
+                                        Deploy
+                                    </button>
+                                </div>
+                            `}
+                        </div>
+                    </div>
+                </div>
+            ` : `
+                <div class="no-malware-selected">
+                    <div class="empty-state">
+                        <i class="fas fa-code empty-icon"></i>
+                        <h3>Nessun Malware Selezionato</h3>
+                        <p>Seleziona un malware compilato dall'editor per avviare la programmazione a tempo</p>
+                        <button class="btn-secondary" onclick="showReworkSection('editor')">
+                            <i class="fas fa-arrow-left"></i>
+                            Torna all'Editor
+                        </button>
+                    </div>
+                </div>
+            `}
             
-            <div class="compilation-history">
-                <h4 class="text-md font-semibold text-gray-300 mb-3">Cronologia Recente</h4>
-                ${renderCompilationHistory()}
+            <div class="programming-sections">
+                <div class="active-processes">
+                    <h3 class="section-title">
+                        <i class="fas fa-spinner"></i>
+                        Processi Attivi
+                    </h3>
+                    <div class="processes-container">
+                        ${renderActivePrograms()}
+                    </div>
+                </div>
+                
+                <div class="completed-programs">
+                    <h3 class="section-title">
+                        <i class="fas fa-history"></i>
+                        Cronologia Recente
+                    </h3>
+                    <div class="history-container">
+                        ${renderProgrammingHistory()}
+                    </div>
+                </div>
             </div>
         </div>
     `;
+}
+
+function renderActivePrograms() {
+    if (activeCompilations.size === 0) {
+        return `
+            <div class="empty-processes">
+                <i class="fas fa-clock"></i>
+                <span>Nessun processo in corso</span>
+            </div>
+        `;
+    }
+    
+    return Array.from(activeCompilations.values()).map(compilation => `
+        <div class="process-card">
+            <div class="process-header">
+                <div class="process-info">
+                    <span class="process-name">${compilation.templateName}</span>
+                    <span class="process-phase">${getPhaseDisplayName(compilation.phase)}</span>
+                </div>
+                <div class="process-actions">
+                    <button class="action-btn speedup" onclick="speedUpCompilation('${compilation.id}')" 
+                            title="Accelera (costa XMR)">
+                        <i class="fas fa-forward"></i>
+                    </button>
+                    <button class="action-btn cancel" onclick="cancelCompilation('${compilation.id}')" 
+                            title="Annulla">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="process-progress">
+                <div class="progress-bar-container">
+                    <div class="progress-bar" style="width: ${compilation.progress}%"></div>
+                </div>
+                <div class="progress-details">
+                    <span class="progress-percent">${Math.round(compilation.progress)}%</span>
+                    <span class="time-remaining">
+                        ${formatCompilationTime(Math.max(0, compilation.totalTime - ((Date.now() - compilation.startTime) / 1000)))} rimanenti
+                    </span>
+                </div>
+            </div>
+            
+            <div class="process-details">
+                <div class="detail-tag">
+                    <i class="fas fa-cogs"></i>
+                    <span>${Object.keys(compilation.nodeUpgrades || {}).length} nodi</span>
+                </div>
+                <div class="detail-tag">
+                    <i class="fas fa-tools"></i>
+                    <span>${compilation.compilerOptions.length} opzioni</span>
+                </div>
+                <div class="detail-tag">
+                    <i class="fas fa-clock"></i>
+                    <span>${formatCompilationTime(compilation.totalTime)}</span>
+                </div>
+            </div>
+        </div>
+    `).join('');
+}
+
+function renderProgrammingHistory() {
+    const recentCompilations = state.programmingTimer.completedCompilations.slice(-3).reverse();
+    
+    if (recentCompilations.length === 0) {
+        return `
+            <div class="empty-history">
+                <i class="fas fa-inbox"></i>
+                <span>Nessuna programmazione completata</span>
+            </div>
+        `;
+    }
+    
+    return recentCompilations.map(compilation => `
+        <div class="history-card">
+            <div class="history-header">
+                <span class="history-name">${compilation.templateName}</span>
+                <span class="history-date">${formatDateTime(compilation.completedAt)}</span>
+            </div>
+            <div class="history-results">
+                <div class="result-item">
+                    <span class="result-label">Efficacia:</span>
+                    <span class="result-value">${Math.round(compilation.effectiveness * 100)}%</span>
+                </div>
+                <div class="result-item">
+                    <span class="result-label">Ricompense:</span>
+                    <span class="result-value">+${compilation.rewards.xp} XP, +${compilation.rewards.xmr} XMR</span>
+                </div>
+            </div>
+        </div>
+    `).join('');
+}
+
+function startTimedProgramming(malwareId) {
+    const malware = (state.reworkEditor.compiledMalware || []).find(m => m.id === malwareId);
+    if (!malware) return;
+    
+    // Start the timed programming process
+    malware.programmingStatus = 'programming';
+    malware.programmingStartTime = Date.now();
+    malware.programmingDuration = calculateProgrammingDuration(malware);
+    
+    saveState();
+    renderProgrammingTimerUI();
+    
+    // Start the programming timer
+    startProgrammingTimer(malwareId);
+    
+    showNotification(`Programmazione di ${malware.templateName} avviata`, 'info');
+}
+
+function startProgrammingTimer(malwareId) {
+    const updateInterval = setInterval(() => {
+        const malware = (state.reworkEditor.compiledMalware || []).find(m => m.id === malwareId);
+        if (!malware || malware.programmingStatus !== 'programming') {
+            clearInterval(updateInterval);
+            return;
+        }
+        
+        const elapsed = Date.now() - malware.programmingStartTime;
+        const progress = Math.min(100, (elapsed / (malware.programmingDuration * 1000)) * 100);
+        
+        if (progress >= 100) {
+            malware.programmingStatus = 'completed';
+            malware.programmingCompletedAt = Date.now();
+            clearInterval(updateInterval);
+            saveState();
+            renderProgrammingTimerUI();
+            showNotification(`Programmazione di ${malware.templateName} completata!`, 'success');
+        } else {
+            renderProgrammingTimerUI(); // Update UI
+        }
+    }, 1000);
+}
+
+function calculateProgrammingDuration(malware) {
+    // Base programming time based on complexity
+    let baseDuration = 120; // 2 minutes base
+    
+    // Add time based on effectiveness and complexity
+    if (malware.effectiveness > 80) baseDuration += 60;
+    if (malware.stealthRating > 80) baseDuration += 45;
+    if (malware.complexity === 'Avanzato') baseDuration += 30;
+    if (malware.complexity === 'Esperto') baseDuration += 60;
+    
+    // Modifier bonuses
+    if (malware.appliedModifiers && malware.appliedModifiers.length > 0) {
+        baseDuration += malware.appliedModifiers.length * 20;
+    }
+    
+    return baseDuration;
+}
+
+function cancelTimedProgramming(malwareId) {
+    const malware = (state.reworkEditor.compiledMalware || []).find(m => m.id === malwareId);
+    if (!malware) return;
+    
+    malware.programmingStatus = 'ready';
+    delete malware.programmingStartTime;
+    delete malware.programmingDuration;
+    
+    saveState();
+    renderProgrammingTimerUI();
+    showNotification('Programmazione interrotta', 'warning');
 }
 
 function renderActiveCompilations() {

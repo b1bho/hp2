@@ -332,8 +332,11 @@ function initReworkEditor() {
             availableTemplates: Object.keys(toolTemplates),
             activeTemplate: null,
             nodeUpgrades: {},
+            appliedModifiers: {},
             compilationHistory: [],
-            unlockedOptions: []
+            compiledMalware: [],
+            unlockedOptions: [],
+            selectedCompilerOptions: []
         };
     }
     
@@ -448,6 +451,21 @@ function renderTemplateEditor() {
                 </div>
             </div>
             
+            <div class="modifier-slots-panel">
+                <h4 class="modifier-panel-title">
+                    <i class="fas fa-puzzle-piece"></i> Modificatori del Flusso
+                </h4>
+                <div class="modifier-slots">
+                    ${renderModifierSlots()}
+                </div>
+                <div class="available-modifiers">
+                    <h5>Modificatori Disponibili:</h5>
+                    <div class="modifier-list">
+                        ${renderAvailableModifiers()}
+                    </div>
+                </div>
+            </div>
+            
             <div class="node-inspector" id="node-inspector">
                 ${selectedNodeId ? renderNodeInspector() : '<p class="text-gray-400">Seleziona un nodo per visualizzarne i dettagli</p>'}
             </div>
@@ -492,18 +510,172 @@ function renderTemplateNodes() {
 function renderTemplateConnections() {
     const template = toolTemplates[currentTemplate];
     
-    return template.connections.map((conn, index) => {
+    return `
+        <svg class="connections-svg" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1;">
+            ${template.connections.map((conn, index) => {
+                const fromNode = template.nodes.find(n => n.id === conn.from);
+                const toNode = template.nodes.find(n => n.id === conn.to);
+                
+                if (!fromNode || !toNode) return '';
+                
+                // Calculate connection points (center of nodes)
+                const x1 = fromNode.position.x + 90; // Half node width (180px)
+                const y1 = fromNode.position.y + 50; // Half node height (100px)
+                const x2 = toNode.position.x + 90;
+                const y2 = toNode.position.y + 50;
+                
+                // Calculate control points for curved line
+                const midX = (x1 + x2) / 2;
+                const midY = (y1 + y2) / 2;
+                const controlOffset = 30;
+                
+                return `
+                    <g class="connection-group" data-connection="${index}">
+                        <defs>
+                            <marker id="arrowhead-${index}" markerWidth="10" markerHeight="7" 
+                                    refX="9" refY="3.5" orient="auto">
+                                <polygon points="0 0, 10 3.5, 0 7" fill="#8b5cf6" />
+                            </marker>
+                        </defs>
+                        <path d="M ${x1} ${y1} Q ${midX} ${midY - controlOffset} ${x2} ${y2}"
+                              stroke="#8b5cf6"
+                              stroke-width="2"
+                              fill="none"
+                              marker-end="url(#arrowhead-${index})"
+                              class="connection-line" />
+                        <circle cx="${x1}" cy="${y1}" r="3" fill="#22c55e" class="connection-start" />
+                        <circle cx="${x2}" cy="${y2}" r="3" fill="#ef4444" class="connection-end" />
+                    </g>
+                `;
+            }).join('')}
+        </svg>
+    `;
+}
+
+function renderModifierSlots() {
+    const maxSlots = 3; // Maximum modifier slots per template
+    const appliedModifiers = state.reworkEditor.appliedModifiers[currentTemplate] || [];
+    
+    let slotsHTML = '';
+    for (let i = 0; i < maxSlots; i++) {
+        const modifier = appliedModifiers[i];
+        slotsHTML += `
+            <div class="modifier-slot ${modifier ? 'occupied' : 'empty'}" 
+                 data-slot-index="${i}"
+                 onclick="selectModifierSlot(${i})">
+                ${modifier ? `
+                    <div class="modifier-in-slot">
+                        <span class="modifier-name">${modifierNodes[modifier].name}</span>
+                        <button class="remove-modifier-btn" onclick="removeModifier(${i})" title="Rimuovi modificatore">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                ` : `
+                    <div class="empty-slot-placeholder">
+                        <i class="fas fa-plus"></i>
+                        <span>Slot Modificatore</span>
+                    </div>
+                `}
+            </div>
+        `;
+    }
+    return slotsHTML;
+}
+
+function renderAvailableModifiers() {
+    return Object.entries(modifierNodes).map(([key, modifier]) => {
+        const isUnlocked = checkModifierRequirements(modifier);
+        const isApplied = (state.reworkEditor.appliedModifiers[currentTemplate] || []).includes(key);
+        
         return `
-            <div class="template-connection" 
-                 data-connection="${index}"
-                 data-from="${conn.from}" 
-                 data-to="${conn.to}">
+            <div class="available-modifier ${isUnlocked ? 'unlocked' : 'locked'} ${isApplied ? 'applied' : ''}"
+                 data-modifier-key="${key}"
+                 onclick="selectModifier('${key}')">
+                <div class="modifier-icon">
+                    <i class="fas fa-${getModifierIcon(modifier.type)}"></i>
+                </div>
+                <div class="modifier-info">
+                    <span class="modifier-name">${modifier.name}</span>
+                    <p class="modifier-description">${modifier.description}</p>
+                    ${!isUnlocked ? `
+                        <div class="modifier-requirements">
+                            <small>Richiede: ${modifier.requiredTalents.join(', ')}</small>
+                        </div>
+                    ` : ''}
+                </div>
+                ${isUnlocked && !isApplied ? `
+                    <button class="apply-modifier-btn" onclick="applyModifier('${key}')">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                ` : ''}
             </div>
         `;
     }).join('');
 }
 
-function renderNodeInspector() {
+function getModifierIcon(type) {
+    const icons = {
+        'modifier': 'cogs',
+        'obfuscator': 'eye-slash',
+        'crypter': 'lock',
+        'self_delete': 'trash'
+    };
+    return icons[type] || 'puzzle-piece';
+}
+
+function checkModifierRequirements(modifier) {
+    return modifier.requiredTalents.every(talent => checkTalentRequirement(talent));
+}
+
+function selectModifier(modifierKey) {
+    // Implementation for selecting a modifier to view details
+    console.log('Selected modifier:', modifierKey);
+}
+
+function applyModifier(modifierKey) {
+    const appliedModifiers = state.reworkEditor.appliedModifiers[currentTemplate] || [];
+    
+    if (appliedModifiers.length >= 3) {
+        alert('Hai raggiunto il limite massimo di modificatori per questo template');
+        return;
+    }
+    
+    if (appliedModifiers.includes(modifierKey)) {
+        alert('Questo modificatore è già applicato');
+        return;
+    }
+    
+    if (!checkModifierRequirements(modifierNodes[modifierKey])) {
+        alert('Non hai i talenti richiesti per questo modificatore');
+        return;
+    }
+    
+    appliedModifiers.push(modifierKey);
+    
+    if (!state.reworkEditor.appliedModifiers) {
+        state.reworkEditor.appliedModifiers = {};
+    }
+    state.reworkEditor.appliedModifiers[currentTemplate] = appliedModifiers;
+    
+    saveState();
+    displayReworkEditor();
+}
+
+function removeModifier(slotIndex) {
+    const appliedModifiers = state.reworkEditor.appliedModifiers[currentTemplate] || [];
+    
+    if (slotIndex >= 0 && slotIndex < appliedModifiers.length) {
+        appliedModifiers.splice(slotIndex, 1);
+        state.reworkEditor.appliedModifiers[currentTemplate] = appliedModifiers;
+        saveState();
+        displayReworkEditor();
+    }
+}
+
+function selectModifierSlot(slotIndex) {
+    // Implementation for selecting a modifier slot
+    console.log('Selected modifier slot:', slotIndex);
+}
     const template = toolTemplates[currentTemplate];
     const node = template.nodes.find(n => n.id === selectedNodeId);
     if (!node) return '';
@@ -580,8 +752,166 @@ function renderCompilationPanel() {
                     ${renderCompilationQueue()}
                 </div>
             </div>
+            
+            <div class="compiled-malware-storage">
+                <h4 class="text-md font-semibold text-gray-300 mb-2">
+                    <i class="fas fa-archive"></i> Malware Compilati
+                </h4>
+                <div class="storage-list">
+                    ${renderCompiledMalwareStorage()}
+                </div>
+            </div>
         </div>
     `;
+}
+
+function renderCompiledMalwareStorage() {
+    const compiledMalware = state.reworkEditor.compiledMalware || [];
+    
+    if (compiledMalware.length === 0) {
+        return `
+            <div class="empty-storage">
+                <i class="fas fa-archive text-gray-500"></i>
+                <p class="text-gray-400">Nessun malware compilato</p>
+                <small class="text-gray-500">I malware completati appariranno qui</small>
+            </div>
+        `;
+    }
+    
+    return compiledMalware.map(malware => `
+        <div class="stored-malware-item">
+            <div class="malware-header">
+                <div class="malware-info">
+                    <span class="malware-name">
+                        <i class="fas ${getTemplateIcon(malware.template)}"></i>
+                        ${malware.templateName}
+                    </span>
+                    <span class="malware-version">v${malware.version || '1.0'}</span>
+                </div>
+                <div class="malware-status">
+                    <span class="status-badge ${malware.programmingStatus || 'ready'}">
+                        ${getMalwareStatusText(malware.programmingStatus)}
+                    </span>
+                    <span class="compile-date">${formatDate(malware.completedAt)}</span>
+                </div>
+            </div>
+            
+            <div class="malware-details">
+                <div class="malware-specs">
+                    <div class="spec-item">
+                        <span class="spec-label">Efficacia:</span>
+                        <span class="spec-value">${malware.effectiveness}%</span>
+                    </div>
+                    <div class="spec-item">
+                        <span class="spec-label">Stealth:</span>
+                        <span class="spec-value">${malware.stealthRating}%</span>
+                    </div>
+                    <div class="spec-item">
+                        <span class="spec-label">Complessità:</span>
+                        <span class="spec-value">${malware.complexity}</span>
+                    </div>
+                </div>
+                
+                ${malware.appliedModifiers && malware.appliedModifiers.length > 0 ? `
+                    <div class="malware-modifiers">
+                        <span class="modifiers-label">Modificatori applicati:</span>
+                        ${malware.appliedModifiers.map(mod => `
+                            <span class="modifier-tag">${modifierNodes[mod]?.name || mod}</span>
+                        `).join('')}
+                    </div>
+                ` : ''}
+            </div>
+            
+            <div class="malware-actions">
+                ${(!malware.programmingStatus || malware.programmingStatus === 'ready') ? `
+                    <button class="btn-primary" onclick="startProgrammingProcess('${malware.id}')">
+                        <i class="fas fa-play"></i> Avvia Programmazione
+                    </button>
+                ` : malware.programmingStatus === 'programming' ? `
+                    <button class="btn-warning" disabled>
+                        <i class="fas fa-clock"></i> In Programmazione...
+                    </button>
+                ` : `
+                    <button class="btn-success" onclick="deployMalware('${malware.id}')">
+                        <i class="fas fa-rocket"></i> Deploy
+                    </button>
+                `}
+                <button class="btn-secondary" onclick="viewMalwareDetails('${malware.id}')">
+                    <i class="fas fa-info-circle"></i> Dettagli
+                </button>
+                <button class="btn-danger" onclick="deleteMalware('${malware.id}')">
+                    <i class="fas fa-trash"></i> Elimina
+                </button>
+            </div>
+        </div>
+    `).join('');
+}
+
+function getMalwareStatusText(status) {
+    const statusTexts = {
+        'ready': 'Pronto',
+        'programming': 'In Programmazione',
+        'completed': 'Completato',
+        'deployed': 'Distribuito'
+    };
+    return statusTexts[status] || 'Pronto';
+}
+
+function formatDate(timestamp) {
+    return new Date(timestamp).toLocaleDateString('it-IT', {
+        day: '2-digit',
+        month: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+}
+
+function startProgrammingProcess(malwareId) {
+    // Navigate to programming section with the specific malware
+    showReworkSection('programming');
+    state.reworkProgramming = state.reworkProgramming || {};
+    state.reworkProgramming.selectedMalware = malwareId;
+    
+    // Update malware status
+    const malware = (state.reworkEditor.compiledMalware || []).find(m => m.id === malwareId);
+    if (malware) {
+        malware.programmingStatus = 'programming';
+        saveState();
+    }
+    
+    showNotification('Processo di programmazione avviato', 'success');
+}
+
+function viewMalwareDetails(malwareId) {
+    const malware = (state.reworkEditor.compiledMalware || []).find(m => m.id === malwareId);
+    if (malware) {
+        // Show detailed view modal or panel
+        console.log('Viewing malware details:', malware);
+        alert(`Dettagli Malware:\n\nNome: ${malware.templateName}\nEfficacia: ${malware.effectiveness}%\nStealth: ${malware.stealthRating}%\nCompletato: ${formatDate(malware.completedAt)}`);
+    }
+}
+
+function deployMalware(malwareId) {
+    const malware = (state.reworkEditor.compiledMalware || []).find(m => m.id === malwareId);
+    if (malware) {
+        malware.programmingStatus = 'deployed';
+        malware.deployedAt = Date.now();
+        saveState();
+        displayReworkEditor();
+        showNotification(`${malware.templateName} distribuito con successo!`, 'success');
+    }
+}
+
+function deleteMalware(malwareId) {
+    if (confirm('Sei sicuro di voler eliminare questo malware?')) {
+        const malwareIndex = (state.reworkEditor.compiledMalware || []).findIndex(m => m.id === malwareId);
+        if (malwareIndex !== -1) {
+            state.reworkEditor.compiledMalware.splice(malwareIndex, 1);
+            saveState();
+            displayReworkEditor();
+            showNotification('Malware eliminato', 'info');
+        }
+    }
 }
 
 function renderCompilerOptions() {
@@ -616,20 +946,95 @@ function renderCompilerOptions() {
 
 function renderCompilationQueue() {
     if (compilationQueue.length === 0) {
-        return '<p class="text-gray-400">Nessuna compilazione in corso</p>';
+        return `
+            <div class="empty-queue">
+                <i class="fas fa-clipboard-list text-gray-500"></i>
+                <p class="text-gray-400">Nessuna compilazione in corso</p>
+                <small class="text-gray-500">Seleziona un template e premi "Compila" per iniziare</small>
+            </div>
+        `;
     }
     
     return compilationQueue.map((item, index) => `
-        <div class="queue-item">
-            <div class="item-info">
-                <span class="item-name">${item.templateName}</span>
-                <span class="item-progress">${Math.round(item.progress)}%</span>
+        <div class="queue-item ${item.isActive ? 'active' : 'completed'}">
+            <div class="item-header">
+                <div class="item-info">
+                    <span class="item-name">
+                        <i class="fas ${getTemplateIcon(item.template)}"></i>
+                        ${item.templateName}
+                    </span>
+                    <span class="item-status ${item.isActive ? 'compiling' : 'completed'}">
+                        ${item.isActive ? item.phase : 'Completato'}
+                    </span>
+                </div>
+                <div class="item-progress-text">
+                    ${Math.round(item.progress)}%
+                </div>
             </div>
-            <div class="progress-bar">
-                <div class="progress-fill" style="width: ${item.progress}%"></div>
+            
+            <div class="progress-container">
+                <div class="progress-bar">
+                    <div class="progress-fill ${item.isActive ? 'animated' : 'completed'}" 
+                         style="width: ${item.progress}%"></div>
+                </div>
+                <div class="progress-phases">
+                    <div class="phase-indicator ${getPhaseStatus(item, 'Analysis')}">Analysis</div>
+                    <div class="phase-indicator ${getPhaseStatus(item, 'Preprocessing')}">Preprocessing</div>
+                    <div class="phase-indicator ${getPhaseStatus(item, 'Compilation')}">Compilation</div>
+                    <div class="phase-indicator ${getPhaseStatus(item, 'Optimization')}">Optimization</div>
+                    <div class="phase-indicator ${getPhaseStatus(item, 'Linking')}">Linking</div>
+                    <div class="phase-indicator ${getPhaseStatus(item, 'Finalization')}">Finalization</div>
+                </div>
             </div>
-            <div class="item-time">
-                <span class="time-remaining">${formatTime(item.timeRemaining)}</span>
+            
+            <div class="item-details">
+                <div class="item-modifiers">
+                    ${item.appliedModifiers && item.appliedModifiers.length > 0 ? `
+                        <span class="modifiers-label">Modificatori:</span>
+                        ${item.appliedModifiers.map(mod => `
+                            <span class="modifier-tag">${modifierNodes[mod]?.name || mod}</span>
+                        `).join('')}
+                    ` : '<span class="no-modifiers">Nessun modificatore</span>'}
+                </div>
+                <div class="item-time">
+                    ${item.isActive ? `
+                        <span class="time-remaining">
+                            <i class="fas fa-clock"></i>
+                            ${formatTime(item.timeRemaining)} rimanenti
+                        </span>
+                    ` : `
+                        <span class="time-completed">
+                            <i class="fas fa-check-circle"></i>
+                            Completato in ${formatTime(item.totalTime)}
+                        </span>
+                    `}
+                </div>
+            </div>
+            
+            ${!item.isActive ? `
+                <div class="item-actions">
+                    <button class="btn-primary" onclick="startProgrammingProcess('${item.id}')">
+                        <i class="fas fa-play"></i> Avvia Programmazione
+                    </button>
+                    <button class="btn-secondary" onclick="viewCompiledMalware('${item.id}')">
+                        <i class="fas fa-eye"></i> Visualizza
+                    </button>
+                </div>
+            ` : ''}
+        </div>
+    `).join('');
+}
+
+function getPhaseStatus(item, phase) {
+    const phases = ['Analysis', 'Preprocessing', 'Compilation', 'Optimization', 'Linking', 'Finalization'];
+    const currentPhaseIndex = phases.indexOf(item.phase);
+    const phaseIndex = phases.indexOf(phase);
+    
+    if (phaseIndex < currentPhaseIndex) return 'completed';
+    if (phaseIndex === currentPhaseIndex && item.isActive) return 'active';
+    if (!item.isActive && item.progress >= 100) return 'completed';
+    return 'pending';
+}
             </div>
         </div>
     `).join('');
@@ -727,20 +1132,40 @@ function upgradeNode(nodeId) {
 function compileTemplate() {
     if (!currentTemplate) return;
     
+    // Check if there's already a compilation in progress (single compilation limit)
+    if (compilationQueue.length > 0) {
+        showNotification('È già in corso una compilazione. Attendi il completamento prima di iniziarne una nuova.', 'warning');
+        return;
+    }
+    
     const template = toolTemplates[currentTemplate];
+    const appliedModifiers = state.reworkEditor.appliedModifiers[currentTemplate] || [];
+    const selectedOptions = state.reworkEditor.selectedCompilerOptions || [];
+    
     const compilationTime = calculateCompilationTime();
     
     const compilationItem = {
         id: Date.now(),
         templateName: template.name,
         template: currentTemplate,
+        appliedModifiers: [...appliedModifiers],
+        compilerOptions: [...selectedOptions],
+        nodeUpgrades: {...(state.reworkEditor.nodeUpgrades || {})},
         startTime: Date.now(),
         totalTime: compilationTime,
         progress: 0,
-        timeRemaining: compilationTime
+        timeRemaining: compilationTime,
+        phase: 'Analysis',
+        isActive: true
     };
     
     compilationQueue.push(compilationItem);
+    
+    // Immediately update the display to show the new compilation
+    if (currentSection === 'editor') {
+        displayReworkEditor();
+    }
+    
     startCompilation(compilationItem);
     
     showNotification(`Iniziata compilazione di ${template.name} (${formatTime(compilationTime)})`, 'info');
@@ -778,17 +1203,36 @@ function calculateCompilationTime() {
 }
 
 function startCompilation(item) {
+    const phases = ['Analysis', 'Preprocessing', 'Compilation', 'Optimization', 'Linking', 'Finalization'];
+    let phaseIndex = 0;
+    
     const updateInterval = setInterval(() => {
         const elapsed = (Date.now() - item.startTime) / 1000;
-        item.progress = Math.min(100, (elapsed / item.totalTime) * 100);
+        const progress = Math.min(100, (elapsed / item.totalTime) * 100);
+        
+        // Update phase based on progress
+        const progressPerPhase = 100 / phases.length;
+        phaseIndex = Math.min(phases.length - 1, Math.floor(progress / progressPerPhase));
+        
+        item.progress = progress;
         item.timeRemaining = Math.max(0, item.totalTime - elapsed);
+        item.phase = phases[phaseIndex];
         
         if (item.progress >= 100) {
             clearInterval(updateInterval);
+            item.isActive = false;
+            item.phase = 'Completed';
             completeCompilation(item);
         }
         
-        renderCompilationPanel();
+        // Update display if currently viewing the editor
+        if (currentSection === 'editor') {
+            // Only update the compilation panel part instead of the whole editor
+            const queueElement = document.querySelector('.queue-list');
+            if (queueElement) {
+                queueElement.innerHTML = renderCompilationQueue();
+            }
+        }
     }, 1000);
 }
 
@@ -799,12 +1243,43 @@ function completeCompilation(item) {
         compilationQueue.splice(index, 1);
     }
     
-    // Add to compilation history
+    // Calculate malware statistics
+    const effectiveness = calculateMalwareEffectiveness(item);
+    const stealthRating = calculateStealthRating(item);
+    const complexity = calculateComplexityRating(item);
+    
+    // Create compiled malware entry
+    const compiledMalware = {
+        id: item.id,
+        templateName: item.templateName,
+        template: item.template,
+        appliedModifiers: item.appliedModifiers || [],
+        compilerOptions: item.compilerOptions || [],
+        nodeUpgrades: item.nodeUpgrades || {},
+        completedAt: Date.now(),
+        effectiveness: effectiveness,
+        stealthRating: stealthRating,
+        complexity: complexity,
+        version: '1.0',
+        programmingStatus: 'ready'
+    };
+    
+    // Add to compiled malware storage
+    if (!state.reworkEditor.compiledMalware) {
+        state.reworkEditor.compiledMalware = [];
+    }
+    state.reworkEditor.compiledMalware.push(compiledMalware);
+    
+    // Add to compilation history for statistics
+    if (!state.reworkEditor.compilationHistory) {
+        state.reworkEditor.compilationHistory = [];
+    }
     state.reworkEditor.compilationHistory.push({
         templateName: item.templateName,
         template: item.template,
         completedAt: Date.now(),
-        nodeUpgrades: { ...state.reworkEditor.nodeUpgrades }
+        compilationTime: item.totalTime,
+        effectiveness: effectiveness
     });
     
     // Award XP and resources
@@ -813,6 +1288,94 @@ function completeCompilation(item) {
     state.xmr += Math.round(item.totalTime / 30); // 1 XMR per 30 seconds
     
     saveState();
+    
+    showNotification(`${item.templateName} compilato con successo! +${Math.round(xpGained)} XP`, 'success');
+    
+    // Update display
+    if (currentSection === 'editor') {
+        displayReworkEditor();
+    }
+}
+
+function calculateMalwareEffectiveness(item) {
+    let baseEffectiveness = 70; // Base effectiveness
+    
+    // Node level bonuses
+    Object.entries(item.nodeUpgrades || {}).forEach(([nodeKey, level]) => {
+        baseEffectiveness += (level - 1) * 5; // +5% per node level
+    });
+    
+    // Modifier bonuses
+    (item.appliedModifiers || []).forEach(modKey => {
+        const modifier = modifierNodes[modKey];
+        if (modifier) {
+            baseEffectiveness += 10; // +10% per modifier
+        }
+    });
+    
+    // Compiler option bonuses
+    (item.compilerOptions || []).forEach(optKey => {
+        const option = compilerOptions[optKey];
+        if (option && option.effectivenessBonus) {
+            baseEffectiveness += option.effectivenessBonus * 100; // Convert to percentage
+        }
+    });
+    
+    // Core talent bonuses
+    const coreTalents = state.reworkTalents?.coreTalents || {};
+    const sviluppoLevel = coreTalents['Sviluppo'] || 0;
+    baseEffectiveness += sviluppoLevel * 5; // +5% per development level
+    
+    return Math.min(100, Math.max(0, Math.round(baseEffectiveness)));
+}
+
+function calculateStealthRating(item) {
+    let baseStealth = 50; // Base stealth
+    
+    // Stealth talent bonuses
+    const coreTalents = state.reworkTalents?.coreTalents || {};
+    const stealthLevel = coreTalents['Stealth'] || 0;
+    baseStealth += stealthLevel * 15; // +15% per stealth level
+    
+    // Modifier bonuses (especially crypter and obfuscator)
+    (item.appliedModifiers || []).forEach(modKey => {
+        if (modKey === 'crypter') baseStealth += 20;
+        if (modKey === 'obfuscator') baseStealth += 15;
+        if (modKey === 'self_delete') baseStealth += 10;
+    });
+    
+    // Compiler option bonuses
+    (item.compilerOptions || []).forEach(optKey => {
+        if (optKey === 'code_encryption') baseStealth += 15;
+        if (optKey === 'anti_debugging') baseStealth += 20;
+        if (optKey === 'polymorphic_engine') baseStealth += 25;
+    });
+    
+    return Math.min(100, Math.max(0, Math.round(baseStealth)));
+}
+
+function calculateComplexityRating(item) {
+    const template = toolTemplates[item.template];
+    if (!template) return 'Semplice';
+    
+    let complexityScore = template.nodes.length * 10;
+    
+    // Add node level complexity
+    Object.entries(item.nodeUpgrades || {}).forEach(([nodeKey, level]) => {
+        complexityScore += level * 5;
+    });
+    
+    // Add modifier complexity
+    complexityScore += (item.appliedModifiers || []).length * 15;
+    
+    // Add compiler option complexity
+    complexityScore += (item.compilerOptions || []).length * 10;
+    
+    if (complexityScore < 50) return 'Semplice';
+    if (complexityScore < 100) return 'Intermedio';
+    if (complexityScore < 150) return 'Avanzato';
+    return 'Esperto';
+}
     updateUI();
     renderReworkEditor();
     
