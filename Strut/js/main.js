@@ -329,6 +329,15 @@ async function switchPage(pageName) {
     document.querySelectorAll('.nav-btn').forEach(btn => {
         btn.classList.toggle('active', btn.dataset.page === pageName);
     });
+    
+    // Handle development environment directly without loading HTML file
+    if (pageName === 'dev_environment') {
+        renderDevEnvironmentPage();
+        initDevEnvironment();
+        saveState();
+        return;
+    }
+    
     try {
         const response = await fetch(`pages/${pageName}.html`);
         if (!response.ok) throw new Error(`Pagina non trovata: ${pageName}.html`);

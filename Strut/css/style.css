@@ -1319,3 +1319,345 @@ header .nav-btn:hover {
     transform: translateY(-1px);
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
 }
+
+/* Development Environment Styles */
+.dev-environment-container {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background-color: #111827;
+}
+
+.dev-environment-header {
+    background: linear-gradient(135deg, #1f2937, #111827);
+    border-bottom: 2px solid #8b5cf6;
+    box-shadow: 0 2px 10px rgba(139, 92, 246, 0.2);
+}
+
+.dev-environment-nav {
+    background: linear-gradient(90deg, #1f2937, #374151);
+}
+
+.dev-tab-btn {
+    padding: 12px 20px;
+    background-color: rgba(55, 65, 81, 0.5);
+    border: 1px solid #4b5563;
+    color: #9ca3af;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border-radius: 8px 8px 0 0;
+    margin-right: 2px;
+}
+
+.dev-tab-btn:hover {
+    background-color: rgba(79, 70, 229, 0.2);
+    border-color: #6366f1;
+    color: white;
+}
+
+.dev-tab-btn.active {
+    background-color: #8b5cf6;
+    border-color: #8b5cf6;
+    color: white;
+    box-shadow: 0 -2px 10px rgba(139, 92, 246, 0.3);
+}
+
+.dev-tab-content {
+    display: none;
+    height: 100%;
+}
+
+.dev-tab-content.active {
+    display: block;
+}
+
+/* Advanced Editor Styles */
+.advanced-editor {
+    background-color: #111827;
+}
+
+.editor-toolbar {
+    background: linear-gradient(135deg, #1f2937, #374151);
+    border-bottom: 1px solid #4b5563;
+}
+
+.flow-area {
+    background: linear-gradient(135deg, #0f172a, #1e293b);
+}
+
+.area-header {
+    background: linear-gradient(90deg, #1f2937, #2d3748);
+    border-bottom: 1px solid #4b5563;
+}
+
+.block-palette {
+    background: linear-gradient(180deg, #1f2937, #111827);
+}
+
+.palette-block {
+    background-color: #374151;
+    border: 1px solid #4b5563;
+    border-radius: 8px;
+    padding: 12px;
+    cursor: move;
+    transition: all 0.3s ease;
+}
+
+.palette-block:hover {
+    background-color: #4f46e5;
+    border-color: #6366f1;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+}
+
+.flow-canvas {
+    background-color: #0f172a;
+    background-image: 
+        linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+    background-size: 20px 20px;
+}
+
+.flow-block {
+    background: linear-gradient(135deg, #1f2937, #374151);
+    border: 2px solid #4f46e5;
+    border-radius: 12px;
+    padding: 16px;
+    cursor: move;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+    min-width: 180px;
+    transition: all 0.3s ease;
+}
+
+.flow-block:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 35px rgba(79, 70, 229, 0.3);
+}
+
+.input-connector, .output-connector {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 2px solid #111827;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.input-connector {
+    background-color: #10b981;
+}
+
+.output-connector {
+    background-color: #ef4444;
+}
+
+.input-connector:hover, .output-connector:hover {
+    transform: scale(1.3);
+    box-shadow: 0 0 15px currentColor;
+}
+
+/* Modifiers Area Styles */
+.modifiers-area {
+    background: linear-gradient(135deg, #1e1b4b, #312e81);
+}
+
+.modifier-card {
+    background: linear-gradient(135deg, #1f2937, #374151);
+    border: 1px solid #4b5563;
+    border-radius: 8px;
+    padding: 16px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.modifier-card:hover {
+    border-color: #8b5cf6;
+    background: linear-gradient(135deg, #374151, #4b5563);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(139, 92, 246, 0.2);
+}
+
+.modifier-card.active {
+    border-color: #8b5cf6;
+    background: linear-gradient(135deg, #581c87, #7c2d12);
+}
+
+/* Compiler Area Styles */
+.compiler-area {
+    background: linear-gradient(135deg, #92400e, #b45309);
+}
+
+.compilation-status {
+    background-color: rgba(17, 24, 39, 0.7);
+    border-radius: 8px;
+    padding: 12px;
+    border: 1px solid #4b5563;
+}
+
+/* New Talents System Styles */
+.new-talents-system {
+    background-color: #111827;
+}
+
+.talents-header {
+    background: linear-gradient(135deg, #581c87, #7c2d12);
+    border-bottom: 2px solid #8b5cf6;
+}
+
+.talent-branch {
+    background: linear-gradient(135deg, #1f2937, #374151);
+    border: 1px solid #4b5563;
+    border-radius: 12px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.talent-branch:hover {
+    border-color: #8b5cf6;
+    box-shadow: 0 8px 25px rgba(139, 92, 246, 0.2);
+}
+
+.branch-header {
+    background: linear-gradient(90deg, #374151, #4b5563);
+    border-bottom: 1px solid #6b7280;
+}
+
+.talent-card {
+    background: linear-gradient(135deg, #374151, #4b5563);
+    border: 1px solid #6b7280;
+    border-radius: 8px;
+    padding: 20px;
+    transition: all 0.3s ease;
+}
+
+.talent-card:hover {
+    border-color: #8b5cf6;
+    background: linear-gradient(135deg, #4b5563, #6b7280);
+    transform: translateY(-2px);
+}
+
+.talent-level-indicator {
+    background-color: rgba(17, 24, 39, 0.7);
+    border-radius: 6px;
+    padding: 8px;
+    border: 1px solid #4b5563;
+}
+
+.current-level-info {
+    background: linear-gradient(135deg, #065f46, #047857);
+    border: 1px solid #10b981;
+    border-radius: 8px;
+}
+
+.next-level-preview {
+    background: linear-gradient(135deg, #581c87, #7c2d12);
+    border: 1px solid #8b5cf6;
+    border-radius: 8px;
+}
+
+/* Time-based Compiler Styles */
+.time-compiler-system {
+    background-color: #111827;
+}
+
+.compiler-header {
+    background: linear-gradient(135deg, #92400e, #b45309);
+    border-bottom: 2px solid #f97316;
+}
+
+.new-compilation-panel,
+.active-compilations-panel,
+.compilation-history-panel {
+    background: linear-gradient(180deg, #1f2937, #111827);
+}
+
+.panel-header {
+    background: linear-gradient(90deg, #374151, #4b5563);
+}
+
+.active-compilation-card {
+    background: linear-gradient(135deg, #1f2937, #374151);
+    border: 1px solid #3b82f6;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.active-compilation-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(59, 130, 246, 0.2);
+}
+
+.history-item {
+    background: linear-gradient(135deg, #374151, #4b5563);
+    transition: all 0.3s ease;
+}
+
+.history-item:hover {
+    transform: translateX(4px);
+    border-color: #10b981;
+}
+
+.queued-compilation-card {
+    background: linear-gradient(135deg, #374151, #4b5563);
+    border: 1px solid #8b5cf6;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.queued-compilation-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(139, 92, 246, 0.2);
+}
+
+.compilation-queue {
+    background: linear-gradient(90deg, #1f2937, #374151);
+    border-top: 1px solid #4b5563;
+}
+
+.compilation-estimate {
+    background: linear-gradient(135deg, #92400e, #b45309);
+    border: 1px solid #f97316;
+}
+
+/* Development Environment Navigation Special Style */
+.menu-dev-environment {
+    margin-bottom: 20px;
+    padding: 15px;
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(168, 85, 247, 0.1));
+    border-radius: 8px;
+    border: 1px solid rgba(139, 92, 246, 0.3);
+}
+
+.dev-env-btn {
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(168, 85, 247, 0.2)) !important;
+    border-color: rgba(139, 92, 246, 0.4) !important;
+    color: #c4b5fd !important;
+}
+
+.dev-env-btn:hover {
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(168, 85, 247, 0.3)) !important;
+    border-color: #8b5cf6 !important;
+    color: white !important;
+}
+
+.dev-env-btn.active {
+    background: linear-gradient(135deg, #8b5cf6, #a855f7) !important;
+    border-color: #8b5cf6 !important;
+    color: white !important;
+    box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4) !important;
+}
+
+/* Animation for development environment elements */
+@keyframes devGlow {
+    0%, 100% { 
+        box-shadow: 0 0 5px rgba(139, 92, 246, 0.3);
+    }
+    50% { 
+        box-shadow: 0 0 20px rgba(139, 92, 246, 0.6);
+    }
+}
+
+.dev-environment-container .area-header h3 {
+    animation: devGlow 3s ease-in-out infinite;
+}
+}
