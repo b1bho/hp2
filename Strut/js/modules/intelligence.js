@@ -75,8 +75,21 @@ function loadAnalysisFlows() {
     if (!analysisFlowSelect) return;
     
     // Get saved flows that have reconnaissance objective
-    const analysisFlows = (state.permanentFlows && Array.isArray(state.permanentFlows)) ? 
-        state.permanentFlows.filter(flow => isAnalysisFlow(flow)) : [];
+    // permanentFlows is an object with flow names as keys and flow data as values
+    const analysisFlows = [];
+    if (state.permanentFlows && typeof state.permanentFlows === 'object') {
+        Object.keys(state.permanentFlows).forEach(flowName => {
+            const flowData = state.permanentFlows[flowName];
+            if (isAnalysisFlow(flowData)) {
+                // Add flow name to the flow data for display
+                analysisFlows.push({
+                    ...flowData,
+                    name: flowName,
+                    id: flowName
+                });
+            }
+        });
+    }
     
     // Clear existing options
     analysisFlowSelect.innerHTML = '<option value="">Seleziona un flusso di analisi...</option>';
@@ -607,9 +620,9 @@ function stopDataAnalysis() {
 }
 
 function getFlowRobustness(flowId) {
-    // Check saved flows
-    if (state.permanentFlows && Array.isArray(state.permanentFlows)) {
-        const savedFlow = state.permanentFlows.find(flow => flow.id === flowId);
+    // Check saved flows - permanentFlows is an object with flow names as keys
+    if (state.permanentFlows && typeof state.permanentFlows === 'object') {
+        const savedFlow = state.permanentFlows[flowId];
         if (savedFlow) {
             return calculateFlowRobustness(savedFlow);
         }
