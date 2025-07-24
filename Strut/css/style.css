@@ -750,12 +750,11 @@ header .nav-btn:hover {
 
 /* Stili Quartier Generale (HQ) */
 #hq-visual {
-    background: linear-gradient(135deg, #1f2937 0%, #374151 50%, #4f46e5 100%);
-    background-image: 
+    background: 
         radial-gradient(circle at 20% 80%, rgba(79, 70, 229, 0.3) 0%, transparent 50%),
         radial-gradient(circle at 80% 20%, rgba(139, 92, 246, 0.2) 0%, transparent 50%),
-        url('https://placehold.co/1200x600/1f2937/e5e7eb?text=Il+Tuo+Quartier+Generale');
-    background-size: cover, cover, cover;
+        linear-gradient(135deg, #1f2937 0%, #374151 50%, #4f46e5 100%);
+    background-size: cover;
     background-position: center center;
     border: 2px solid rgba(99, 102, 241, 0.5);
     min-height: 400px;
