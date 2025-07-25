@@ -92,12 +92,12 @@ const toolTemplates = {
             },
             2: {
                 nodes: [
-                    // Level 1 nodes remain
+                    // Level 2 nodes optimized for smaller size (140px width)
                     {
                         id: 'entry',
                         type: 'entry',
                         name: 'Target Entry',
-                        position: { x: 100, y: 100 },
+                        position: { x: 50, y: 50 },
                         level: 1,
                         maxLevel: 3,
                         upgrades: {
@@ -111,7 +111,7 @@ const toolTemplates = {
                         id: 'antivirus_evasion',
                         type: 'stealth',
                         name: 'Evasione Antivirus (Base)',
-                        position: { x: 100, y: 250 },
+                        position: { x: 50, y: 150 },
                         level: 1,
                         maxLevel: 2,
                         upgrades: {
@@ -123,7 +123,7 @@ const toolTemplates = {
                         id: 'file_encrypt',
                         type: 'encryption',
                         name: 'Crittografa File (Standard)',
-                        position: { x: 300, y: 100 },
+                        position: { x: 220, y: 50 },
                         level: 2,
                         maxLevel: 3,
                         upgrades: {
@@ -135,7 +135,7 @@ const toolTemplates = {
                         id: 'persistence_base',
                         type: 'persistence',
                         name: 'Imposta Persistenza (Base)',
-                        position: { x: 500, y: 250 },
+                        position: { x: 390, y: 150 },
                         level: 1,
                         maxLevel: 2,
                         upgrades: {
@@ -147,7 +147,7 @@ const toolTemplates = {
                         id: 'ransom_message',
                         type: 'payload',
                         name: 'Crea Messaggio Riscatto (Standard)',
-                        position: { x: 300, y: 350 },
+                        position: { x: 220, y: 250 },
                         level: 2,
                         maxLevel: 3,
                         upgrades: {
@@ -159,7 +159,7 @@ const toolTemplates = {
                         id: 'ransom_request',
                         type: 'communication',
                         name: 'Richiesta Riscatto',
-                        position: { x: 500, y: 350 },
+                        position: { x: 390, y: 250 },
                         level: 1,
                         maxLevel: 1,
                         upgrades: {
@@ -170,7 +170,7 @@ const toolTemplates = {
                         id: 'self_delete',
                         type: 'stealth',
                         name: 'Self-Delete (Base)',
-                        position: { x: 700, y: 300 },
+                        position: { x: 560, y: 150 },
                         level: 1,
                         maxLevel: 2,
                         upgrades: {
@@ -182,7 +182,7 @@ const toolTemplates = {
                         id: 'compiler',
                         type: 'compiler',
                         name: 'Compiler',
-                        position: { x: 700, y: 175 },
+                        position: { x: 560, y: 250 },
                         level: 1,
                         maxLevel: 3,
                         upgrades: {
@@ -204,12 +204,12 @@ const toolTemplates = {
             },
             3: {
                 nodes: [
-                    // Level 1 and 2 nodes remain, plus new Level 3 nodes
+                    // Level 3 nodes optimized for smaller size (120px width)
                     {
                         id: 'entry',
                         type: 'entry',
                         name: 'Target Entry',
-                        position: { x: 100, y: 50 },
+                        position: { x: 30, y: 30 },
                         level: 1,
                         maxLevel: 3,
                         upgrades: {
@@ -218,12 +218,11 @@ const toolTemplates = {
                             3: { name: 'Scan Automatico', description: 'Identifica automaticamente target vulnerabili', requires: ['Malware Attivi LV2'] }
                         }
                     },
-                    // New Level 3 nodes as specified in requirements
                     {
                         id: 'antivirus_evasion_advanced',
                         type: 'stealth',
                         name: 'Evasione Antivirus (Avanzato)',
-                        position: { x: 100, y: 150 },
+                        position: { x: 30, y: 120 },
                         level: 3,
                         maxLevel: 4,
                         upgrades: {
@@ -235,7 +234,7 @@ const toolTemplates = {
                         id: 'sandbox_bypass',
                         type: 'stealth',
                         name: 'Bypassa Sandbox/VM (Base)',
-                        position: { x: 300, y: 50 },
+                        position: { x: 180, y: 30 },
                         level: 1,
                         maxLevel: 2,
                         upgrades: {
@@ -247,7 +246,7 @@ const toolTemplates = {
                         id: 'file_scanner_advanced',
                         type: 'analysis',
                         name: 'Scanner File (Avanzato)',
-                        position: { x: 300, y: 150 },
+                        position: { x: 180, y: 120 },
                         level: 3,
                         maxLevel: 4,
                         upgrades: {
@@ -259,7 +258,7 @@ const toolTemplates = {
                         id: 'crypto_key_gen_advanced',
                         type: 'encryption',
                         name: 'Genera Chiave Crittografia (Avanzato)',
-                        position: { x: 500, y: 50 },
+                        position: { x: 330, y: 30 },
                         level: 3,
                         maxLevel: 4,
                         upgrades: {
@@ -271,7 +270,7 @@ const toolTemplates = {
                         id: 'file_encrypt_advanced',
                         type: 'encryption',
                         name: 'Crittografa File (Avanzata)',
-                        position: { x: 500, y: 150 },
+                        position: { x: 330, y: 120 },
                         level: 3,
                         maxLevel: 4,
                         upgrades: {
@@ -280,10 +279,22 @@ const toolTemplates = {
                         }
                     },
                     {
+                        id: 'auto_propagation',
+                        type: 'propagation',
+                        name: 'Auto-Propagazione (Base)',
+                        position: { x: 480, y: 30 },
+                        level: 1,
+                        maxLevel: 2,
+                        upgrades: {
+                            1: { name: 'Propagazione Base', description: 'Auto-propagazione base in rete' },
+                            2: { name: 'Propagazione Avanzata', description: 'Auto-propagazione avanzata', requires: ['Networking LV3'] }
+                        }
+                    },
+                    {
                         id: 'persistence_advanced',
                         type: 'persistence',
                         name: 'Imposta Persistenza (Avanzata)',
-                        position: { x: 100, y: 250 },
+                        position: { x: 30, y: 210 },
                         level: 3,
                         maxLevel: 3,
                         upgrades: {
@@ -294,7 +305,7 @@ const toolTemplates = {
                         id: 'c2_communication',
                         type: 'communication',
                         name: 'Comunica C2 (Covert)',
-                        position: { x: 300, y: 250 },
+                        position: { x: 180, y: 210 },
                         level: 1,
                         maxLevel: 2,
                         upgrades: {
@@ -306,7 +317,7 @@ const toolTemplates = {
                         id: 'data_exfiltration',
                         type: 'exfiltration',
                         name: 'Data Exfiltration (Base)',
-                        position: { x: 500, y: 250 },
+                        position: { x: 330, y: 210 },
                         level: 1,
                         maxLevel: 2,
                         upgrades: {
@@ -318,7 +329,7 @@ const toolTemplates = {
                         id: 'system_lock',
                         type: 'disruption',
                         name: 'Blocco Sistema Operativo (Base)',
-                        position: { x: 100, y: 350 },
+                        position: { x: 30, y: 300 },
                         level: 1,
                         maxLevel: 2,
                         upgrades: {
@@ -330,7 +341,7 @@ const toolTemplates = {
                         id: 'ransom_message_advanced',
                         type: 'payload',
                         name: 'Crea Messaggio Riscatto (Avanzato)',
-                        position: { x: 300, y: 350 },
+                        position: { x: 180, y: 300 },
                         level: 3,
                         maxLevel: 3,
                         upgrades: {
@@ -341,7 +352,7 @@ const toolTemplates = {
                         id: 'ransom_request_advanced',
                         type: 'communication',
                         name: 'Richiesta Riscatto',
-                        position: { x: 500, y: 350 },
+                        position: { x: 330, y: 300 },
                         level: 1,
                         maxLevel: 1,
                         upgrades: {
@@ -352,7 +363,7 @@ const toolTemplates = {
                         id: 'self_delete_advanced',
                         type: 'stealth',
                         name: 'Self-Delete (Avanzato)',
-                        position: { x: 700, y: 250 },
+                        position: { x: 480, y: 210 },
                         level: 3,
                         maxLevel: 3,
                         upgrades: {
@@ -360,22 +371,10 @@ const toolTemplates = {
                         }
                     },
                     {
-                        id: 'auto_propagation',
-                        type: 'propagation',
-                        name: 'Auto-Propagazione (Base)',
-                        position: { x: 700, y: 150 },
-                        level: 1,
-                        maxLevel: 2,
-                        upgrades: {
-                            1: { name: 'Propagazione Base', description: 'Auto-propagazione base in rete' },
-                            2: { name: 'Propagazione Avanzata', description: 'Auto-propagazione avanzata', requires: ['Networking LV3'] }
-                        }
-                    },
-                    {
                         id: 'compiler',
                         type: 'compiler',
                         name: 'Compiler',
-                        position: { x: 700, y: 350 },
+                        position: { x: 480, y: 300 },
                         level: 1,
                         maxLevel: 3,
                         upgrades: {
@@ -796,13 +795,14 @@ function renderTemplateEditor() {
     if (!currentTemplate) return '';
     
     const template = toolTemplates[currentTemplate];
+    const currentTemplateLevel = state.reworkEditor.templateLevels[currentTemplate] || 1;
     
     return `
-        <div class="template-editor-content">
+        <div class="template-editor-content" data-template-level="${currentTemplateLevel}">
             <div class="editor-toolbar">
                 <h3 class="text-lg font-semibold text-white">
                     <i class="fas ${getTemplateIcon(currentTemplate)} mr-2"></i>
-                    ${template.name} Editor - Livello ${state.reworkEditor.templateLevels[currentTemplate] || 1}
+                    ${template.name} Editor - Livello ${currentTemplateLevel}
                 </h3>
                 <div class="toolbar-actions">
                     ${canPowerUpTemplate(currentTemplate) ? `
@@ -819,7 +819,7 @@ function renderTemplateEditor() {
                 </div>
             </div>
             
-            <div class="template-canvas">
+            <div class="template-canvas" data-template-level="${currentTemplateLevel}">
                 <div class="canvas-grid">
                     ${renderTemplateNodes()}
                     ${renderTemplateConnections()}
