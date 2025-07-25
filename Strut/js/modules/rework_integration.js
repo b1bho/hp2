@@ -438,8 +438,53 @@ function showReworkHelp() {
 }
 
 function showReworkSettings() {
-    // Implementation for settings modal
-    showNotification('Impostazioni non ancora implementate', 'info');
+    const settingsModal = document.createElement('div');
+    settingsModal.className = 'modal-overlay';
+    settingsModal.innerHTML = `
+        <div class="modal-content rework-settings-modal">
+            <div class="modal-header">
+                <h3 class="modal-title">
+                    <i class="fas fa-cog text-purple-400 mr-2"></i>
+                    Impostazioni Ambiente di Sviluppo v2.0
+                </h3>
+                <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="settings-section">
+                    <h4 class="text-lg font-semibold text-white mb-4">
+                        <i class="fas fa-tools text-orange-400 mr-2"></i>
+                        Strumenti di Debug
+                    </h4>
+                    <div class="settings-group">
+                        <p class="text-gray-400 mb-4">Resetta completamente tutti i progressi dell'ambiente di sviluppo per il testing.</p>
+                        <button class="btn-danger w-full" onclick="resetReworkEnvironment(); this.closest('.modal-overlay').remove();">
+                            <i class="fas fa-trash-alt mr-2"></i>
+                            Reset Completo
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="settings-section mt-6">
+                    <h4 class="text-lg font-semibold text-white mb-4">
+                        <i class="fas fa-info-circle text-blue-400 mr-2"></i>
+                        Informazioni
+                    </h4>
+                    <div class="settings-info">
+                        <p class="text-gray-400">
+                            Ambiente di Sviluppo v2.0 - Sistema completo di testing per le nuove meccaniche di gioco.
+                        </p>
+                        <p class="text-sm text-gray-500 mt-2">
+                            Version: 2.0.0-beta | Build: ${Date.now()}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(settingsModal);
 }
 
 // Helper functions
@@ -479,6 +524,66 @@ function getTotalCompilationTime() {
     }
 }
 
+function resetReworkEnvironment() {
+    if (!confirm('Sei sicuro di voler resettare tutti i progressi dell\'Ambiente di Sviluppo v2.0? Questa azione è irreversibile.')) {
+        return;
+    }
+    
+    // Reset all rework-related state
+    state.reworkEnvironment = {
+        isActive: false,
+        activeSection: 'overview',
+        unlocked: true,
+        lastAccessed: Date.now()
+    };
+    
+    state.reworkEditor = {
+        selectedTemplate: 'ransomware',
+        nodeUpgrades: {},
+        appliedModifiers: {},
+        compiledMalware: []
+    };
+    
+    state.reworkTalents = {
+        unlockedCore: {},
+        unlockedSpecialization: {},
+        studyingCore: {},
+        studyingSpecialization: {}
+    };
+    
+    state.programmingTimer = {
+        activeCompilations: {},
+        completedCompilations: [],
+        totalCompilationTime: 0,
+        efficiencyRating: 1.0
+    };
+    
+    // Clear any active compilations
+    if (window.activeCompilations) {
+        window.activeCompilations.clear();
+    }
+    
+    // Clear any intervals
+    document.querySelectorAll('*').forEach(el => {
+        if (el.interval) {
+            clearInterval(el.interval);
+        }
+    });
+    
+    // Reset talent points for testing (give 50 points)
+    state.talentPoints = 50;
+    
+    saveState();
+    
+    // Refresh the current view
+    if (document.getElementById('rework-main-container').style.display === 'block') {
+        const currentSection = state.reworkEnvironment.activeSection;
+        showReworkSection(currentSection);
+    }
+    
+    showNotification('Ambiente di Sviluppo v2.0 resettato completamente', 'success');
+}
+
 // Initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', function() {
     // Add a small delay to ensure other systems are initialized
@@ -489,3 +594,4 @@ document.addEventListener('DOMContentLoaded', function() {
 window.showReworkSection = showReworkSection;
 window.showReworkHelp = showReworkHelp;
 window.showReworkSettings = showReworkSettings;
+window.resetReworkEnvironment = resetReworkEnvironment;

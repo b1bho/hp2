@@ -322,6 +322,7 @@ const compilerOptions = {
 let currentTemplate = null;
 let selectedNodeId = null;
 let compilationQueue = [];
+let currentSection = 'editor'; // Track current section
 
 function initReworkEditor() {
     console.log('Initializing Rework Editor...');
@@ -340,7 +341,40 @@ function initReworkEditor() {
         };
     }
     
+    // Restore active compilations from programming timer state
+    restoreActiveCompilations();
+    
     renderReworkEditor();
+}
+
+function restoreActiveCompilations() {
+    // Clear existing queue
+    compilationQueue = [];
+    
+    // Restore from programming timer state
+    if (state.programmingTimer && state.programmingTimer.activeCompilations) {
+        Object.values(state.programmingTimer.activeCompilations).forEach(compilation => {
+            if (compilation.isActive) {
+                const elapsed = (Date.now() - compilation.startTime) / 1000;
+                
+                if (elapsed >= compilation.totalTime) {
+                    // Compilation should have completed while away
+                    compilation.progress = 100;
+                    compilation.isActive = false;
+                    compilation.phase = 'Completed';
+                    delete state.programmingTimer.activeCompilations[compilation.id];
+                    completeCompilation(compilation);
+                } else {
+                    // Resume compilation
+                    compilation.progress = Math.min(100, (elapsed / compilation.totalTime) * 100);
+                    compilation.timeRemaining = Math.max(0, compilation.totalTime - elapsed);
+                    
+                    compilationQueue.push(compilation);
+                    startCompilation(compilation);
+                }
+            }
+        });
+    }
 }
 
 function renderReworkEditor() {
@@ -658,7 +692,7 @@ function applyModifier(modifierKey) {
     state.reworkEditor.appliedModifiers[currentTemplate] = appliedModifiers;
     
     saveState();
-    displayReworkEditor();
+    renderReworkEditor();
 }
 
 function removeModifier(slotIndex) {
@@ -668,7 +702,7 @@ function removeModifier(slotIndex) {
         appliedModifiers.splice(slotIndex, 1);
         state.reworkEditor.appliedModifiers[currentTemplate] = appliedModifiers;
         saveState();
-        displayReworkEditor();
+        renderReworkEditor();
     }
 }
 
@@ -899,7 +933,7 @@ function deployMalware(malwareId) {
         malware.programmingStatus = 'deployed';
         malware.deployedAt = Date.now();
         saveState();
-        displayReworkEditor();
+        renderReworkEditor();
         showNotification(`${malware.templateName} distribuito con successo!`, 'success');
     }
 }
@@ -910,7 +944,7 @@ function deleteMalware(malwareId) {
         if (malwareIndex !== -1) {
             state.reworkEditor.compiledMalware.splice(malwareIndex, 1);
             saveState();
-            displayReworkEditor();
+            renderReworkEditor();
             showNotification('Malware eliminato', 'info');
         }
     }
@@ -1161,7 +1195,7 @@ function compileTemplate() {
     
     // Immediately update the display to show the new compilation
     if (currentSection === 'editor') {
-        displayReworkEditor();
+        renderReworkEditor();
     }
     
     startCompilation(compilationItem);
@@ -1204,6 +1238,18 @@ function startCompilation(item) {
     const phases = ['Analysis', 'Preprocessing', 'Compilation', 'Optimization', 'Linking', 'Finalization'];
     let phaseIndex = 0;
     
+    // Save to programming timer state for persistence
+    if (!state.programmingTimer) {
+        state.programmingTimer = {
+            activeCompilations: {},
+            completedCompilations: [],
+            totalCompilationTime: 0,
+            efficiencyRating: 1.0
+        };
+    }
+    
+    state.programmingTimer.activeCompilations[item.id] = item;
+    
     const updateInterval = setInterval(() => {
         const elapsed = (Date.now() - item.startTime) / 1000;
         const progress = Math.min(100, (elapsed / item.totalTime) * 100);
@@ -1216,11 +1262,23 @@ function startCompilation(item) {
         item.timeRemaining = Math.max(0, item.totalTime - elapsed);
         item.phase = phases[phaseIndex];
         
+        // Update state persistence
+        state.programmingTimer.activeCompilations[item.id] = item;
+        
         if (item.progress >= 100) {
             clearInterval(updateInterval);
             item.isActive = false;
             item.phase = 'Completed';
+            
+            // Remove from programming timer active compilations
+            delete state.programmingTimer.activeCompilations[item.id];
+            
             completeCompilation(item);
+        } else {
+            // Save state every few seconds for persistence
+            if (Math.floor(elapsed) % 5 === 0) {
+                saveState();
+            }
         }
         
         // Update display if currently viewing the editor
@@ -1232,6 +1290,9 @@ function startCompilation(item) {
             }
         }
     }, 1000);
+    
+    // Store interval reference for cleanup
+    item.updateInterval = updateInterval;
 }
 
 function completeCompilation(item) {
@@ -1291,7 +1352,7 @@ function completeCompilation(item) {
     
     // Update display
     if (currentSection === 'editor') {
-        displayReworkEditor();
+        renderReworkEditor();
     }
 }
 

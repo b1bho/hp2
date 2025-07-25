@@ -924,6 +924,16 @@ function canStudyReworkTalent(talentName, talent, isCore) {
     if (!isCore) {
         const branch = Object.values(specializationTalents).find(b => b.talents[talentName]);
         if (branch && !checkSpecializationRequirements(branch)) return false;
+        
+        // Check prerequisites within the same specialization branch
+        if (talentName.includes('LV2')) {
+            const lv1TalentName = talentName.replace('LV2', 'LV1');
+            if (!collection[lv1TalentName]) return false;
+        } else if (talentName.includes('LV3')) {
+            const lv1TalentName = talentName.replace('LV3', 'LV1');
+            const lv2TalentName = talentName.replace('LV3', 'LV2');
+            if (!collection[lv1TalentName] || !collection[lv2TalentName]) return false;
+        }
     }
     
     return true;
