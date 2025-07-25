@@ -944,12 +944,25 @@ function deployMalware(malwareId) {
 
 function deleteMalware(malwareId) {
     if (confirm('Sei sicuro di voler eliminare questo malware?')) {
-        const malwareIndex = (state.reworkEditor.compiledMalware || []).findIndex(m => m.id === malwareId);
+        if (!state.reworkEditor.compiledMalware) {
+            state.reworkEditor.compiledMalware = [];
+        }
+        
+        // Convert malwareId to number if it's a string to handle any type inconsistencies
+        const idToFind = typeof malwareId === 'string' ? parseInt(malwareId) : malwareId;
+        
+        const malwareIndex = state.reworkEditor.compiledMalware.findIndex(m => {
+            const mId = typeof m.id === 'string' ? parseInt(m.id) : m.id;
+            return mId === idToFind;
+        });
+        
         if (malwareIndex !== -1) {
             state.reworkEditor.compiledMalware.splice(malwareIndex, 1);
             saveState();
             renderReworkEditor();
             showNotification('Malware eliminato', 'info');
+        } else {
+            showNotification('Errore: Malware non trovato', 'error');
         }
     }
 }
