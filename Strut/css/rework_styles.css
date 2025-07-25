@@ -645,11 +645,11 @@
 
 /* Increase canvas height for higher template levels */
 .template-canvas[data-template-level="2"] .canvas-grid {
-    height: 500px;
+    height: 400px;
 }
 
 .template-canvas[data-template-level="3"] .canvas-grid {
-    height: 600px;
+    height: 500px;
 }
 
 .template-node {

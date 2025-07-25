@@ -111,7 +111,7 @@ const toolTemplates = {
                         id: 'antivirus_evasion',
                         type: 'stealth',
                         name: 'Evasione Antivirus (Base)',
-                        position: { x: 50, y: 150 },
+                        position: { x: 50, y: 180 },
                         level: 1,
                         maxLevel: 2,
                         upgrades: {
@@ -135,7 +135,7 @@ const toolTemplates = {
                         id: 'persistence_base',
                         type: 'persistence',
                         name: 'Imposta Persistenza (Base)',
-                        position: { x: 390, y: 150 },
+                        position: { x: 390, y: 180 },
                         level: 1,
                         maxLevel: 2,
                         upgrades: {
@@ -147,7 +147,7 @@ const toolTemplates = {
                         id: 'ransom_message',
                         type: 'payload',
                         name: 'Crea Messaggio Riscatto (Standard)',
-                        position: { x: 220, y: 250 },
+                        position: { x: 220, y: 310 },
                         level: 2,
                         maxLevel: 3,
                         upgrades: {
@@ -159,7 +159,7 @@ const toolTemplates = {
                         id: 'ransom_request',
                         type: 'communication',
                         name: 'Richiesta Riscatto',
-                        position: { x: 390, y: 250 },
+                        position: { x: 390, y: 310 },
                         level: 1,
                         maxLevel: 1,
                         upgrades: {
@@ -170,7 +170,7 @@ const toolTemplates = {
                         id: 'self_delete',
                         type: 'stealth',
                         name: 'Self-Delete (Base)',
-                        position: { x: 560, y: 150 },
+                        position: { x: 560, y: 180 },
                         level: 1,
                         maxLevel: 2,
                         upgrades: {
@@ -182,7 +182,7 @@ const toolTemplates = {
                         id: 'compiler',
                         type: 'compiler',
                         name: 'Compiler',
-                        position: { x: 560, y: 250 },
+                        position: { x: 560, y: 310 },
                         level: 1,
                         maxLevel: 3,
                         upgrades: {
@@ -222,7 +222,7 @@ const toolTemplates = {
                         id: 'antivirus_evasion_advanced',
                         type: 'stealth',
                         name: 'Evasione Antivirus (Avanzato)',
-                        position: { x: 30, y: 120 },
+                        position: { x: 30, y: 150 },
                         level: 3,
                         maxLevel: 4,
                         upgrades: {
@@ -246,7 +246,7 @@ const toolTemplates = {
                         id: 'file_scanner_advanced',
                         type: 'analysis',
                         name: 'Scanner File (Avanzato)',
-                        position: { x: 180, y: 120 },
+                        position: { x: 180, y: 150 },
                         level: 3,
                         maxLevel: 4,
                         upgrades: {
@@ -270,7 +270,7 @@ const toolTemplates = {
                         id: 'file_encrypt_advanced',
                         type: 'encryption',
                         name: 'Crittografa File (Avanzata)',
-                        position: { x: 330, y: 120 },
+                        position: { x: 330, y: 150 },
                         level: 3,
                         maxLevel: 4,
                         upgrades: {
@@ -294,7 +294,7 @@ const toolTemplates = {
                         id: 'persistence_advanced',
                         type: 'persistence',
                         name: 'Imposta Persistenza (Avanzata)',
-                        position: { x: 30, y: 210 },
+                        position: { x: 30, y: 270 },
                         level: 3,
                         maxLevel: 3,
                         upgrades: {
@@ -305,7 +305,7 @@ const toolTemplates = {
                         id: 'c2_communication',
                         type: 'communication',
                         name: 'Comunica C2 (Covert)',
-                        position: { x: 180, y: 210 },
+                        position: { x: 180, y: 270 },
                         level: 1,
                         maxLevel: 2,
                         upgrades: {
@@ -317,7 +317,7 @@ const toolTemplates = {
                         id: 'data_exfiltration',
                         type: 'exfiltration',
                         name: 'Data Exfiltration (Base)',
-                        position: { x: 330, y: 210 },
+                        position: { x: 330, y: 270 },
                         level: 1,
                         maxLevel: 2,
                         upgrades: {
@@ -329,7 +329,7 @@ const toolTemplates = {
                         id: 'system_lock',
                         type: 'disruption',
                         name: 'Blocco Sistema Operativo (Base)',
-                        position: { x: 30, y: 300 },
+                        position: { x: 30, y: 390 },
                         level: 1,
                         maxLevel: 2,
                         upgrades: {
@@ -341,7 +341,7 @@ const toolTemplates = {
                         id: 'ransom_message_advanced',
                         type: 'payload',
                         name: 'Crea Messaggio Riscatto (Avanzato)',
-                        position: { x: 180, y: 300 },
+                        position: { x: 180, y: 390 },
                         level: 3,
                         maxLevel: 3,
                         upgrades: {
@@ -352,7 +352,7 @@ const toolTemplates = {
                         id: 'ransom_request_advanced',
                         type: 'communication',
                         name: 'Richiesta Riscatto',
-                        position: { x: 330, y: 300 },
+                        position: { x: 330, y: 390 },
                         level: 1,
                         maxLevel: 1,
                         upgrades: {
@@ -363,7 +363,7 @@ const toolTemplates = {
                         id: 'self_delete_advanced',
                         type: 'stealth',
                         name: 'Self-Delete (Avanzato)',
-                        position: { x: 480, y: 210 },
+                        position: { x: 480, y: 270 },
                         level: 3,
                         maxLevel: 3,
                         upgrades: {
@@ -374,7 +374,7 @@ const toolTemplates = {
                         id: 'compiler',
                         type: 'compiler',
                         name: 'Compiler',
-                        position: { x: 480, y: 300 },
+                        position: { x: 480, y: 390 },
                         level: 1,
                         maxLevel: 3,
                         upgrades: {
