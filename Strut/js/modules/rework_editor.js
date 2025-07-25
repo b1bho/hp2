@@ -472,8 +472,8 @@ function renderTemplateEditor() {
                     <button class="btn-secondary" onclick="resetTemplate()">
                         <i class="fas fa-undo"></i> Reset
                     </button>
-                    <button class="btn-primary" onclick="compileTemplate()">
-                        <i class="fas fa-hammer"></i> Compila
+                    <button class="btn-primary" onclick="compileTemplate()" ${compilationQueue.length > 0 ? 'disabled' : ''}>
+                        <i class="fas fa-hammer"></i> ${compilationQueue.length > 0 ? 'Compilazione in corso...' : 'Compila'}
                     </button>
                 </div>
             </div>
@@ -1168,9 +1168,8 @@ function upgradeNode(nodeId) {
 function compileTemplate() {
     if (!currentTemplate) return;
     
-    // Check if there's already an ACTIVE compilation in progress (single compilation limit)
-    const hasActiveCompilation = compilationQueue.some(item => item.isActive);
-    if (hasActiveCompilation) {
+    // Check if there are any compilations in queue (single compilation limit)
+    if (compilationQueue.length > 0) {
         showNotification('È già in corso una compilazione. Attendi il completamento prima di iniziarne una nuova.', 'warning');
         return;
     }

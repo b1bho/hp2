@@ -69,11 +69,6 @@ function addReworkNavigationItems() {
                 <span>Talenti v2.0</span>
                 <div class="nav-indicator"></div>
             </button>
-            <button class="menu-item rework-nav-btn" data-section="rework-programming" onclick="showReworkSection('programming')">
-                <i class="fas fa-clock"></i>
-                <span>Programmazione</span>
-                <div class="nav-indicator compilation-indicator"></div>
-            </button>
         </div>
     `;
     
@@ -174,9 +169,6 @@ function renderReworkSection(sectionName) {
             break;
         case 'talents':
             renderReworkTalentsSection(contentContainer);
-            break;
-        case 'programming':
-            renderReworkProgrammingSection(contentContainer);
             break;
         default:
             contentContainer.innerHTML = '<p class="text-gray-400">Sezione non trovata</p>';
@@ -327,18 +319,6 @@ function renderReworkTalentsSection(container) {
     if (typeof initReworkTalents === 'function') {
         initReworkTalents();
     }
-}
-
-function renderReworkProgrammingSection(container) {
-    container.innerHTML = '<div id="programming-timer-container"></div>';
-    if (typeof window.programmingTimer !== 'undefined' && window.programmingTimer.renderUI) {
-        window.programmingTimer.renderUI();
-    }
-}
-
-function renderReworkTimerSection(container) {
-    // Legacy function - redirect to programming
-    renderReworkProgrammingSection(container);
 }
 
 function updateReworkNavigation(activeSection) {
@@ -492,9 +472,7 @@ function getSectionDisplayName(sectionName) {
     const names = {
         'overview': 'Panoramica',
         'editor': 'Editor v2.0',
-        'talents': 'Talenti v2.0',
-        'programming': 'Programmazione',
-        'timer': 'Programmazione' // Legacy support
+        'talents': 'Talenti v2.0'
     };
     return names[sectionName] || sectionName;
 }
