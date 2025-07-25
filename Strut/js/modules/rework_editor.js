@@ -1451,33 +1451,19 @@ function checkTemplateRequirements(template) {
 }
 
 function checkTalentRequirement(talentRequirement) {
-    // Temporary: Return true for testing to enable all templates
-    // TODO: Fix state access issue for proper talent checking
-    return true;
-    
-    /* Original implementation - commented for testing
     // Parse requirement like "Malware Attivi LV2" or "Sviluppo LV1"
-    const parts = talentRequirement.split(' LV');
-    const talentName = parts[0];
-    const requiredLevel = parseInt(parts[1]) || 1;
-    
-    // Check if it's a core talent
     const fullTalentName = talentRequirement; // "Sviluppo LV1", "Malware Attivi LV1", etc.
     
-    // First check if it's unlocked in the rework talents system
-    if (state.reworkTalents) {
-        const coreUnlocked = state.reworkTalents.unlockedCore[fullTalentName] || 0;
-        const specializationUnlocked = state.reworkTalents.unlockedSpecialization[fullTalentName] || 0;
-        
-        if (coreUnlocked > 0 || specializationUnlocked > 0) {
-            return true;
-        }
+    // Check if rework talents system is initialized
+    if (!state.reworkTalents) {
+        return false;
     }
     
-    // Fallback to old system for backward compatibility
-    const unlockedLevel = state.unlocked[talentName] || 0;
-    return unlockedLevel >= requiredLevel;
-    */
+    // Check if it's unlocked in the rework talents system
+    const coreUnlocked = state.reworkTalents.unlockedCore[fullTalentName] || false;
+    const specializationUnlocked = state.reworkTalents.unlockedSpecialization[fullTalentName] || false;
+    
+    return coreUnlocked || specializationUnlocked;
 }
 
 function checkCompilerOptionRequirements(option) {

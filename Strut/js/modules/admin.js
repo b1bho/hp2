@@ -18,6 +18,7 @@ function setAdminValues() {
 function unlockAllTalents() {
     if (!confirm('Sei sicuro di voler sbloccare tutti i talenti?')) return;
 
+    // Unlock old talent system
     for (const branchName in talentData) {
         const branch = talentData[branchName];
         for (const talentName in branch.talents) {
@@ -27,6 +28,41 @@ function unlockAllTalents() {
     }
     
     state.studying = {};
+    
+    // Unlock new rework talent system
+    if (typeof coreTalents !== 'undefined' && typeof specializationTalents !== 'undefined') {
+        // Initialize rework talents if not exists
+        if (!state.reworkTalents) {
+            state.reworkTalents = {
+                unlockedCore: {},
+                unlockedSpecialization: {},
+                studyingCore: {},
+                studyingSpecialization: {},
+                completedResearch: []
+            };
+        }
+        
+        // Unlock all core talents
+        for (const branchName in coreTalents) {
+            const branch = coreTalents[branchName];
+            for (const talentName in branch.talents) {
+                state.reworkTalents.unlockedCore[talentName] = true;
+            }
+        }
+        
+        // Unlock all specialization talents
+        for (const branchName in specializationTalents) {
+            const branch = specializationTalents[branchName];
+            for (const talentName in branch.talents) {
+                state.reworkTalents.unlockedSpecialization[talentName] = true;
+            }
+        }
+        
+        // Clear studying
+        state.reworkTalents.studyingCore = {};
+        state.reworkTalents.studyingSpecialization = {};
+    }
+    
     saveState();
     
     if (state.activePage === 'profile') initProfilePage();
