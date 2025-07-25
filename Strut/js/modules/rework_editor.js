@@ -908,14 +908,18 @@ function startProgrammingProcess(malwareId) {
     state.reworkProgramming = state.reworkProgramming || {};
     state.reworkProgramming.selectedMalware = malwareId;
     
-    // Update malware status
-    const malware = (state.reworkEditor.compiledMalware || []).find(m => m.id === malwareId);
-    if (malware) {
-        malware.programmingStatus = 'programming';
-        saveState();
+    // Use the proper programming timer function to start the programming process
+    if (typeof window.startTimedProgramming === 'function') {
+        window.startTimedProgramming(malwareId);
+    } else {
+        // Fallback - just update malware status
+        const malware = (state.reworkEditor.compiledMalware || []).find(m => m.id === malwareId);
+        if (malware) {
+            malware.programmingStatus = 'programming';
+            saveState();
+            showNotification('Processo di programmazione avviato', 'success');
+        }
     }
-    
-    showNotification('Processo di programmazione avviato', 'success');
 }
 
 function viewMalwareDetails(malwareId) {
@@ -1164,8 +1168,9 @@ function upgradeNode(nodeId) {
 function compileTemplate() {
     if (!currentTemplate) return;
     
-    // Check if there's already a compilation in progress (single compilation limit)
-    if (compilationQueue.length > 0) {
+    // Check if there's already an ACTIVE compilation in progress (single compilation limit)
+    const hasActiveCompilation = compilationQueue.some(item => item.isActive);
+    if (hasActiveCompilation) {
         showNotification('È già in corso una compilazione. Attendi il completamento prima di iniziarne una nuova.', 'warning');
         return;
     }
@@ -1492,6 +1497,10 @@ window.selectNode = selectNode;
 window.upgradeNode = upgradeNode;
 window.compileTemplate = compileTemplate;
 window.resetTemplate = resetTemplate;
+window.deleteMalware = deleteMalware;
+window.deployMalware = deployMalware;
+window.viewMalwareDetails = viewMalwareDetails;
+window.startProgrammingProcess = startProgrammingProcess;
 window.showNodeUpgradeMenu = function(nodeId) {
     selectNode(nodeId);
     // Could implement a modal here for more detailed upgrade interface

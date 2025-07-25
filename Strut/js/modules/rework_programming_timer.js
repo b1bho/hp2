@@ -929,6 +929,9 @@ window.programmingTimer = {
     renderUI: renderProgrammingTimerUI
 };
 
+// Also export the timed programming function
+window.startTimedProgramming = startTimedProgramming;
+
 // Auto-initialize
 if (typeof state !== 'undefined') {
     initProgrammingTimer();
