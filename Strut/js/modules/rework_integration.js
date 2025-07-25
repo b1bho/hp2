@@ -538,10 +538,14 @@ function resetReworkEnvironment() {
     };
     
     state.reworkEditor = {
-        selectedTemplate: 'ransomware',
+        availableTemplates: Object.keys(toolTemplates),
+        activeTemplate: null,
         nodeUpgrades: {},
         appliedModifiers: {},
-        compiledMalware: []
+        compilationHistory: [],
+        compiledMalware: [],
+        unlockedOptions: [],
+        selectedCompilerOptions: []
     };
     
     state.reworkTalents = {

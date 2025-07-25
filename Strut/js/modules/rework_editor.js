@@ -391,11 +391,11 @@ function renderReworkEditor() {
                 <div class="editor-stats">
                     <div class="stat-item">
                         <span class="text-gray-400">Templates Disponibili:</span>
-                        <span class="text-white font-bold">${state.reworkEditor.availableTemplates.length}</span>
+                        <span class="text-white font-bold">${(state.reworkEditor.availableTemplates || []).length}</span>
                     </div>
                     <div class="stat-item">
                         <span class="text-gray-400">Tool Compilati:</span>
-                        <span class="text-white font-bold">${state.reworkEditor.compilationHistory.length}</span>
+                        <span class="text-white font-bold">${(state.reworkEditor.compilationHistory || []).length}</span>
                     </div>
                 </div>
             </div>
@@ -952,7 +952,7 @@ function deleteMalware(malwareId) {
 
 function renderCompilerOptions() {
     return Object.entries(compilerOptions).map(([key, option]) => {
-        const isUnlocked = state.reworkEditor.unlockedOptions.includes(key);
+        const isUnlocked = (state.reworkEditor.unlockedOptions || []).includes(key);
         const isAvailable = checkCompilerOptionRequirements(option);
         
         return `
