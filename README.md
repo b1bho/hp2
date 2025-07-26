@@ -6,6 +6,8 @@ Un simulatore interattivo di hacking che consente ai giocatori di esplorare il m
 
 - **Simulazione Realistica**: Meccaniche di hacking basate su tecniche reali di cybersecurity
 - **Editor di Flussi**: Sistema drag-and-drop per creare catene di attacco personalizzate
+- **Editor 2.0**: Sistema template-based avanzato con template OSINT, Ransomware, Keylogger e Botnet Agent
+- **Template OSINT**: Sistema completo per Open Source Intelligence con 3 livelli di complessità
 - **Mappa Globale 3D**: Visualizzazione interattiva dei target mondiali con Three.js
 - **Sistema di Talenti**: Albero delle competenze con specializzazioni in diverse aree
 - **Economia Virtuale**: Sistema monetario basato su Bitcoin e Monero

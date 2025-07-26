@@ -8,6 +8,10 @@ Questa documentazione descrive in dettaglio tutte le meccaniche di gioco di Hack
 - [Economia del Gioco](#economia-del-gioco)
 - [Sistema Talenti](#sistema-talenti)
 - [Editor di Flussi](#editor-di-flussi)
+- [Editor 2.0 - Sistema Template Avanzato](#editor-20---sistema-template-avanzato)
+- [Template OSINT - Open Source Intelligence](#template-osint---open-source-intelligence)
+- [Template Ransomware - Aggiornamenti Livelli 2 e 3](#template-ransomware---aggiornamenti-livelli-2-e-3)
+- [Meccaniche di Potenziamento](#meccaniche-di-potenziamento)
 - [Sistema Botnet](#sistema-botnet)
 - [Mappa Mondiale](#mappa-mondiale)
 - [Sistema Mercato](#sistema-mercato)
@@ -207,6 +211,560 @@ const validFlowSequences = {
 - **Connessioni:** Linee visive tra blocchi compatibili
 - **Validazione:** Real-time feedback su validità flusso
 - **Export:** Salvataggio flussi per riutilizzo
+
+## 🎛️ Editor 2.0 - Sistema Template Avanzato
+
+### Panoramica
+
+L'Editor 2.0 rappresenta un'evoluzione significativa del sistema originale, introducendo un approccio template-based per la creazione di malware e strumenti specializzati. Invece di assemblare blocchi generici, i giocatori utilizzano template predefiniti con flussi di interconnessione fissi e nodi potenziabili.
+
+### Funzionalità dell'Editor 2.0
+
+#### Interface e Navigazione
+
+**Selezione Template:**
+- Griglia di template disponibili con icone distintive
+- Filtro per disponibilità basato sui talenti posseduti
+- Anteprima descrizione e requisiti per ogni template
+
+**Canvas Template:**
+- Visualizzazione template con nodi fissi e interconnessioni predefinite
+- Zoom e pan per navigare template complessi
+- Highlighting nodi selezionati con pannello upgrade
+
+**Pannello di Controllo:**
+- Informazioni livello template attuale
+- Pulsante potenziamento template (se disponibile)
+- Opzioni compilazione e reset
+
+#### Logica di Navigazione
+
+1. **Accesso Editor 2.0:** Dalla schermata principale, sezione "Rework Editor"
+2. **Selezione Template:** Click su template card per caricarlo nell'editor
+3. **Configurazione Nodi:** Click sui nodi per vedere upgrade disponibili
+4. **Potenziamento Template:** Upgrade del template intero per sbloccare nuovi livelli
+5. **Compilazione:** Generazione malware basato sulla configurazione attuale
+
+### Template Disponibili
+
+#### Template Ransomware
+- **Livelli:** 3 (Base, Intermedio, Avanzato)
+- **Specializzazione:** Crittografia dati e richiesta riscatto
+- **Requisiti Base:** Malware Attivi LV1, Stealth LV1, Sviluppo LV1
+
+#### Template OSINT
+- **Livelli:** 3 (Base, Intermedio, Avanzato)  
+- **Specializzazione:** Intelligence gathering e analisi dati
+- **Requisiti Base:** Analisi Dati LV1, Net LV1, Network Security LV1
+
+#### Template Keylogger  
+- **Livelli:** 1 (Base)
+- **Specializzazione:** Cattura keystroke e stealth
+- **Requisiti Base:** Malware Passivi LV1, Sviluppo LV1
+
+#### Template Botnet Agent
+- **Livelli:** 1 (Base)
+- **Specializzazione:** Command & Control e propagazione
+- **Requisiti Base:** Malware di Rete LV1, Networking LV1, Sviluppo LV1
+
+### Condizioni per Selezione Template
+
+**Verifica Automatica:**
+```javascript
+function checkTemplateRequirements(template) {
+    return template.requiredTalents.every(talent => 
+        checkTalentRequirement(talent)
+    );
+}
+```
+
+**Stati Template:**
+- **Disponibile:** Tutti i talenti richiesti posseduti (sfondo verde)
+- **Bloccato:** Talenti mancanti (sfondo grigio, icona lucchetto)
+- **Attivo:** Template attualmente selezionato (bordo dorato)
+
+**Unlocking Progression:**
+- I template si sbloccano automaticamente al raggiungimento dei talenti richiesti
+- Notifica push quando un nuovo template diventa disponibile
+- Progress tracking nel pannello talenti per vedere template quasi sbloccati
+
+## 📊 Template OSINT - Open Source Intelligence
+
+### Panoramica
+
+Il template OSINT è specializzato nella raccolta e analisi di intelligence open-source, fornendo strumenti avanzati per la profilazione target, network discovery e correlazione dati. È ideale per operazioni di ricognizione e intelligence gathering.
+
+### Livelli di Complessità
+
+#### Livello 1 - Base
+**Requisiti:** Analisi Dati LV1, Net LV1, Network Security LV1
+
+**Nodi Fissi:**
+
+1. **Profilazione Target**
+   - *Tipo:* Reconnaissance  
+   - *Funzione:* Identifica informazioni pubbliche base del target
+   - *Potenziamenti:*
+     - LV1: Profilo Base (informazioni pubbliche base)
+     - LV2: Profilo Dettagliato (analisi approfondita attività) - *Richiede: Network Security LV1*
+     - LV3: Profilo Comportamentale (modelli comportamentali e predizioni) - *Richiede: AI LV1*
+
+2. **Network Discovery**
+   - *Tipo:* Access
+   - *Funzione:* Scansione rete e identificazione servizi
+   - *Potenziamenti:*
+     - LV1: Scan Base (scansione rete e port scan base)
+     - LV2: Topology Mapping (mappatura topologia completa) - *Richiede: Net LV2*
+     - LV3: Service Fingerprinting (fingerprinting servizi e versioni) - *Richiede: Network Security LV2*
+
+3. **Data Gathering**
+   - *Tipo:* Acquisition
+   - *Funzione:* Raccolta informazioni da fonti multiple
+   - *Potenziamenti:*
+     - LV1: Info Base (raccolta informazioni pubbliche base)
+     - LV2: Social Media Mining (estrazione dati social media) - *Richiede: Analisi Dati LV1*
+     - LV3: Deep Web Search (ricerca nel deep web) - *Richiede: Analisi Dati LV2*
+     - LV4: Automated Collection (raccolta automatizzata multi-fonte) - *Richiede: AI LV1*
+
+4. **Analysis Engine**
+   - *Tipo:* Reconnaissance
+   - *Funzione:* Analisi e correlazione dati raccolti
+   - *Potenziamenti:*
+     - LV1: Analisi Base (analisi e correlazione dati base)
+     - LV2: Pattern Recognition (riconoscimento pattern e anomalie) - *Richiede: Analisi Dati LV2*
+     - LV3: Predictive Analysis (analisi predittiva comportamentale) - *Richiede: AI LV2*
+
+5. **Intelligence Report**
+   - *Tipo:* Exfiltration
+   - *Funzione:* Generazione report intelligence strutturati
+   - *Potenziamenti:*
+     - LV1: Report Base (generazione report intelligence base)
+     - LV2: Visual Analytics (report con visualizzazioni e grafi) - *Richiede: Analisi Dati LV1*
+     - LV3: Actionable Intelligence (intelligence operativa con raccomandazioni) - *Richiede: AI LV1*
+
+**Interconnessioni Livello 1:**
+```
+Profilazione Target → Network Discovery
+Profilazione Target → Data Gathering
+Network Discovery → Analysis Engine
+Data Gathering → Analysis Engine
+Analysis Engine → Intelligence Report
+```
+
+#### Livello 2 - Intermedio
+**Requisiti Potenziamento:** Analisi Dati LV2, Network Security LV2, Rev Eng LV1
+
+**Nodi Aggiuntivi:**
+
+6. **Vulnerability Assessment**
+   - *Tipo:* Reconnaissance
+   - *Funzione:* Assessment automatico vulnerabilità
+   - *Potenziamenti:*
+     - LV2: Vuln Scanner (scanner automatico vulnerabilità)
+     - LV3: Advanced Assessment (assessment vulnerabilità avanzato) - *Richiede: Network Security LV3*
+
+7. **Social Engineering Intel**
+   - *Tipo:* Acquisition
+   - *Funzione:* Raccolta intelligence umana e profilazione sociale
+   - *Potenziamenti:*
+     - LV2: HUMINT Collection (raccolta intelligence umana)
+     - LV3: Psychological Profiling (profilazione psicologica avanzata) - *Richiede: SocEng LV3*
+
+**Interconnessioni Livello 2:**
+```
+Profilazione Target → Network Discovery
+Profilazione Target → Vulnerability Assessment
+Network Discovery → Social Engineering Intel
+Vulnerability Assessment → Data Gathering
+Social Engineering Intel → Analysis Engine
+Data Gathering → Analysis Engine
+Analysis Engine → Intelligence Report
+```
+
+#### Livello 3 - Avanzato
+**Requisiti Potenziamento:** Analisi Dati LV3, Network Security LV3, AI LV2
+
+**Nodi Specializzati:**
+
+8. **AI Reconnaissance**
+   - *Tipo:* Reconnaissance
+   - *Funzione:* Ricognizione assistita da intelligenza artificiale
+   - *Potenziamenti:*
+     - LV3: AI Pattern Matcher (riconoscimento pattern AI-driven)
+     - LV4: Deep Learning OSINT (deep learning per intelligence gathering) - *Richiede: AI LV3*
+
+9. **Advanced Vuln Research**
+   - *Tipo:* Reconnaissance
+   - *Funzione:* Ricerca avanzata vulnerabilità e zero-day hunting
+   - *Potenziamenti:*
+     - LV3: Zero-Day Hunting (caccia a vulnerabilità zero-day)
+     - LV4: AI Vuln Discovery (scoperta vulnerabilità assistita da AI) - *Richiede: AI LV3*
+
+10. **Deep Web Crawler**
+    - *Tipo:* Acquisition
+    - *Funzione:* Accesso sistematico al deep/dark web
+    - *Potenziamenti:*
+      - LV3: Dark Web Access (accesso sistematico al dark web)
+      - LV4: Quantum Search (algoritmi di ricerca quantistici) - *Richiede: AI LV3*
+
+11. **Predictive Analytics**
+    - *Tipo:* Reconnaissance
+    - *Funzione:* Analisi predittiva e modellazione comportamentale
+    - *Potenziamenti:*
+      - LV3: Threat Prediction (predizione minacce e comportamenti)
+      - LV4: Quantum Analytics (analisi predittiva quantistica) - *Richiede: AI LV3*
+
+12. **Actionable Intelligence**
+    - *Tipo:* Exfiltration
+    - *Funzione:* Intelligence operativa con raccomandazioni strategiche
+    - *Potenziamenti:*
+      - LV3: Strategic Intel (intelligence strategica operativa)
+      - LV4: AI-Driven Recommendations (raccomandazioni basate su AI) - *Richiede: AI LV2*
+
+**Interconnessioni Livello 3:**
+```
+Profilazione Target → AI Reconnaissance
+Profilazione Target → Network Discovery
+AI Reconnaissance → Advanced Vuln Research
+Network Discovery → Deep Web Crawler
+Advanced Vuln Research → Social Engineering Intel
+Deep Web Crawler → Predictive Analytics
+Social Engineering Intel → Predictive Analytics
+Predictive Analytics → Actionable Intelligence
+```
+
+### Talenti Necessari per Potenziamenti
+
+**Talenti Fondamentali:**
+- **Analisi Dati:** Requisito primario per la maggior parte dei potenziamenti
+- **Network Security:** Essenziale per funzionalità di rete avanzate
+- **AI (Intelligenza Artificiale):** Sblocca capacità predittive e analitiche avanzate
+
+**Talenti Opzionali:**
+- **SocEng (Social Engineering):** Per potenziamenti di profilazione psicologica
+- **Rev Eng (Reverse Engineering):** Richiesto per accesso al Livello 2
+
+**Progressione Consigliata:**
+```
+1. Analisi Dati LV1 → Net LV1 → Network Security LV1 (Accesso Livello 1)
+2. Analisi Dati LV2 → Network Security LV2 → Rev Eng LV1 (Accesso Livello 2)
+3. Analisi Dati LV3 → Network Security LV3 → AI LV2 (Accesso Livello 3)
+4. AI LV3 → Potenziamenti quantistici e AI avanzata
+```
+
+## 🦠 Template Ransomware - Aggiornamenti Livelli 2 e 3
+
+### Panoramica
+
+Il template Ransomware è specializzato nella creazione di malware per crittografia dati e richiesta riscatto. Offre 3 livelli di complessità crescente, con nodi aggiuntivi e potenziamenti avanzati nei livelli superiori.
+
+### Livello 2 - Intermedio
+**Requisiti Potenziamento:** Malware Attivi LV2, Sviluppo LV2, Stealth LV2
+
+**Nodi Aggiuntivi:**
+
+1. **Evasione Antivirus (Base)**
+   - *Tipo:* Stealth
+   - *Posizione:* (50, 180)
+   - *Funzione:* Tecniche di evasione per evitare rilevazione antivirus
+   - *Potenziamenti:*
+     - LV1: Evasione Base (tecniche base di evasione antivirus)
+     - LV2: Evasione Standard (evasione antivirus migliorata) - *Richiede: Stealth LV2*
+
+2. **Crittografa File (Standard)**
+   - *Tipo:* Encryption
+   - *Posizione:* (220, 50)
+   - *Funzione:* Crittografia file con algoritmi standard
+   - *Potenziamenti:*
+     - LV2: Crittografia Standard (crittografia file con algoritmi standard)
+     - LV3: Crittografia Avanzata (crittografia file avanzata) - *Richiede: Sviluppo LV2*
+
+3. **Imposta Persistenza (Base)**
+   - *Tipo:* Persistence
+   - *Posizione:* (390, 180)
+   - *Funzione:* Meccanismi base di persistenza nel sistema
+   - *Potenziamenti:*
+     - LV1: Persistenza Base (meccanismi base di persistenza)
+     - LV2: Persistenza Avanzata (persistenza avanzata nel sistema) - *Richiede: Sviluppo LV2*
+
+4. **Crea Messaggio Riscatto (Standard)**
+   - *Tipo:* Payload
+   - *Posizione:* (220, 310)
+   - *Funzione:* Generazione messaggi di riscatto personalizzati
+   - *Potenziamenti:*
+     - LV2: Messaggio Standard (messaggio riscatto base)
+     - LV3: Messaggio Personalizzato (messaggio riscatto avanzato) - *Richiede: SocEng LV2*
+
+**Interconnessioni Livello 2:**
+```
+Target Entry → Evasione Antivirus
+Target Entry → Crittografa File
+Evasione Antivirus → Imposta Persistenza
+Crittografa File → Crea Messaggio Riscatto
+Imposta Persistenza → Compiler
+Crea Messaggio Riscatto → Compiler
+```
+
+### Livello 3 - Avanzato
+**Requisiti Potenziamento:** Malware Attivi LV3, Sviluppo LV3, Stealth LV3
+
+**Nodi Specializzati:**
+
+5. **Evasione Anti-Analisi (Avanzata)**
+   - *Tipo:* Stealth
+   - *Posizione:* (50, 280)
+   - *Funzione:* Tecniche anti-analisi per evitare reverse engineering
+   - *Potenziamenti:*
+     - LV3: Anti-Analisi Avanzata (tecniche anti-analisi avanzate)
+     - LV4: VM Detection & Evasion (rilevazione ed evasione macchine virtuali) - *Richiede: Stealth LV3*
+
+6. **Crittografia File (Avanzata)**
+   - *Tipo:* Encryption
+   - *Posizione:* (220, 180)
+   - *Funzione:* Crittografia file con algoritmi avanzati e multi-layer
+   - *Potenziamenti:*
+     - LV3: Multi-Layer Encryption (crittografia a più livelli)
+     - LV4: Quantum-Resistant Crypto (crittografia resistente quantistica) - *Richiede: Stealth LV3, AI LV2*
+
+7. **Auto-Propagazione**
+   - *Tipo:* Propagation
+   - *Posizione:* (390, 280)
+   - *Funzione:* Capacità di auto-propagazione del ransomware
+   - *Potenziamenti:*
+     - LV3: Network Propagation (propagazione automatica via rete)
+     - LV4: Multi-Vector Spread (propagazione multi-vettore) - *Richiede: Networking LV3*
+
+8. **Auto-Eliminazione (Avanzata)**
+   - *Tipo:* Cleanup
+   - *Posizione:* (390, 380)
+   - *Funzione:* Auto-eliminazione sicura dopo esecuzione
+   - *Potenziamenti:*
+     - LV3: Secure Self-Delete (auto-eliminazione sicura)
+     - LV4: Memory Wipe (pulizia memoria completa) - *Richiede: Stealth LV3*
+
+**Interconnessioni Livello 3:**
+```
+Target Entry → Evasione Anti-Analisi
+Evasione Anti-Analisi → Crittografia File Avanzata
+Crittografia File Avanzata → Auto-Propagazione
+Auto-Propagazione → Compiler
+Auto-Eliminazione Avanzata → Compiler
+```
+
+### Miglioramenti Specifici per Livello
+
+**Ottimizzazioni Livello 2:**
+- Canvas ridimensionato per nodi più compatti (140px width)
+- Migliore utilizzo spazio con layout ottimizzato
+- Nuove interconnessioni per flusso logico migliorato
+
+**Specializzazioni Livello 3:**
+- Nodi altamente specializzati per operazioni avanzate
+- Requisiti talenti più stringenti per accesso
+- Capacità di evasione e stealth significativamente migliorate
+- Algoritmi di crittografia all'avanguardia
+
+### Sinergie tra Potenziamenti
+
+**Combinazioni Efficaci:**
+- **Stealth + Encryption:** Massima furtività con crittografia robusta
+- **Persistence + Propagation:** Diffusione e permanenza ottimali
+- **Anti-Analysis + VM Evasion:** Resistenza completa all'analisi
+
+**Progression Path Ottimale:**
+```
+Livello 1 → Sviluppo talenti base → Livello 2 → Specializzazione stealth → Livello 3
+```
+
+## ⚙️ Meccaniche di Potenziamento
+
+### Sistema di Upgrade Nodi
+
+#### Concetto Base
+
+Ogni nodo all'interno dei template può essere potenziato individualmente attraverso un sistema di upgrade a livelli. Ogni upgrade migliora le capacità del nodo e può sbloccare nuove funzionalità.
+
+#### Struttura Upgrade
+
+**Formato Standard:**
+```javascript
+upgrades: {
+    1: { 
+        name: 'Nome Upgrade', 
+        description: 'Descrizione funzionalità',
+        requires: [] // Talenti opzionali richiesti
+    },
+    2: { 
+        name: 'Nome Upgrade LV2', 
+        description: 'Funzionalità migliorata',
+        requires: ['Talento LV2'] // Talenti richiesti
+    }
+}
+```
+
+#### Meccaniche di Potenziamento
+
+**Processo di Upgrade:**
+1. **Selezione Nodo:** Click sul nodo per visualizzare upgrade disponibili
+2. **Verifica Requisiti:** Controllo automatico talenti necessari  
+3. **Conferma Upgrade:** Applicazione immediata del potenziamento
+4. **Persistenza:** Salvataggio automatico della configurazione
+
+**Requisiti Upgrade:**
+- **Talenti Specifici:** Ogni upgrade può richiedere talenti specifici
+- **Livello Minimo:** Alcuni upgrade sono disponibili solo a certi livelli del nodo
+- **Progressione Lineare:** Gli upgrade devono essere acquisiti in ordine sequenziale
+
+#### Categorie di Potenziamento
+
+**Potenziamenti Funzionali:**
+- Aggiungono nuove capacità al nodo
+- Migliorano l'efficacia delle operazioni esistenti
+- Sbloccano nuovi tipi di input/output
+
+**Potenziamenti di Efficienza:**
+- Riducono il tempo di esecuzione
+- Migliorano il tasso di successo
+- Ottimizzano l'utilizzo delle risorse
+
+**Potenziamenti di Stealth:**
+- Riducono la tracciabilità delle operazioni
+- Migliorano l'evasione dai sistemi di sicurezza
+- Aumentano la resistenza all'analisi
+
+### Sistema Template Level
+
+#### Potenziamento Template Globale
+
+**Meccanica Power-Up:**
+```javascript
+function powerUpTemplate(templateKey) {
+    const currentLevel = state.reworkEditor.templateLevels[templateKey];
+    const nextLevel = currentLevel + 1;
+    
+    if (canPowerUpTemplate(templateKey)) {
+        state.reworkEditor.templateLevels[templateKey] = nextLevel;
+        unlockNewNodesAndConnections(templateKey, nextLevel);
+    }
+}
+```
+
+**Benefici del Template Level:**
+- **Nuovi Nodi:** Sblocco di nodi specializzati aggiuntivi
+- **Nuove Interconnessioni:** Flussi di dati più complessi
+- **Capacità Avanzate:** Funzionalità non disponibili nei livelli inferiori
+
+#### Requisiti per Template Level
+
+**Verifica Talenti:**
+```javascript
+const levelRequirements = {
+    2: ['Malware Attivi LV2', 'Sviluppo LV2', 'Stealth LV2'],
+    3: ['Malware Attivi LV3', 'Sviluppo LV3', 'Stealth LV3']
+};
+```
+
+**Progression Gates:**
+- Ogni livello richiede un set specifico di talenti
+- La verifica è automatica e in tempo reale
+- Feedback visivo per requisiti mancanti
+
+### Talenti Necessari per Livelli Template
+
+#### Template OSINT
+
+**Livello 1 → 2:**
+- Analisi Dati LV2 (essenziale per data processing avanzato)
+- Network Security LV2 (necessario per vulnerability assessment)
+- Rev Eng LV1 (richiesto per analisi tecnica)
+
+**Livello 2 → 3:**
+- Analisi Dati LV3 (massima capacità di correlazione dati)
+- Network Security LV3 (funzionalità di security avanzate)
+- AI LV2 (capacità di machine learning e predizione)
+
+#### Template Ransomware
+
+**Livello 1 → 2:**
+- Malware Attivi LV2 (capacità malware intermediate)
+- Sviluppo LV2 (programmazione avanzata)
+- Stealth LV2 (evasione antivirus standard)
+
+**Livello 2 → 3:**
+- Malware Attivi LV3 (tecniche malware expert)
+- Sviluppo LV3 (programmazione sistemistica avanzata)
+- Stealth LV3 (massima furtività e anti-analisi)
+
+#### Template Keylogger
+
+**Requisiti Base:**
+- Malware Passivi LV1 (capacità keylogging base)
+- Sviluppo LV1 (programmazione base)
+
+#### Template Botnet Agent
+
+**Requisiti Base:**
+- Malware di Rete LV1 (malware con capacità di rete)
+- Networking LV1 (conoscenze di rete base)
+- Sviluppo LV1 (programmazione base)
+
+### Sistema di Notifiche Upgrade
+
+#### Feedback Visivo
+
+**Indicatori Stato:**
+- **Verde:** Upgrade disponibile e requisiti soddisfatti
+- **Giallo:** Upgrade disponibile ma talenti mancanti  
+- **Grigio:** Upgrade non ancora raggiungibile
+- **Blu:** Upgrade già applicato
+
+**Tooltips Informativi:**
+```javascript
+function generateUpgradeTooltip(upgrade, nodeId) {
+    return `
+        <div class="upgrade-tooltip">
+            <h4>${upgrade.name}</h4>
+            <p>${upgrade.description}</p>
+            ${upgrade.requires ? 
+                `<div class="requirements">
+                    Richiede: ${upgrade.requires.join(', ')}
+                </div>` : ''
+            }
+        </div>
+    `;
+}
+```
+
+#### Notifiche di Sblocco
+
+**Push Notifications:**
+- Avviso quando un nuovo upgrade diventa disponibile
+- Notifica di sblocco nuovi template level
+- Alert per template precedentemente bloccati ora accessibili
+
+**Progress Tracking:**
+- Barra di progresso per talenti mancanti
+- Lista template quasi sbloccati
+- Suggerimenti per ottimizzare la progressione talenti
+
+### Ottimizzazione Configurazioni
+
+#### Best Practices
+
+**Progression Strategy:**
+1. **Focus Specializzazione:** Concentrare talenti su un ramo specifico
+2. **Template Sinergici:** Sviluppare template che condividono requisiti
+3. **Upgrade Economici:** Prioritizzare upgrade con requisiti già posseduti
+
+**Resource Management:**
+- Pianificare la distribuzione punti talento
+- Bilanciare ampiezza vs profondità delle competenze  
+- Considerare i template level come obiettivi a lungo termine
+
+**Template Optimization:**
+- Configurare upgrade per massimizzare l'efficacia del template
+- Bilanciare stealth, potenza e velocità di esecuzione
+- Adattare configurazioni agli obiettivi specifici della missione
 
 ## 🕸️ Sistema Botnet Avanzato
 
