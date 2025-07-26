@@ -405,6 +405,395 @@ const toolTemplates = {
         },
         requiredTalents: ['Malware Attivi LV1', 'Stealth LV1', 'Sviluppo LV1']
     },
+    'osint': {
+        name: 'OSINT',
+        description: 'Template per la creazione di flussi OSINT con moduli di scansione, analisi e intelligence',
+        maxTemplateLevel: 3,
+        templateLevel: 1,
+        levelRequirements: {
+            2: ['Networking LV2', 'Sviluppo LV2', 'Stealth LV2'],
+            3: ['Networking LV3', 'Sviluppo LV3', 'Stealth LV3']
+        },
+        levels: {
+            1: {
+                nodes: [
+                    {
+                        id: 'signal_trigger',
+                        type: 'entry',
+                        name: 'Ricevi segnale trigger',
+                        position: { x: 100, y: 100 },
+                        level: 1,
+                        maxLevel: 1,
+                        upgrades: {
+                            1: { name: 'Segnale Trigger', description: 'Riceve segnale per avviare scansione OSINT' }
+                        }
+                    },
+                    {
+                        id: 'network_scan_base',
+                        type: 'scanning',
+                        name: 'Scansione Rete Globale (Base)',
+                        position: { x: 300, y: 100 },
+                        level: 1,
+                        maxLevel: 2,
+                        upgrades: {
+                            1: { name: 'Scansione Base', description: 'Scansione di rete globale base' },
+                            2: { name: 'Scansione Standard', description: 'Scansione di rete globale standard', requires: ['Networking LV1'] }
+                        }
+                    },
+                    {
+                        id: 'port_scan_advanced',
+                        type: 'scanning',
+                        name: 'Esegui port scan avanzato',
+                        position: { x: 500, y: 100 },
+                        level: 1,
+                        maxLevel: 2,
+                        upgrades: {
+                            1: { name: 'Port Scan Avanzato', description: 'Port scanning avanzato per identificazione servizi' },
+                            2: { name: 'Port Scan Standard', description: 'Port scanning standard ottimizzato', requires: ['Networking LV2'] }
+                        }
+                    },
+                    {
+                        id: 'target_identification',
+                        type: 'analysis',
+                        name: 'Identificazione Target / Filtraggio',
+                        position: { x: 200, y: 250 },
+                        level: 1,
+                        maxLevel: 2,
+                        upgrades: {
+                            1: { name: 'Identificazione Base', description: 'Identificazione e filtraggio target base' },
+                            2: { name: 'Identificazione Standard', description: 'Identificazione target ottimizzata', requires: ['Sviluppo LV1'] }
+                        }
+                    },
+                    {
+                        id: 'save_targets',
+                        type: 'storage',
+                        name: 'Salva Target Scoperti',
+                        position: { x: 400, y: 250 },
+                        level: 1,
+                        maxLevel: 2,
+                        upgrades: {
+                            1: { name: 'Salvataggio Base', description: 'Salvataggio target scoperti' },
+                            2: { name: 'Salvataggio Standard', description: 'Salvataggio ottimizzato target', requires: ['Sviluppo LV1'] }
+                        }
+                    },
+                    {
+                        id: 'clean_database',
+                        type: 'stealth',
+                        name: 'Pulisci database (rimuovi tracce)',
+                        position: { x: 300, y: 400 },
+                        level: 1,
+                        maxLevel: 2,
+                        upgrades: {
+                            1: { name: 'Pulizia Base', description: 'Rimozione tracce base dal database' },
+                            2: { name: 'Pulizia Avanzata', description: 'Rimozione tracce avanzata', requires: ['Stealth LV1'] }
+                        }
+                    }
+                ],
+                connections: [
+                    { from: 'signal_trigger', to: 'network_scan_base' },
+                    { from: 'network_scan_base', to: 'port_scan_advanced' },
+                    { from: 'port_scan_advanced', to: 'target_identification' },
+                    { from: 'target_identification', to: 'save_targets' },
+                    { from: 'save_targets', to: 'clean_database' }
+                ]
+            },
+            2: {
+                nodes: [
+                    {
+                        id: 'signal_trigger',
+                        type: 'entry',
+                        name: 'Ricevi segnale trigger',
+                        position: { x: 50, y: 50 },
+                        level: 1,
+                        maxLevel: 1,
+                        upgrades: {
+                            1: { name: 'Segnale Trigger', description: 'Riceve segnale per avviare scansione OSINT' }
+                        }
+                    },
+                    {
+                        id: 'network_scan_standard',
+                        type: 'scanning',
+                        name: 'Scansione Rete Globale (Standard)',
+                        position: { x: 250, y: 50 },
+                        level: 2,
+                        maxLevel: 3,
+                        upgrades: {
+                            2: { name: 'Scansione Standard', description: 'Scansione di rete globale standard' },
+                            3: { name: 'Scansione Avanzata', description: 'Scansione di rete globale avanzata', requires: ['Networking LV2'] }
+                        }
+                    },
+                    {
+                        id: 'port_scan_standard',
+                        type: 'scanning',
+                        name: 'Esegui port scan avanzato (Standard)',
+                        position: { x: 450, y: 50 },
+                        level: 2,
+                        maxLevel: 3,
+                        upgrades: {
+                            2: { name: 'Port Scan Standard', description: 'Port scanning standard' },
+                            3: { name: 'Port Scan Avanzato', description: 'Port scanning avanzato ottimizzato', requires: ['Networking LV3'] }
+                        }
+                    },
+                    {
+                        id: 'log_analysis',
+                        type: 'analysis',
+                        name: 'Analizza log file',
+                        position: { x: 50, y: 200 },
+                        level: 1,
+                        maxLevel: 2,
+                        upgrades: {
+                            1: { name: 'Analisi Log Base', description: 'Analisi base dei file di log' },
+                            2: { name: 'Analisi Log Avanzata', description: 'Analisi avanzata dei log', requires: ['Sviluppo LV2'] }
+                        }
+                    },
+                    {
+                        id: 'network_topology',
+                        type: 'mapping',
+                        name: 'Mappa topologia di rete',
+                        position: { x: 250, y: 200 },
+                        level: 1,
+                        maxLevel: 2,
+                        upgrades: {
+                            1: { name: 'Mappatura Base', description: 'Mappatura topologia di rete base' },
+                            2: { name: 'Mappatura Avanzata', description: 'Mappatura topologia avanzata', requires: ['Networking LV2'] }
+                        }
+                    },
+                    {
+                        id: 'target_identification_standard',
+                        type: 'analysis',
+                        name: 'Identificazione Target / Filtraggio (Standard)',
+                        position: { x: 450, y: 200 },
+                        level: 2,
+                        maxLevel: 3,
+                        upgrades: {
+                            2: { name: 'Identificazione Standard', description: 'Identificazione target standard' },
+                            3: { name: 'Identificazione Avanzata', description: 'Identificazione target avanzata', requires: ['Sviluppo LV2'] }
+                        }
+                    },
+                    {
+                        id: 'vulnerability_analysis_base',
+                        type: 'analysis',
+                        name: 'Analisi Vulnerabilità (AI) (Base)',
+                        position: { x: 50, y: 350 },
+                        level: 1,
+                        maxLevel: 2,
+                        upgrades: {
+                            1: { name: 'Analisi AI Base', description: 'Analisi vulnerabilità con AI base' },
+                            2: { name: 'Analisi AI Standard', description: 'Analisi vulnerabilità AI standard', requires: ['Sviluppo LV2'] }
+                        }
+                    },
+                    {
+                        id: 'save_targets_standard',
+                        type: 'storage',
+                        name: 'Salva Target Scoperti (Standard)',
+                        position: { x: 250, y: 350 },
+                        level: 2,
+                        maxLevel: 3,
+                        upgrades: {
+                            2: { name: 'Salvataggio Standard', description: 'Salvataggio target standard' },
+                            3: { name: 'Salvataggio Avanzato', description: 'Salvataggio target avanzato', requires: ['Sviluppo LV2'] }
+                        }
+                    },
+                    {
+                        id: 'clean_database_advanced',
+                        type: 'stealth',
+                        name: 'Pulisci database (avanzato)',
+                        position: { x: 450, y: 350 },
+                        level: 2,
+                        maxLevel: 2,
+                        upgrades: {
+                            2: { name: 'Pulizia Avanzata', description: 'Rimozione tracce avanzata dal database' }
+                        }
+                    },
+                    {
+                        id: 'osint_monitoring_base',
+                        type: 'monitoring',
+                        name: 'Monitora Traffico OSINT (Base)',
+                        position: { x: 250, y: 500 },
+                        level: 1,
+                        maxLevel: 2,
+                        upgrades: {
+                            1: { name: 'Monitoraggio Base', description: 'Monitoraggio traffico OSINT base' },
+                            2: { name: 'Monitoraggio Avanzato', description: 'Monitoraggio traffico OSINT avanzato', requires: ['Stealth LV3'] }
+                        }
+                    }
+                ],
+                connections: [
+                    { from: 'signal_trigger', to: 'network_scan_standard' },
+                    { from: 'network_scan_standard', to: 'port_scan_standard' },
+                    { from: 'signal_trigger', to: 'log_analysis' },
+                    { from: 'log_analysis', to: 'network_topology' },
+                    { from: 'network_topology', to: 'target_identification_standard' },
+                    { from: 'port_scan_standard', to: 'target_identification_standard' },
+                    { from: 'target_identification_standard', to: 'vulnerability_analysis_base' },
+                    { from: 'vulnerability_analysis_base', to: 'save_targets_standard' },
+                    { from: 'save_targets_standard', to: 'clean_database_advanced' },
+                    { from: 'clean_database_advanced', to: 'osint_monitoring_base' }
+                ]
+            },
+            3: {
+                nodes: [
+                    {
+                        id: 'signal_trigger',
+                        type: 'entry',
+                        name: 'Ricevi segnale trigger',
+                        position: { x: 50, y: 50 },
+                        level: 1,
+                        maxLevel: 1,
+                        upgrades: {
+                            1: { name: 'Segnale Trigger', description: 'Riceve segnale per avviare scansione OSINT' }
+                        }
+                    },
+                    {
+                        id: 'network_scan_advanced',
+                        type: 'scanning',
+                        name: 'Scansione Rete Globale (Avanzata)',
+                        position: { x: 250, y: 50 },
+                        level: 3,
+                        maxLevel: 4,
+                        upgrades: {
+                            3: { name: 'Scansione Avanzata', description: 'Scansione di rete globale avanzata' },
+                            4: { name: 'Scansione Elite', description: 'Scansione di rete globale elite', requires: ['Networking LV3'] }
+                        }
+                    },
+                    {
+                        id: 'port_scan_advanced_elite',
+                        type: 'scanning',
+                        name: 'Esegui port scan avanzato (Avanzato)',
+                        position: { x: 450, y: 50 },
+                        level: 3,
+                        maxLevel: 4,
+                        upgrades: {
+                            3: { name: 'Port Scan Avanzato', description: 'Port scanning avanzato' },
+                            4: { name: 'Port Scan Elite', description: 'Port scanning elite', requires: ['Networking LV4'] }
+                        }
+                    },
+                    {
+                        id: 'log_analysis_advanced',
+                        type: 'analysis',
+                        name: 'Analizza log file (Avanzato)',
+                        position: { x: 50, y: 200 },
+                        level: 2,
+                        maxLevel: 3,
+                        upgrades: {
+                            2: { name: 'Analisi Log Avanzata', description: 'Analisi avanzata dei file di log' },
+                            3: { name: 'Analisi Log Elite', description: 'Analisi log elite', requires: ['Sviluppo LV3'] }
+                        }
+                    },
+                    {
+                        id: 'network_topology_advanced',
+                        type: 'mapping',
+                        name: 'Mappa topologia di rete (Avanzata)',
+                        position: { x: 250, y: 200 },
+                        level: 2,
+                        maxLevel: 3,
+                        upgrades: {
+                            2: { name: 'Mappatura Avanzata', description: 'Mappatura topologia di rete avanzata' },
+                            3: { name: 'Mappatura Elite', description: 'Mappatura topologia elite', requires: ['Networking LV3'] }
+                        }
+                    },
+                    {
+                        id: 'target_identification_advanced',
+                        type: 'analysis',
+                        name: 'Identificazione Target / Filtraggio (Avanzato)',
+                        position: { x: 450, y: 200 },
+                        level: 3,
+                        maxLevel: 4,
+                        upgrades: {
+                            3: { name: 'Identificazione Avanzata', description: 'Identificazione target avanzata' },
+                            4: { name: 'Identificazione Elite', description: 'Identificazione target elite', requires: ['Sviluppo LV3'] }
+                        }
+                    },
+                    {
+                        id: 'vulnerability_analysis_standard',
+                        type: 'analysis',
+                        name: 'Analisi Vulnerabilità (AI) (Standard)',
+                        position: { x: 50, y: 350 },
+                        level: 2,
+                        maxLevel: 3,
+                        upgrades: {
+                            2: { name: 'Analisi AI Standard', description: 'Analisi vulnerabilità AI standard' },
+                            3: { name: 'Analisi AI Avanzata', description: 'Analisi vulnerabilità AI avanzata', requires: ['Sviluppo LV3'] }
+                        }
+                    },
+                    {
+                        id: 'network_intercept',
+                        type: 'interception',
+                        name: 'Intercetta traffico di rete',
+                        position: { x: 250, y: 350 },
+                        level: 1,
+                        maxLevel: 2,
+                        upgrades: {
+                            1: { name: 'Intercettazione Base', description: 'Intercettazione traffico di rete base' },
+                            2: { name: 'Intercettazione Avanzata', description: 'Intercettazione traffico avanzata', requires: ['Networking LV3'] }
+                        }
+                    },
+                    {
+                        id: 'protocol_reconstruction',
+                        type: 'analysis',
+                        name: 'Ricostruisci protocollo di comunicazione',
+                        position: { x: 450, y: 350 },
+                        level: 1,
+                        maxLevel: 2,
+                        upgrades: {
+                            1: { name: 'Ricostruzione Base', description: 'Ricostruzione protocolli di comunicazione base' },
+                            2: { name: 'Ricostruzione Avanzata', description: 'Ricostruzione protocolli avanzata', requires: ['Sviluppo LV3'] }
+                        }
+                    },
+                    {
+                        id: 'save_targets_advanced',
+                        type: 'storage',
+                        name: 'Salva Target Scoperti (Avanzato)',
+                        position: { x: 50, y: 500 },
+                        level: 3,
+                        maxLevel: 4,
+                        upgrades: {
+                            3: { name: 'Salvataggio Avanzato', description: 'Salvataggio target avanzato' },
+                            4: { name: 'Salvataggio Elite', description: 'Salvataggio target elite', requires: ['Sviluppo LV3'] }
+                        }
+                    },
+                    {
+                        id: 'clean_database_advanced_v2',
+                        type: 'stealth',
+                        name: 'Pulisci database (avanzato)',
+                        position: { x: 250, y: 500 },
+                        level: 2,
+                        maxLevel: 2,
+                        upgrades: {
+                            2: { name: 'Pulizia Avanzata', description: 'Rimozione tracce avanzata dal database' }
+                        }
+                    },
+                    {
+                        id: 'osint_monitoring_advanced',
+                        type: 'monitoring',
+                        name: 'Monitora Traffico OSINT (Avanzato)',
+                        position: { x: 450, y: 500 },
+                        level: 2,
+                        maxLevel: 3,
+                        upgrades: {
+                            2: { name: 'Monitoraggio Avanzato', description: 'Monitoraggio traffico OSINT avanzato' },
+                            3: { name: 'Monitoraggio Elite', description: 'Monitoraggio traffico OSINT elite', requires: ['Stealth LV3'] }
+                        }
+                    }
+                ],
+                connections: [
+                    { from: 'signal_trigger', to: 'network_scan_advanced' },
+                    { from: 'network_scan_advanced', to: 'port_scan_advanced_elite' },
+                    { from: 'signal_trigger', to: 'log_analysis_advanced' },
+                    { from: 'log_analysis_advanced', to: 'network_topology_advanced' },
+                    { from: 'network_topology_advanced', to: 'target_identification_advanced' },
+                    { from: 'port_scan_advanced_elite', to: 'target_identification_advanced' },
+                    { from: 'target_identification_advanced', to: 'vulnerability_analysis_standard' },
+                    { from: 'vulnerability_analysis_standard', to: 'network_intercept' },
+                    { from: 'network_intercept', to: 'protocol_reconstruction' },
+                    { from: 'protocol_reconstruction', to: 'save_targets_advanced' },
+                    { from: 'save_targets_advanced', to: 'clean_database_advanced_v2' },
+                    { from: 'clean_database_advanced_v2', to: 'osint_monitoring_advanced' }
+                ]
+            }
+        },
+        requiredTalents: ['Networking LV1', 'Stealth LV1', 'Sviluppo LV1']
+    },
     'keylogger': {
         name: 'Keylogger',
         description: 'Template per la creazione di keylogger con moduli di cattura, stealth e trasmissione',
@@ -1746,7 +2135,8 @@ function getTemplateIcon(templateKey) {
     const icons = {
         'ransomware': 'fa-lock',
         'keylogger': 'fa-keyboard',
-        'botnet_agent': 'fa-network-wired'
+        'botnet_agent': 'fa-network-wired',
+        'osint': 'fa-search'
     };
     return icons[templateKey] || 'fa-code';
 }
