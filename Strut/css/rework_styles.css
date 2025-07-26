@@ -609,6 +609,24 @@
     background: rgba(139, 92, 246, 0.3);
 }
 
+.btn-upgrade {
+    padding: 10px 16px;
+    background: rgba(251, 146, 60, 0.2);
+    border: 1px solid rgba(251, 146, 60, 0.5);
+    border-radius: 8px;
+    color: #fed7aa;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-weight: 500;
+    box-shadow: 0 0 10px rgba(251, 146, 60, 0.2);
+}
+
+.btn-upgrade:hover {
+    background: rgba(251, 146, 60, 0.3);
+    box-shadow: 0 0 15px rgba(251, 146, 60, 0.3);
+    transform: translateY(-1px);
+}
+
 .template-canvas {
     padding: 30px;
     min-height: 400px;
@@ -625,6 +643,15 @@
     background-size: 20px 20px;
 }
 
+/* Increase canvas height for higher template levels */
+.template-canvas[data-template-level="2"] .canvas-grid {
+    height: 400px;
+}
+
+.template-canvas[data-template-level="3"] .canvas-grid {
+    height: 500px;
+}
+
 .template-node {
     position: absolute;
     width: 180px;
@@ -637,6 +664,43 @@
     transition: all 0.3s ease;
     backdrop-filter: blur(10px);
     z-index: 10;
+}
+
+/* Smaller nodes for Level 2 templates (7+ nodes) */
+.template-canvas[data-template-level="2"] .template-node {
+    width: 140px;
+    min-height: 80px;
+    padding: 12px;
+    border-radius: 8px;
+}
+
+/* Even smaller nodes for Level 3 templates (15+ nodes) */
+.template-canvas[data-template-level="3"] .template-node {
+    width: 120px;
+    min-height: 70px;
+    padding: 10px;
+    border-radius: 8px;
+}
+
+/* Adjust font sizes for smaller nodes */
+.template-canvas[data-template-level="2"] .node-name,
+.template-canvas[data-template-level="3"] .node-name {
+    font-size: 12px;
+    line-height: 1.2;
+}
+
+.template-canvas[data-template-level="2"] .node-level,
+.template-canvas[data-template-level="3"] .node-level {
+    font-size: 10px;
+    padding: 1px 4px;
+}
+
+.template-canvas[data-template-level="2"] .node-upgrade-btn,
+.template-canvas[data-template-level="2"] .node-info-btn,
+.template-canvas[data-template-level="3"] .node-upgrade-btn,
+.template-canvas[data-template-level="3"] .node-info-btn {
+    padding: 4px 6px;
+    font-size: 10px;
 }
 
 .template-node:hover {

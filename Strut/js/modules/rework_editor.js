@@ -6,81 +6,403 @@ const toolTemplates = {
     'ransomware': {
         name: 'Ransomware',
         description: 'Template per la creazione di ransomware con nodi di crittografia, payload e distribuzione',
-        nodes: [
-            {
-                id: 'entry',
-                type: 'entry',
-                name: 'Target Entry',
-                position: { x: 100, y: 100 },
-                level: 1,
-                maxLevel: 3,
-                upgrades: {
-                    1: { name: 'Target Singolo', description: 'Colpisce un singolo target' },
-                    2: { name: 'Target Multipli', description: 'Colpisce più target simultaneamente', requires: ['Networking LV2'] },
-                    3: { name: 'Scan Automatico', description: 'Identifica automaticamente target vulnerabili', requires: ['Malware Attivi LV2'] }
-                }
+        maxTemplateLevel: 3,
+        templateLevel: 1,
+        levelRequirements: {
+            2: ['Malware Attivi LV2', 'Sviluppo LV2', 'Stealth LV2'],
+            3: ['Malware Attivi LV3', 'Sviluppo LV3', 'Stealth LV3']
+        },
+        levels: {
+            1: {
+                nodes: [
+                    {
+                        id: 'entry',
+                        type: 'entry',
+                        name: 'Target Entry',
+                        position: { x: 100, y: 100 },
+                        level: 1,
+                        maxLevel: 3,
+                        upgrades: {
+                            1: { name: 'Target Singolo', description: 'Colpisce un singolo target' },
+                            2: { name: 'Target Multipli', description: 'Colpisce più target simultaneamente', requires: ['Networking LV2'] },
+                            3: { name: 'Scan Automatico', description: 'Identifica automaticamente target vulnerabili', requires: ['Malware Attivi LV2'] }
+                        }
+                    },
+                    {
+                        id: 'payload',
+                        type: 'encryption',
+                        name: 'Encryption Engine',
+                        position: { x: 300, y: 100 },
+                        level: 1,
+                        maxLevel: 4,
+                        upgrades: {
+                            1: { name: 'AES-128', description: 'Crittografia base AES-128' },
+                            2: { name: 'AES-256', description: 'Crittografia avanzata AES-256', requires: ['Stealth LV2'] },
+                            3: { name: 'Multi-Layer', description: 'Crittografia a più livelli', requires: ['Stealth LV3'] },
+                            4: { name: 'Quantum-Resistant', description: 'Resistente agli attacchi quantistici', requires: ['Stealth LV3', 'Malware Attivi LV2'] }
+                        }
+                    },
+                    {
+                        id: 'distribution',
+                        type: 'delivery',
+                        name: 'Distribution Module',
+                        position: { x: 500, y: 100 },
+                        level: 1,
+                        maxLevel: 3,
+                        upgrades: {
+                            1: { name: 'Email Phishing', description: 'Distribuzione tramite email di phishing' },
+                            2: { name: 'Network Worm', description: 'Distribuzione automatica via rete', requires: ['Networking LV2'] },
+                            3: { name: 'Multi-Vector', description: 'Distribuzione su più vettori', requires: ['Ingegneria Sociale LV2', 'Networking LV2'] }
+                        }
+                    },
+                    {
+                        id: 'persistence',
+                        type: 'persistence',
+                        name: 'Persistence Module',
+                        position: { x: 300, y: 250 },
+                        level: 1,
+                        maxLevel: 3,
+                        upgrades: {
+                            1: { name: 'Registry Entry', description: 'Persistenza tramite registro di sistema' },
+                            2: { name: 'Service Creation', description: 'Crea servizio di sistema', requires: ['Sviluppo LV2'] },
+                            3: { name: 'Rootkit Integration', description: 'Integrazione con rootkit', requires: ['Stealth LV3'] }
+                        }
+                    },
+                    {
+                        id: 'compiler',
+                        type: 'compiler',
+                        name: 'Compiler',
+                        position: { x: 700, y: 175 },
+                        level: 1,
+                        maxLevel: 3,
+                        upgrades: {
+                            1: { name: 'Basic Compilation', description: 'Compilazione base del ransomware' },
+                            2: { name: 'Code Obfuscation', description: 'Offuscamento del codice', requires: ['Stealth LV2'] },
+                            3: { name: 'Anti-Analysis', description: 'Tecniche anti-analisi', requires: ['Stealth LV3'] }
+                        }
+                    }
+                ],
+                connections: [
+                    { from: 'entry', to: 'payload' },
+                    { from: 'payload', to: 'distribution' },
+                    { from: 'payload', to: 'persistence' },
+                    { from: 'distribution', to: 'compiler' },
+                    { from: 'persistence', to: 'compiler' }
+                ]
             },
-            {
-                id: 'payload',
-                type: 'encryption',
-                name: 'Encryption Engine',
-                position: { x: 300, y: 100 },
-                level: 1,
-                maxLevel: 4,
-                upgrades: {
-                    1: { name: 'AES-128', description: 'Crittografia base AES-128' },
-                    2: { name: 'AES-256', description: 'Crittografia avanzata AES-256', requires: ['Stealth LV2'] },
-                    3: { name: 'Multi-Layer', description: 'Crittografia a più livelli', requires: ['Stealth LV3'] },
-                    4: { name: 'Quantum-Resistant', description: 'Resistente agli attacchi quantistici', requires: ['Stealth LV3', 'Malware Attivi LV2'] }
-                }
+            2: {
+                nodes: [
+                    // Level 2 nodes optimized for smaller size (140px width)
+                    {
+                        id: 'entry',
+                        type: 'entry',
+                        name: 'Target Entry',
+                        position: { x: 50, y: 50 },
+                        level: 1,
+                        maxLevel: 3,
+                        upgrades: {
+                            1: { name: 'Target Singolo', description: 'Colpisce un singolo target' },
+                            2: { name: 'Target Multipli', description: 'Colpisce più target simultaneamente', requires: ['Networking LV2'] },
+                            3: { name: 'Scan Automatico', description: 'Identifica automaticamente target vulnerabili', requires: ['Malware Attivi LV2'] }
+                        }
+                    },
+                    // New Level 2 nodes as specified in requirements
+                    {
+                        id: 'antivirus_evasion',
+                        type: 'stealth',
+                        name: 'Evasione Antivirus (Base)',
+                        position: { x: 50, y: 180 },
+                        level: 1,
+                        maxLevel: 2,
+                        upgrades: {
+                            1: { name: 'Evasione Base', description: 'Tecniche base di evasione antivirus' },
+                            2: { name: 'Evasione Standard', description: 'Evasione antivirus migliorata', requires: ['Stealth LV2'] }
+                        }
+                    },
+                    {
+                        id: 'file_encrypt',
+                        type: 'encryption',
+                        name: 'Crittografa File (Standard)',
+                        position: { x: 220, y: 50 },
+                        level: 2,
+                        maxLevel: 3,
+                        upgrades: {
+                            2: { name: 'Crittografia Standard', description: 'Crittografia file con algoritmi standard' },
+                            3: { name: 'Crittografia Avanzata', description: 'Crittografia file avanzata', requires: ['Sviluppo LV2'] }
+                        }
+                    },
+                    {
+                        id: 'persistence_base',
+                        type: 'persistence',
+                        name: 'Imposta Persistenza (Base)',
+                        position: { x: 390, y: 180 },
+                        level: 1,
+                        maxLevel: 2,
+                        upgrades: {
+                            1: { name: 'Persistenza Base', description: 'Meccanismi base di persistenza' },
+                            2: { name: 'Persistenza Avanzata', description: 'Persistenza avanzata nel sistema', requires: ['Sviluppo LV2'] }
+                        }
+                    },
+                    {
+                        id: 'ransom_message',
+                        type: 'payload',
+                        name: 'Crea Messaggio Riscatto (Standard)',
+                        position: { x: 220, y: 310 },
+                        level: 2,
+                        maxLevel: 3,
+                        upgrades: {
+                            2: { name: 'Messaggio Standard', description: 'Messaggio di riscatto standard' },
+                            3: { name: 'Messaggio Avanzato', description: 'Messaggio di riscatto personalizzato', requires: ['Sviluppo LV2'] }
+                        }
+                    },
+                    {
+                        id: 'ransom_request',
+                        type: 'communication',
+                        name: 'Richiesta Riscatto',
+                        position: { x: 390, y: 310 },
+                        level: 1,
+                        maxLevel: 1,
+                        upgrades: {
+                            1: { name: 'Richiesta Riscatto', description: 'Gestisce la richiesta di riscatto' }
+                        }
+                    },
+                    {
+                        id: 'self_delete',
+                        type: 'stealth',
+                        name: 'Self-Delete (Base)',
+                        position: { x: 560, y: 180 },
+                        level: 1,
+                        maxLevel: 2,
+                        upgrades: {
+                            1: { name: 'Auto-eliminazione Base', description: 'Eliminazione automatica base' },
+                            2: { name: 'Auto-eliminazione Avanzata', description: 'Auto-eliminazione sicura', requires: ['Stealth LV2'] }
+                        }
+                    },
+                    {
+                        id: 'compiler',
+                        type: 'compiler',
+                        name: 'Compiler',
+                        position: { x: 560, y: 310 },
+                        level: 1,
+                        maxLevel: 3,
+                        upgrades: {
+                            1: { name: 'Basic Compilation', description: 'Compilazione base del ransomware' },
+                            2: { name: 'Code Obfuscation', description: 'Offuscamento del codice', requires: ['Stealth LV2'] },
+                            3: { name: 'Anti-Analysis', description: 'Tecniche anti-analisi', requires: ['Stealth LV3'] }
+                        }
+                    }
+                ],
+                connections: [
+                    { from: 'entry', to: 'antivirus_evasion' },
+                    { from: 'antivirus_evasion', to: 'file_encrypt' },
+                    { from: 'file_encrypt', to: 'persistence_base' },
+                    { from: 'persistence_base', to: 'ransom_message' },
+                    { from: 'ransom_message', to: 'ransom_request' },
+                    { from: 'ransom_request', to: 'self_delete' },
+                    { from: 'self_delete', to: 'compiler' }
+                ]
             },
-            {
-                id: 'distribution',
-                type: 'delivery',
-                name: 'Distribution Module',
-                position: { x: 500, y: 100 },
-                level: 1,
-                maxLevel: 3,
-                upgrades: {
-                    1: { name: 'Email Phishing', description: 'Distribuzione tramite email di phishing' },
-                    2: { name: 'Network Worm', description: 'Distribuzione automatica via rete', requires: ['Networking LV2'] },
-                    3: { name: 'Multi-Vector', description: 'Distribuzione su più vettori', requires: ['Ingegneria Sociale LV2', 'Networking LV2'] }
-                }
-            },
-            {
-                id: 'persistence',
-                type: 'persistence',
-                name: 'Persistence Module',
-                position: { x: 300, y: 250 },
-                level: 1,
-                maxLevel: 3,
-                upgrades: {
-                    1: { name: 'Registry Entry', description: 'Persistenza tramite registro di sistema' },
-                    2: { name: 'Service Creation', description: 'Crea servizio di sistema', requires: ['Sviluppo LV2'] },
-                    3: { name: 'Rootkit Integration', description: 'Integrazione con rootkit', requires: ['Stealth LV3'] }
-                }
-            },
-            {
-                id: 'compiler',
-                type: 'compiler',
-                name: 'Compiler',
-                position: { x: 700, y: 175 },
-                level: 1,
-                maxLevel: 3,
-                upgrades: {
-                    1: { name: 'Basic Compilation', description: 'Compilazione base del ransomware' },
-                    2: { name: 'Code Obfuscation', description: 'Offuscamento del codice', requires: ['Stealth LV2'] },
-                    3: { name: 'Anti-Analysis', description: 'Tecniche anti-analisi', requires: ['Stealth LV3'] }
-                }
+            3: {
+                nodes: [
+                    // Level 3 nodes optimized for smaller size (120px width)
+                    {
+                        id: 'entry',
+                        type: 'entry',
+                        name: 'Target Entry',
+                        position: { x: 30, y: 30 },
+                        level: 1,
+                        maxLevel: 3,
+                        upgrades: {
+                            1: { name: 'Target Singolo', description: 'Colpisce un singolo target' },
+                            2: { name: 'Target Multipli', description: 'Colpisce più target simultaneamente', requires: ['Networking LV2'] },
+                            3: { name: 'Scan Automatico', description: 'Identifica automaticamente target vulnerabili', requires: ['Malware Attivi LV2'] }
+                        }
+                    },
+                    {
+                        id: 'antivirus_evasion_advanced',
+                        type: 'stealth',
+                        name: 'Evasione Antivirus (Avanzato)',
+                        position: { x: 30, y: 150 },
+                        level: 3,
+                        maxLevel: 4,
+                        upgrades: {
+                            3: { name: 'Evasione Avanzata', description: 'Tecniche avanzate di evasione antivirus' },
+                            4: { name: 'Evasione Elite', description: 'Evasione antivirus di livello elite', requires: ['Stealth LV3'] }
+                        }
+                    },
+                    {
+                        id: 'sandbox_bypass',
+                        type: 'stealth',
+                        name: 'Bypassa Sandbox/VM (Base)',
+                        position: { x: 180, y: 30 },
+                        level: 1,
+                        maxLevel: 2,
+                        upgrades: {
+                            1: { name: 'Bypass Base', description: 'Bypass base di sandbox e VM' },
+                            2: { name: 'Bypass Avanzato', description: 'Bypass avanzato di ambienti virtualizzati', requires: ['Stealth LV3'] }
+                        }
+                    },
+                    {
+                        id: 'file_scanner_advanced',
+                        type: 'analysis',
+                        name: 'Scanner File (Avanzato)',
+                        position: { x: 180, y: 150 },
+                        level: 3,
+                        maxLevel: 4,
+                        upgrades: {
+                            3: { name: 'Scan Avanzato', description: 'Scanner file avanzato per target' },
+                            4: { name: 'Scan Elite', description: 'Scanner file di livello elite', requires: ['Sviluppo LV3'] }
+                        }
+                    },
+                    {
+                        id: 'crypto_key_gen_advanced',
+                        type: 'encryption',
+                        name: 'Genera Chiave Crittografia (Avanzato)',
+                        position: { x: 330, y: 30 },
+                        level: 3,
+                        maxLevel: 4,
+                        upgrades: {
+                            3: { name: 'Generazione Avanzata', description: 'Generazione avanzata chiavi crittografiche' },
+                            4: { name: 'Generazione Elite', description: 'Generazione elite chiavi crittografiche', requires: ['Stealth LV3'] }
+                        }
+                    },
+                    {
+                        id: 'file_encrypt_advanced',
+                        type: 'encryption',
+                        name: 'Crittografa File (Avanzata)',
+                        position: { x: 330, y: 150 },
+                        level: 3,
+                        maxLevel: 4,
+                        upgrades: {
+                            3: { name: 'Crittografia Avanzata', description: 'Crittografia file di livello avanzato' },
+                            4: { name: 'Crittografia Elite', description: 'Crittografia file elite', requires: ['Sviluppo LV3'] }
+                        }
+                    },
+                    {
+                        id: 'auto_propagation',
+                        type: 'propagation',
+                        name: 'Auto-Propagazione (Base)',
+                        position: { x: 480, y: 30 },
+                        level: 1,
+                        maxLevel: 2,
+                        upgrades: {
+                            1: { name: 'Propagazione Base', description: 'Auto-propagazione base in rete' },
+                            2: { name: 'Propagazione Avanzata', description: 'Auto-propagazione avanzata', requires: ['Networking LV3'] }
+                        }
+                    },
+                    {
+                        id: 'persistence_advanced',
+                        type: 'persistence',
+                        name: 'Imposta Persistenza (Avanzata)',
+                        position: { x: 30, y: 270 },
+                        level: 3,
+                        maxLevel: 3,
+                        upgrades: {
+                            3: { name: 'Persistenza Avanzata', description: 'Meccanismi avanzati di persistenza nel sistema' }
+                        }
+                    },
+                    {
+                        id: 'c2_communication',
+                        type: 'communication',
+                        name: 'Comunica C2 (Covert)',
+                        position: { x: 180, y: 270 },
+                        level: 1,
+                        maxLevel: 2,
+                        upgrades: {
+                            1: { name: 'Comunicazione Covert', description: 'Comunicazione nascosta con C2' },
+                            2: { name: 'Comunicazione Elite', description: 'Comunicazione C2 di livello elite', requires: ['Stealth LV3'] }
+                        }
+                    },
+                    {
+                        id: 'data_exfiltration',
+                        type: 'exfiltration',
+                        name: 'Data Exfiltration (Base)',
+                        position: { x: 330, y: 270 },
+                        level: 1,
+                        maxLevel: 2,
+                        upgrades: {
+                            1: { name: 'Esfiltrazione Base', description: 'Esfiltrazione base di dati' },
+                            2: { name: 'Esfiltrazione Avanzata', description: 'Esfiltrazione avanzata di dati', requires: ['Sviluppo LV3'] }
+                        }
+                    },
+                    {
+                        id: 'system_lock',
+                        type: 'disruption',
+                        name: 'Blocco Sistema Operativo (Base)',
+                        position: { x: 30, y: 390 },
+                        level: 1,
+                        maxLevel: 2,
+                        upgrades: {
+                            1: { name: 'Blocco Base', description: 'Blocco base del sistema operativo' },
+                            2: { name: 'Blocco Avanzato', description: 'Blocco avanzato del sistema', requires: ['Sviluppo LV3'] }
+                        }
+                    },
+                    {
+                        id: 'ransom_message_advanced',
+                        type: 'payload',
+                        name: 'Crea Messaggio Riscatto (Avanzato)',
+                        position: { x: 180, y: 390 },
+                        level: 3,
+                        maxLevel: 3,
+                        upgrades: {
+                            3: { name: 'Messaggio Avanzato', description: 'Messaggio di riscatto avanzato e personalizzato' }
+                        }
+                    },
+                    {
+                        id: 'ransom_request_advanced',
+                        type: 'communication',
+                        name: 'Richiesta Riscatto',
+                        position: { x: 330, y: 390 },
+                        level: 1,
+                        maxLevel: 1,
+                        upgrades: {
+                            1: { name: 'Richiesta Riscatto', description: 'Gestisce la richiesta di riscatto' }
+                        }
+                    },
+                    {
+                        id: 'self_delete_advanced',
+                        type: 'stealth',
+                        name: 'Self-Delete (Avanzato)',
+                        position: { x: 480, y: 270 },
+                        level: 3,
+                        maxLevel: 3,
+                        upgrades: {
+                            3: { name: 'Auto-eliminazione Avanzata', description: 'Auto-eliminazione avanzata e sicura' }
+                        }
+                    },
+                    {
+                        id: 'compiler',
+                        type: 'compiler',
+                        name: 'Compiler',
+                        position: { x: 480, y: 390 },
+                        level: 1,
+                        maxLevel: 3,
+                        upgrades: {
+                            1: { name: 'Basic Compilation', description: 'Compilazione base del ransomware' },
+                            2: { name: 'Code Obfuscation', description: 'Offuscamento del codice', requires: ['Stealth LV2'] },
+                            3: { name: 'Anti-Analysis', description: 'Tecniche anti-analisi', requires: ['Stealth LV3'] }
+                        }
+                    }
+                ],
+                connections: [
+                    { from: 'entry', to: 'antivirus_evasion_advanced' },
+                    { from: 'entry', to: 'sandbox_bypass' },
+                    { from: 'sandbox_bypass', to: 'file_scanner_advanced' },
+                    { from: 'file_scanner_advanced', to: 'crypto_key_gen_advanced' },
+                    { from: 'crypto_key_gen_advanced', to: 'file_encrypt_advanced' },
+                    { from: 'antivirus_evasion_advanced', to: 'persistence_advanced' },
+                    { from: 'persistence_advanced', to: 'c2_communication' },
+                    { from: 'c2_communication', to: 'data_exfiltration' },
+                    { from: 'data_exfiltration', to: 'system_lock' },
+                    { from: 'system_lock', to: 'ransom_message_advanced' },
+                    { from: 'ransom_message_advanced', to: 'ransom_request_advanced' },
+                    { from: 'ransom_request_advanced', to: 'self_delete_advanced' },
+                    { from: 'file_encrypt_advanced', to: 'auto_propagation' },
+                    { from: 'auto_propagation', to: 'compiler' },
+                    { from: 'self_delete_advanced', to: 'compiler' }
+                ]
             }
-        ],
-        connections: [
-            { from: 'entry', to: 'payload' },
-            { from: 'payload', to: 'distribution' },
-            { from: 'payload', to: 'persistence' },
-            { from: 'distribution', to: 'compiler' },
-            { from: 'persistence', to: 'compiler' }
-        ],
+        },
         requiredTalents: ['Malware Attivi LV1', 'Stealth LV1', 'Sviluppo LV1']
     },
     'keylogger': {
@@ -332,6 +654,7 @@ function initReworkEditor() {
         state.reworkEditor = {
             availableTemplates: Object.keys(toolTemplates),
             activeTemplate: null,
+            templateLevels: {}, // Track template levels
             nodeUpgrades: {},
             appliedModifiers: {},
             compilationHistory: [],
@@ -340,6 +663,18 @@ function initReworkEditor() {
             selectedCompilerOptions: []
         };
     }
+    
+    // Initialize template levels if not exists
+    if (!state.reworkEditor.templateLevels) {
+        state.reworkEditor.templateLevels = {};
+    }
+    
+    // Initialize all templates to level 1 if not set
+    Object.keys(toolTemplates).forEach(templateKey => {
+        if (!state.reworkEditor.templateLevels[templateKey]) {
+            state.reworkEditor.templateLevels[templateKey] = 1;
+        }
+    });
     
     // Restore active compilations from programming timer state
     restoreActiveCompilations();
@@ -460,15 +795,21 @@ function renderTemplateEditor() {
     if (!currentTemplate) return '';
     
     const template = toolTemplates[currentTemplate];
+    const currentTemplateLevel = state.reworkEditor.templateLevels[currentTemplate] || 1;
     
     return `
-        <div class="template-editor-content">
+        <div class="template-editor-content" data-template-level="${currentTemplateLevel}">
             <div class="editor-toolbar">
                 <h3 class="text-lg font-semibold text-white">
                     <i class="fas ${getTemplateIcon(currentTemplate)} mr-2"></i>
-                    ${template.name} Editor
+                    ${template.name} Editor - Livello ${currentTemplateLevel}
                 </h3>
                 <div class="toolbar-actions">
+                    ${canPowerUpTemplate(currentTemplate) ? `
+                        <button class="btn-upgrade" onclick="powerUpTemplate('${currentTemplate}')" title="Potenzia il flusso al livello successivo">
+                            <i class="fas fa-rocket"></i> Potenzia Flusso
+                        </button>
+                    ` : ''}
                     <button class="btn-secondary" onclick="resetTemplate()">
                         <i class="fas fa-undo"></i> Reset
                     </button>
@@ -478,7 +819,7 @@ function renderTemplateEditor() {
                 </div>
             </div>
             
-            <div class="template-canvas">
+            <div class="template-canvas" data-template-level="${currentTemplateLevel}">
                 <div class="canvas-grid">
                     ${renderTemplateNodes()}
                     ${renderTemplateConnections()}
@@ -509,8 +850,10 @@ function renderTemplateEditor() {
 
 function renderTemplateNodes() {
     const template = toolTemplates[currentTemplate];
+    const currentTemplateLevel = state.reworkEditor.templateLevels[currentTemplate] || 1;
+    const currentLevelData = template.levels[currentTemplateLevel];
     
-    return template.nodes.map(node => {
+    return currentLevelData.nodes.map(node => {
         const currentLevel = state.reworkEditor.nodeUpgrades[`${currentTemplate}_${node.id}`] || 1;
         const isSelected = selectedNodeId === node.id;
         
@@ -543,12 +886,14 @@ function renderTemplateNodes() {
 
 function renderTemplateConnections() {
     const template = toolTemplates[currentTemplate];
+    const currentTemplateLevel = state.reworkEditor.templateLevels[currentTemplate] || 1;
+    const currentLevelData = template.levels[currentTemplateLevel];
     
     return `
         <svg class="connections-svg" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1;">
-            ${template.connections.map((conn, index) => {
-                const fromNode = template.nodes.find(n => n.id === conn.from);
-                const toNode = template.nodes.find(n => n.id === conn.to);
+            ${currentLevelData.connections.map((conn, index) => {
+                const fromNode = currentLevelData.nodes.find(n => n.id === conn.from);
+                const toNode = currentLevelData.nodes.find(n => n.id === conn.to);
                 
                 if (!fromNode || !toNode) return '';
                 
@@ -713,7 +1058,9 @@ function selectModifierSlot(slotIndex) {
 
 function renderNodeInspector() {
     const template = toolTemplates[currentTemplate];
-    const node = template.nodes.find(n => n.id === selectedNodeId);
+    const currentTemplateLevel = state.reworkEditor.templateLevels[currentTemplate] || 1;
+    const currentLevelData = template.levels[currentTemplateLevel];
+    const node = currentLevelData.nodes.find(n => n.id === selectedNodeId);
     if (!node) return '';
     
     const currentLevel = state.reworkEditor.nodeUpgrades[`${currentTemplate}_${node.id}`] || 1;
@@ -1105,26 +1452,18 @@ function checkTemplateRequirements(template) {
 
 function checkTalentRequirement(talentRequirement) {
     // Parse requirement like "Malware Attivi LV2" or "Sviluppo LV1"
-    const parts = talentRequirement.split(' LV');
-    const talentName = parts[0];
-    const requiredLevel = parseInt(parts[1]) || 1;
-    
-    // Check if it's a core talent
     const fullTalentName = talentRequirement; // "Sviluppo LV1", "Malware Attivi LV1", etc.
     
-    // First check if it's unlocked in the rework talents system
-    if (state.reworkTalents) {
-        const coreUnlocked = state.reworkTalents.unlockedCore[fullTalentName] || 0;
-        const specializationUnlocked = state.reworkTalents.unlockedSpecialization[fullTalentName] || 0;
-        
-        if (coreUnlocked > 0 || specializationUnlocked > 0) {
-            return true;
-        }
+    // Check if rework talents system is initialized
+    if (!state.reworkTalents) {
+        return false;
     }
     
-    // Fallback to old system for backward compatibility
-    const unlockedLevel = state.unlocked[talentName] || 0;
-    return unlockedLevel >= requiredLevel;
+    // Check if it's unlocked in the rework talents system
+    const coreUnlocked = state.reworkTalents.unlockedCore[fullTalentName] || false;
+    const specializationUnlocked = state.reworkTalents.unlockedSpecialization[fullTalentName] || false;
+    
+    return coreUnlocked || specializationUnlocked;
 }
 
 function checkCompilerOptionRequirements(option) {
@@ -1133,7 +1472,9 @@ function checkCompilerOptionRequirements(option) {
 
 function canUpgradeNode(nodeId) {
     const template = toolTemplates[currentTemplate];
-    const node = template.nodes.find(n => n.id === nodeId);
+    const currentTemplateLevel = state.reworkEditor.templateLevels[currentTemplate] || 1;
+    const currentLevelData = template.levels[currentTemplateLevel];
+    const node = currentLevelData.nodes.find(n => n.id === nodeId);
     if (!node) return false;
     
     const currentLevel = state.reworkEditor.nodeUpgrades[`${currentTemplate}_${node.id}`] || 1;
@@ -1163,6 +1504,52 @@ function selectTemplate(templateKey) {
 function selectNode(nodeId) {
     selectedNodeId = nodeId;
     renderReworkEditor();
+}
+
+function canPowerUpTemplate(templateKey) {
+    const template = toolTemplates[templateKey];
+    const currentTemplateLevel = state.reworkEditor.templateLevels[templateKey] || 1;
+    
+    // Check if template has higher levels available
+    if (currentTemplateLevel >= template.maxTemplateLevel) {
+        return false;
+    }
+    
+    // Check if player has required talents for next level
+    const nextLevel = currentTemplateLevel + 1;
+    const requiredTalents = template.levelRequirements[nextLevel];
+    
+    if (requiredTalents) {
+        return requiredTalents.every(talent => checkTalentRequirement(talent));
+    }
+    
+    return true;
+}
+
+function powerUpTemplate(templateKey) {
+    const template = toolTemplates[templateKey];
+    const currentTemplateLevel = state.reworkEditor.templateLevels[templateKey] || 1;
+    
+    if (canPowerUpTemplate(templateKey)) {
+        const nextLevel = currentTemplateLevel + 1;
+        state.reworkEditor.templateLevels[templateKey] = nextLevel;
+        
+        // Reset selected node since the canvas will change
+        selectedNodeId = null;
+        
+        saveState();
+        renderReworkEditor();
+        
+        showNotification(`Template ${template.name} potenziato al Livello ${nextLevel}! Nuovi nodi e interconnessioni disponibili.`, 'success');
+    } else {
+        const nextLevel = currentTemplateLevel + 1;
+        const requiredTalents = template.levelRequirements[nextLevel];
+        if (requiredTalents) {
+            showNotification(`Per potenziare al Livello ${nextLevel} sono richiesti: ${requiredTalents.join(', ')}`, 'warning');
+        } else {
+            showNotification('Template già al livello massimo.', 'info');
+        }
+    }
 }
 
 function upgradeNode(nodeId) {
@@ -1197,6 +1584,7 @@ function compileTemplate() {
         id: Date.now(),
         templateName: template.name,
         template: currentTemplate,
+        templateLevel: state.reworkEditor.templateLevels[currentTemplate] || 1,
         appliedModifiers: [...appliedModifiers],
         compilerOptions: [...selectedOptions],
         nodeUpgrades: {...(state.reworkEditor.nodeUpgrades || {})},
@@ -1222,12 +1610,14 @@ function compileTemplate() {
 
 function calculateCompilationTime() {
     const template = toolTemplates[currentTemplate];
+    const currentTemplateLevel = state.reworkEditor.templateLevels[currentTemplate] || 1;
+    const currentLevelData = template.levels[currentTemplateLevel];
     
     // Base time based on template complexity
-    let baseTime = template.nodes.length * 30; // 30 seconds per node
+    let baseTime = currentLevelData.nodes.length * 30; // 30 seconds per node
     
     // Add time based on node upgrades
-    template.nodes.forEach(node => {
+    currentLevelData.nodes.forEach(node => {
         const currentLevel = state.reworkEditor.nodeUpgrades[`${currentTemplate}_${node.id}`] || 1;
         baseTime += currentLevel * 15; // 15 seconds per upgrade level
     });
@@ -1434,7 +1824,11 @@ function calculateComplexityRating(item) {
     const template = toolTemplates[item.template];
     if (!template) return 'Semplice';
     
-    let complexityScore = template.nodes.length * 10;
+    // Use template level from compilation item or default to 1
+    const templateLevel = item.templateLevel || 1;
+    const levelData = template.levels[templateLevel];
+    
+    let complexityScore = levelData.nodes.length * 10;
     
     // Add node level complexity
     Object.entries(item.nodeUpgrades || {}).forEach(([nodeKey, level]) => {
@@ -1507,6 +1901,8 @@ window.initReworkEditor = initReworkEditor;
 window.selectTemplate = selectTemplate;
 window.selectNode = selectNode;
 window.upgradeNode = upgradeNode;
+window.powerUpTemplate = powerUpTemplate;
+window.canPowerUpTemplate = canPowerUpTemplate;
 window.compileTemplate = compileTemplate;
 window.resetTemplate = resetTemplate;
 window.deleteMalware = deleteMalware;
