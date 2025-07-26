@@ -421,7 +421,7 @@ const toolTemplates = {
                         id: 'signal_trigger',
                         type: 'entry',
                         name: 'Ricevi segnale trigger',
-                        position: { x: 50, y: 50 },
+                        position: { x: 100, y: 100 },
                         level: 1,
                         maxLevel: 1,
                         upgrades: {
@@ -432,7 +432,7 @@ const toolTemplates = {
                         id: 'network_scan_base',
                         type: 'scanning',
                         name: 'Scansione Rete Globale (Base)',
-                        position: { x: 200, y: 50 },
+                        position: { x: 300, y: 100 },
                         level: 1,
                         maxLevel: 2,
                         upgrades: {
@@ -444,7 +444,7 @@ const toolTemplates = {
                         id: 'port_scan_advanced',
                         type: 'scanning',
                         name: 'Esegui port scan avanzato',
-                        position: { x: 350, y: 50 },
+                        position: { x: 500, y: 100 },
                         level: 1,
                         maxLevel: 2,
                         upgrades: {
@@ -456,7 +456,7 @@ const toolTemplates = {
                         id: 'target_identification',
                         type: 'analysis',
                         name: 'Identificazione Target / Filtraggio',
-                        position: { x: 200, y: 150 },
+                        position: { x: 200, y: 250 },
                         level: 1,
                         maxLevel: 2,
                         upgrades: {
@@ -468,7 +468,7 @@ const toolTemplates = {
                         id: 'save_targets',
                         type: 'storage',
                         name: 'Salva Target Scoperti',
-                        position: { x: 350, y: 150 },
+                        position: { x: 400, y: 250 },
                         level: 1,
                         maxLevel: 2,
                         upgrades: {
@@ -480,7 +480,7 @@ const toolTemplates = {
                         id: 'clean_database',
                         type: 'stealth',
                         name: 'Pulisci database (rimuovi tracce)',
-                        position: { x: 200, y: 250 },
+                        position: { x: 300, y: 400 },
                         level: 1,
                         maxLevel: 2,
                         upgrades: {
@@ -503,7 +503,7 @@ const toolTemplates = {
                         id: 'signal_trigger',
                         type: 'entry',
                         name: 'Ricevi segnale trigger',
-                        position: { x: 30, y: 30 },
+                        position: { x: 50, y: 50 },
                         level: 1,
                         maxLevel: 1,
                         upgrades: {
@@ -514,7 +514,7 @@ const toolTemplates = {
                         id: 'network_scan_standard',
                         type: 'scanning',
                         name: 'Scansione Rete Globale (Standard)',
-                        position: { x: 150, y: 30 },
+                        position: { x: 250, y: 50 },
                         level: 2,
                         maxLevel: 3,
                         upgrades: {
@@ -526,7 +526,7 @@ const toolTemplates = {
                         id: 'port_scan_standard',
                         type: 'scanning',
                         name: 'Esegui port scan avanzato (Standard)',
-                        position: { x: 270, y: 30 },
+                        position: { x: 450, y: 50 },
                         level: 2,
                         maxLevel: 3,
                         upgrades: {
@@ -538,7 +538,7 @@ const toolTemplates = {
                         id: 'log_analysis',
                         type: 'analysis',
                         name: 'Analizza log file',
-                        position: { x: 30, y: 120 },
+                        position: { x: 50, y: 200 },
                         level: 1,
                         maxLevel: 2,
                         upgrades: {
@@ -550,7 +550,7 @@ const toolTemplates = {
                         id: 'network_topology',
                         type: 'mapping',
                         name: 'Mappa topologia di rete',
-                        position: { x: 150, y: 120 },
+                        position: { x: 250, y: 200 },
                         level: 1,
                         maxLevel: 2,
                         upgrades: {
@@ -562,7 +562,7 @@ const toolTemplates = {
                         id: 'target_identification_standard',
                         type: 'analysis',
                         name: 'Identificazione Target / Filtraggio (Standard)',
-                        position: { x: 270, y: 120 },
+                        position: { x: 450, y: 200 },
                         level: 2,
                         maxLevel: 3,
                         upgrades: {
@@ -574,7 +574,7 @@ const toolTemplates = {
                         id: 'vulnerability_analysis_base',
                         type: 'analysis',
                         name: 'Analisi Vulnerabilità (AI) (Base)',
-                        position: { x: 30, y: 210 },
+                        position: { x: 50, y: 350 },
                         level: 1,
                         maxLevel: 2,
                         upgrades: {
@@ -586,7 +586,7 @@ const toolTemplates = {
                         id: 'save_targets_standard',
                         type: 'storage',
                         name: 'Salva Target Scoperti (Standard)',
-                        position: { x: 150, y: 210 },
+                        position: { x: 250, y: 350 },
                         level: 2,
                         maxLevel: 3,
                         upgrades: {
@@ -598,7 +598,7 @@ const toolTemplates = {
                         id: 'clean_database_advanced',
                         type: 'stealth',
                         name: 'Pulisci database (avanzato)',
-                        position: { x: 270, y: 210 },
+                        position: { x: 450, y: 350 },
                         level: 2,
                         maxLevel: 2,
                         upgrades: {
@@ -609,7 +609,7 @@ const toolTemplates = {
                         id: 'osint_monitoring_base',
                         type: 'monitoring',
                         name: 'Monitora Traffico OSINT (Base)',
-                        position: { x: 150, y: 300 },
+                        position: { x: 250, y: 500 },
                         level: 1,
                         maxLevel: 2,
                         upgrades: {
@@ -637,7 +637,7 @@ const toolTemplates = {
                         id: 'signal_trigger',
                         type: 'entry',
                         name: 'Ricevi segnale trigger',
-                        position: { x: 20, y: 20 },
+                        position: { x: 50, y: 50 },
                         level: 1,
                         maxLevel: 1,
                         upgrades: {
@@ -648,7 +648,7 @@ const toolTemplates = {
                         id: 'network_scan_advanced',
                         type: 'scanning',
                         name: 'Scansione Rete Globale (Avanzata)',
-                        position: { x: 120, y: 20 },
+                        position: { x: 250, y: 50 },
                         level: 3,
                         maxLevel: 4,
                         upgrades: {
@@ -660,7 +660,7 @@ const toolTemplates = {
                         id: 'port_scan_advanced_elite',
                         type: 'scanning',
                         name: 'Esegui port scan avanzato (Avanzato)',
-                        position: { x: 220, y: 20 },
+                        position: { x: 450, y: 50 },
                         level: 3,
                         maxLevel: 4,
                         upgrades: {
@@ -672,7 +672,7 @@ const toolTemplates = {
                         id: 'log_analysis_advanced',
                         type: 'analysis',
                         name: 'Analizza log file (Avanzato)',
-                        position: { x: 20, y: 100 },
+                        position: { x: 50, y: 200 },
                         level: 2,
                         maxLevel: 3,
                         upgrades: {
@@ -684,7 +684,7 @@ const toolTemplates = {
                         id: 'network_topology_advanced',
                         type: 'mapping',
                         name: 'Mappa topologia di rete (Avanzata)',
-                        position: { x: 120, y: 100 },
+                        position: { x: 250, y: 200 },
                         level: 2,
                         maxLevel: 3,
                         upgrades: {
@@ -696,7 +696,7 @@ const toolTemplates = {
                         id: 'target_identification_advanced',
                         type: 'analysis',
                         name: 'Identificazione Target / Filtraggio (Avanzato)',
-                        position: { x: 220, y: 100 },
+                        position: { x: 450, y: 200 },
                         level: 3,
                         maxLevel: 4,
                         upgrades: {
@@ -708,7 +708,7 @@ const toolTemplates = {
                         id: 'vulnerability_analysis_standard',
                         type: 'analysis',
                         name: 'Analisi Vulnerabilità (AI) (Standard)',
-                        position: { x: 20, y: 180 },
+                        position: { x: 50, y: 350 },
                         level: 2,
                         maxLevel: 3,
                         upgrades: {
@@ -720,7 +720,7 @@ const toolTemplates = {
                         id: 'network_intercept',
                         type: 'interception',
                         name: 'Intercetta traffico di rete',
-                        position: { x: 120, y: 180 },
+                        position: { x: 250, y: 350 },
                         level: 1,
                         maxLevel: 2,
                         upgrades: {
@@ -732,7 +732,7 @@ const toolTemplates = {
                         id: 'protocol_reconstruction',
                         type: 'analysis',
                         name: 'Ricostruisci protocollo di comunicazione',
-                        position: { x: 220, y: 180 },
+                        position: { x: 450, y: 350 },
                         level: 1,
                         maxLevel: 2,
                         upgrades: {
@@ -744,7 +744,7 @@ const toolTemplates = {
                         id: 'save_targets_advanced',
                         type: 'storage',
                         name: 'Salva Target Scoperti (Avanzato)',
-                        position: { x: 20, y: 260 },
+                        position: { x: 50, y: 500 },
                         level: 3,
                         maxLevel: 4,
                         upgrades: {
@@ -756,7 +756,7 @@ const toolTemplates = {
                         id: 'clean_database_advanced_v2',
                         type: 'stealth',
                         name: 'Pulisci database (avanzato)',
-                        position: { x: 120, y: 260 },
+                        position: { x: 250, y: 500 },
                         level: 2,
                         maxLevel: 2,
                         upgrades: {
@@ -767,7 +767,7 @@ const toolTemplates = {
                         id: 'osint_monitoring_advanced',
                         type: 'monitoring',
                         name: 'Monitora Traffico OSINT (Avanzato)',
-                        position: { x: 220, y: 260 },
+                        position: { x: 450, y: 500 },
                         level: 2,
                         maxLevel: 3,
                         upgrades: {
