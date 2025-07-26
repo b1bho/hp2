@@ -563,6 +563,311 @@ const toolTemplates = {
             { from: 'payload', to: 'compiler' }
         ],
         requiredTalents: ['Malware di Rete LV1', 'Networking LV1', 'Sviluppo LV1']
+    },
+    'osint': {
+        name: 'OSINT',
+        description: 'Template per la raccolta di intelligence open-source con moduli di ricognizione, analisi e correlazione dati',
+        maxTemplateLevel: 3,
+        templateLevel: 1,
+        levelRequirements: {
+            2: ['Analisi Dati LV2', 'Network Security LV2', 'Rev Eng LV1'],
+            3: ['Analisi Dati LV3', 'Network Security LV3', 'AI LV2']
+        },
+        levels: {
+            1: {
+                nodes: [
+                    {
+                        id: 'target_profiling',
+                        type: 'recon',
+                        name: 'Profilazione Target',
+                        position: { x: 100, y: 100 },
+                        level: 1,
+                        maxLevel: 3,
+                        upgrades: {
+                            1: { name: 'Profilo Base', description: 'Identifica informazioni pubbliche base del target' },
+                            2: { name: 'Profilo Dettagliato', description: 'Analisi approfondita delle attività del target', requires: ['Network Security LV1'] },
+                            3: { name: 'Profilo Comportamentale', description: 'Modelli comportamentali e predizioni', requires: ['AI LV1'] }
+                        }
+                    },
+                    {
+                        id: 'network_discovery',
+                        type: 'access',
+                        name: 'Network Discovery',
+                        position: { x: 300, y: 50 },
+                        level: 1,
+                        maxLevel: 3,
+                        upgrades: {
+                            1: { name: 'Scan Base', description: 'Scansione rete e port scan base' },
+                            2: { name: 'Topology Mapping', description: 'Mappatura topologia di rete completa', requires: ['Net LV2'] },
+                            3: { name: 'Service Fingerprinting', description: 'Fingerprinting servizi e versioni', requires: ['Network Security LV2'] }
+                        }
+                    },
+                    {
+                        id: 'data_gathering',
+                        type: 'acquisition',
+                        name: 'Data Gathering',
+                        position: { x: 300, y: 150 },
+                        level: 1,
+                        maxLevel: 4,
+                        upgrades: {
+                            1: { name: 'Info Base', description: 'Raccolta informazioni pubbliche base' },
+                            2: { name: 'Social Media Mining', description: 'Estrazione dati da social media', requires: ['Analisi Dati LV1'] },
+                            3: { name: 'Deep Web Search', description: 'Ricerca nel deep web e database specializzati', requires: ['Analisi Dati LV2'] },
+                            4: { name: 'Automated Collection', description: 'Raccolta automatizzata multi-fonte', requires: ['AI LV1'] }
+                        }
+                    },
+                    {
+                        id: 'analysis_engine',
+                        type: 'recon',
+                        name: 'Analysis Engine',
+                        position: { x: 500, y: 100 },
+                        level: 1,
+                        maxLevel: 3,
+                        upgrades: {
+                            1: { name: 'Analisi Base', description: 'Analisi e correlazione dati base' },
+                            2: { name: 'Pattern Recognition', description: 'Riconoscimento pattern e anomalie', requires: ['Analisi Dati LV2'] },
+                            3: { name: 'Predictive Analysis', description: 'Analisi predittiva comportamentale', requires: ['AI LV2'] }
+                        }
+                    },
+                    {
+                        id: 'intelligence_report',
+                        type: 'exfiltration',
+                        name: 'Intelligence Report',
+                        position: { x: 700, y: 100 },
+                        level: 1,
+                        maxLevel: 3,
+                        upgrades: {
+                            1: { name: 'Report Base', description: 'Generazione report intelligence base' },
+                            2: { name: 'Visual Analytics', description: 'Report con visualizzazioni e grafi', requires: ['Analisi Dati LV1'] },
+                            3: { name: 'Actionable Intelligence', description: 'Intelligence operativa con raccomandazioni', requires: ['AI LV1'] }
+                        }
+                    }
+                ],
+                connections: [
+                    { from: 'target_profiling', to: 'network_discovery' },
+                    { from: 'target_profiling', to: 'data_gathering' },
+                    { from: 'network_discovery', to: 'analysis_engine' },
+                    { from: 'data_gathering', to: 'analysis_engine' },
+                    { from: 'analysis_engine', to: 'intelligence_report' }
+                ]
+            },
+            2: {
+                nodes: [
+                    {
+                        id: 'target_profiling',
+                        type: 'recon',
+                        name: 'Profilazione Target',
+                        position: { x: 50, y: 80 },
+                        level: 1,
+                        maxLevel: 3,
+                        upgrades: {
+                            1: { name: 'Profilo Base', description: 'Identifica informazioni pubbliche base del target' },
+                            2: { name: 'Profilo Dettagliato', description: 'Analisi approfondita delle attività del target', requires: ['Network Security LV1'] },
+                            3: { name: 'Profilo Comportamentale', description: 'Modelli comportamentali e predizioni', requires: ['AI LV1'] }
+                        }
+                    },
+                    {
+                        id: 'network_discovery',
+                        type: 'access',
+                        name: 'Network Discovery',
+                        position: { x: 220, y: 30 },
+                        level: 1,
+                        maxLevel: 3,
+                        upgrades: {
+                            1: { name: 'Scan Base', description: 'Scansione rete e port scan base' },
+                            2: { name: 'Topology Mapping', description: 'Mappatura topologia di rete completa', requires: ['Net LV2'] },
+                            3: { name: 'Service Fingerprinting', description: 'Fingerprinting servizi e versioni', requires: ['Network Security LV2'] }
+                        }
+                    },
+                    {
+                        id: 'vulnerability_assessment',
+                        type: 'recon',
+                        name: 'Vulnerability Assessment',
+                        position: { x: 220, y: 130 },
+                        level: 2,
+                        maxLevel: 3,
+                        upgrades: {
+                            2: { name: 'Vuln Scanner', description: 'Scanner automatico vulnerabilità' },
+                            3: { name: 'Advanced Assessment', description: 'Assessment vulnerabilità avanzato', requires: ['Network Security LV3'] }
+                        }
+                    },
+                    {
+                        id: 'social_engineering_intel',
+                        type: 'acquisition',
+                        name: 'Social Engineering Intel',
+                        position: { x: 390, y: 30 },
+                        level: 2,
+                        maxLevel: 3,
+                        upgrades: {
+                            2: { name: 'HUMINT Collection', description: 'Raccolta intelligence umana' },
+                            3: { name: 'Psychological Profiling', description: 'Profilazione psicologica avanzata', requires: ['SocEng LV3'] }
+                        }
+                    },
+                    {
+                        id: 'data_gathering',
+                        type: 'acquisition',
+                        name: 'Data Gathering',
+                        position: { x: 390, y: 130 },
+                        level: 1,
+                        maxLevel: 4,
+                        upgrades: {
+                            1: { name: 'Info Base', description: 'Raccolta informazioni pubbliche base' },
+                            2: { name: 'Social Media Mining', description: 'Estrazione dati da social media', requires: ['Analisi Dati LV1'] },
+                            3: { name: 'Deep Web Search', description: 'Ricerca nel deep web e database specializzati', requires: ['Analisi Dati LV2'] },
+                            4: { name: 'Automated Collection', description: 'Raccolta automatizzata multi-fonte', requires: ['AI LV1'] }
+                        }
+                    },
+                    {
+                        id: 'analysis_engine',
+                        type: 'recon',
+                        name: 'Analysis Engine',
+                        position: { x: 220, y: 230 },
+                        level: 1,
+                        maxLevel: 3,
+                        upgrades: {
+                            1: { name: 'Analisi Base', description: 'Analisi e correlazione dati base' },
+                            2: { name: 'Pattern Recognition', description: 'Riconoscimento pattern e anomalie', requires: ['Analisi Dati LV2'] },
+                            3: { name: 'Predictive Analysis', description: 'Analisi predittiva comportamentale', requires: ['AI LV2'] }
+                        }
+                    },
+                    {
+                        id: 'intelligence_report',
+                        type: 'exfiltration',
+                        name: 'Intelligence Report',
+                        position: { x: 390, y: 230 },
+                        level: 1,
+                        maxLevel: 3,
+                        upgrades: {
+                            1: { name: 'Report Base', description: 'Generazione report intelligence base' },
+                            2: { name: 'Visual Analytics', description: 'Report con visualizzazioni e grafi', requires: ['Analisi Dati LV1'] },
+                            3: { name: 'Actionable Intelligence', description: 'Intelligence operativa con raccomandazioni', requires: ['AI LV1'] }
+                        }
+                    }
+                ],
+                connections: [
+                    { from: 'target_profiling', to: 'network_discovery' },
+                    { from: 'target_profiling', to: 'vulnerability_assessment' },
+                    { from: 'network_discovery', to: 'social_engineering_intel' },
+                    { from: 'vulnerability_assessment', to: 'data_gathering' },
+                    { from: 'social_engineering_intel', to: 'analysis_engine' },
+                    { from: 'data_gathering', to: 'analysis_engine' },
+                    { from: 'analysis_engine', to: 'intelligence_report' }
+                ]
+            },
+            3: {
+                nodes: [
+                    {
+                        id: 'target_profiling',
+                        type: 'recon',
+                        name: 'Profilazione Target',
+                        position: { x: 50, y: 80 },
+                        level: 1,
+                        maxLevel: 3,
+                        upgrades: {
+                            1: { name: 'Profilo Base', description: 'Identifica informazioni pubbliche base del target' },
+                            2: { name: 'Profilo Dettagliato', description: 'Analisi approfondita delle attività del target', requires: ['Network Security LV1'] },
+                            3: { name: 'Profilo Comportamentale', description: 'Modelli comportamentali e predizioni', requires: ['AI LV1'] }
+                        }
+                    },
+                    {
+                        id: 'ai_reconnaissance',
+                        type: 'recon',
+                        name: 'AI Reconnaissance',
+                        position: { x: 50, y: 180 },
+                        level: 3,
+                        maxLevel: 4,
+                        upgrades: {
+                            3: { name: 'AI Pattern Matcher', description: 'Riconoscimento pattern AI-driven' },
+                            4: { name: 'Deep Learning OSINT', description: 'Deep learning per intelligence gathering', requires: ['AI LV3'] }
+                        }
+                    },
+                    {
+                        id: 'network_discovery',
+                        type: 'access',
+                        name: 'Network Discovery',
+                        position: { x: 220, y: 30 },
+                        level: 1,
+                        maxLevel: 3,
+                        upgrades: {
+                            1: { name: 'Scan Base', description: 'Scansione rete e port scan base' },
+                            2: { name: 'Topology Mapping', description: 'Mappatura topologia di rete completa', requires: ['Net LV2'] },
+                            3: { name: 'Service Fingerprinting', description: 'Fingerprinting servizi e versioni', requires: ['Network Security LV2'] }
+                        }
+                    },
+                    {
+                        id: 'advanced_vuln_research',
+                        type: 'recon',
+                        name: 'Advanced Vuln Research',
+                        position: { x: 220, y: 130 },
+                        level: 3,
+                        maxLevel: 4,
+                        upgrades: {
+                            3: { name: 'Zero-Day Hunting', description: 'Caccia a vulnerabilità zero-day' },
+                            4: { name: 'AI Vuln Discovery', description: 'Scoperta vulnerabilità assistita da AI', requires: ['AI LV3'] }
+                        }
+                    },
+                    {
+                        id: 'deep_web_crawler',
+                        type: 'acquisition',
+                        name: 'Deep Web Crawler',
+                        position: { x: 390, y: 30 },
+                        level: 3,
+                        maxLevel: 4,
+                        upgrades: {
+                            3: { name: 'Dark Web Access', description: 'Accesso sistematico al dark web' },
+                            4: { name: 'Quantum Search', description: 'Algoritmi di ricerca quantistici', requires: ['AI LV3'] }
+                        }
+                    },
+                    {
+                        id: 'social_engineering_intel',
+                        type: 'acquisition',
+                        name: 'Social Engineering Intel',
+                        position: { x: 390, y: 130 },
+                        level: 2,
+                        maxLevel: 3,
+                        upgrades: {
+                            2: { name: 'HUMINT Collection', description: 'Raccolta intelligence umana' },
+                            3: { name: 'Psychological Profiling', description: 'Profilazione psicologica avanzata', requires: ['SocEng LV3'] }
+                        }
+                    },
+                    {
+                        id: 'predictive_analytics',
+                        type: 'recon',
+                        name: 'Predictive Analytics',
+                        position: { x: 220, y: 230 },
+                        level: 3,
+                        maxLevel: 4,
+                        upgrades: {
+                            3: { name: 'Threat Prediction', description: 'Predizione minacce e comportamenti' },
+                            4: { name: 'Quantum Analytics', description: 'Analisi predittiva quantistica', requires: ['AI LV3'] }
+                        }
+                    },
+                    {
+                        id: 'actionable_intelligence',
+                        type: 'exfiltration',
+                        name: 'Actionable Intelligence',
+                        position: { x: 390, y: 230 },
+                        level: 3,
+                        maxLevel: 4,
+                        upgrades: {
+                            3: { name: 'Strategic Intel', description: 'Intelligence strategica operativa' },
+                            4: { name: 'AI-Driven Recommendations', description: 'Raccomandazioni basate su AI', requires: ['AI LV2'] }
+                        }
+                    }
+                ],
+                connections: [
+                    { from: 'target_profiling', to: 'ai_reconnaissance' },
+                    { from: 'target_profiling', to: 'network_discovery' },
+                    { from: 'ai_reconnaissance', to: 'advanced_vuln_research' },
+                    { from: 'network_discovery', to: 'deep_web_crawler' },
+                    { from: 'advanced_vuln_research', to: 'social_engineering_intel' },
+                    { from: 'deep_web_crawler', to: 'predictive_analytics' },
+                    { from: 'social_engineering_intel', to: 'predictive_analytics' },
+                    { from: 'predictive_analytics', to: 'actionable_intelligence' }
+                ]
+            }
+        },
+        requiredTalents: ['Analisi Dati LV1', 'Net LV1', 'Network Security LV1']
     }
 };
 
